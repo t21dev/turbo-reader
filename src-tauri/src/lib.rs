@@ -1,4 +1,4 @@
-//! Turbo Reader — a fast, modern RSS reader.
+//! Turbo Reader, a fast and modern RSS reader.
 //!
 //! Feed fetching, parsing and HTML sanitising all happen here in Rust, off the
 //! UI thread. The webview only ever receives content that has been through the
@@ -8,7 +8,9 @@
 mod commands;
 mod db;
 mod feed;
+mod markdown;
 mod opml;
+mod readable;
 
 use commands::AppState;
 use std::sync::Mutex;
@@ -19,7 +21,6 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             let dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&dir)?;
@@ -52,6 +53,12 @@ pub fn run() {
             commands::get_settings,
             commands::set_setting,
             commands::stats,
+            commands::set_hidden,
+            commands::load_full_content,
+            commands::article_markdown,
+            commands::qr_svg,
+            commands::read_text_file,
+            commands::write_text_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Turbo Reader");
