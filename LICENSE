@@ -1,21 +1,47 @@
-MIT License
+Turbo Reader Non-Commercial Licence
+Copyright (c) 2026 t21 dev and Afshin Nahian Tripto (TriptoAfsin)
 
-Copyright (c) 2026 t21dev
+Permission is granted, free of charge, to any person obtaining a copy of this
+software and its documentation (the "Software") to use, copy, modify, merge,
+publish and distribute the Software for non-commercial purposes, subject to
+the conditions below.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. Non-commercial use
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+   Personal use, study, teaching, research, evaluation, and use by a
+   registered non-profit are all free of charge, with no registration and no
+   reporting.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. Commercial use
+
+   Using the Software, or anything derived from it, to generate revenue or in
+   the course of a business needs a separate licence. That includes bundling
+   it with a paid product, offering it as a hosted or managed service, and
+   internal use inside a for-profit organisation.
+
+   Get in touch and we will sort one out: https://github.com/t21dev
+
+3. Attribution
+
+   The copyright notice above and this permission notice must appear in every
+   copy or substantial portion of the Software, and the credit to t21 dev and
+   TriptoAfsin must stay visible in any derivative work's about screen or
+   documentation.
+
+4. Third-party work
+
+   The Software is an independent implementation and contains no Fluent Reader
+   code. Its feature design, OPML conventions and data model owe a great deal
+   to Fluent Reader by Haoyuan Liu, which is published separately under the
+   BSD-3-Clause licence. Its dependencies keep their own licences, which this
+   one does not alter.
+
+5. No warranty
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
