@@ -1,6 +1,8 @@
 import { useEffect } from "react"
 import { X } from "lucide-react"
 import { isMac } from "@/lib/platform"
+import { useDismissible } from "@/lib/presence"
+import { cn } from "@/lib/utils"
 
 const MOD = isMac ? "⌘" : "Ctrl"
 
@@ -48,28 +50,36 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
 ]
 
 export function Shortcuts({ onClose }: { onClose: () => void }) {
+  const { closing, dismiss } = useDismissible(onClose)
+
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === "Escape" || ev.key === "?") onClose()
+      if (ev.key === "Escape" || ev.key === "?") dismiss()
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [onClose])
+  }, [dismiss])
 
   return (
     <div
-      className="animate-fade absolute inset-0 z-[60] grid place-items-center bg-black/50 p-6"
-      onClick={onClose}
+      className={cn(
+        "absolute inset-0 z-[60] grid place-items-center bg-black/50 p-6",
+        closing ? "animate-fade-out" : "animate-fade",
+      )}
+      onClick={dismiss}
     >
       <div
-        className="animate-pop w-full max-w-[620px] overflow-hidden rounded-xl border border-border bg-popover shadow-float"
+        className={cn(
+          "w-full max-w-[620px] overflow-hidden rounded-xl border border-border bg-popover shadow-float",
+          closing ? "animate-pop-out" : "animate-pop",
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
           <h2 className="text-[14px] font-semibold tracking-tight">Keyboard shortcuts</h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={dismiss}
             title="Close (Esc)"
             className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
           >

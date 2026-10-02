@@ -11,10 +11,18 @@ mod feed;
 mod markdown;
 mod opml;
 mod readable;
+mod winstate;
 
 use commands::AppState;
-use std::sync::Mutex;
-use tauri::Manager;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+use tauri::{Manager, WindowEvent};
+
+/// How long to wait after the last move or resize before writing the state.
+/// Long enough that dragging the window is one write, short enough that a
+/// crash a second later still loses nothing.
+const WINDOW_STATE_DEBOUNCE: Duration = Duration::from_millis(600);
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -25,12 +33,73 @@ pub fn run() {
             let dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&dir)?;
             let conn = db::open(&dir.join("turbo-reader.db"))?;
+
+            // Put the window back before it is shown. It is created hidden and
+            // revealed from the frontend once React has painted, so none of
+            // this is visible as a jump.
+            winstate::restore(app.handle(), &conn);
+
             let http = feed::client()?;
             app.manage(AppState {
                 db: Mutex::new(conn),
                 http,
             });
             Ok(())
+        })
+        // Saving only on a clean exit is not enough: a crash, a kill or a power
+        // cut would all lose where the window was.
+        .on_window_event({
+            // When a save is due, and whether a thread is already waiting for
+            // it. One thread services any number of events.
+            let due: Arc<Mutex<Option<Instant>>> = Arc::new(Mutex::new(None));
+            let waiting = Arc::new(AtomicBool::new(false));
+
+            move |window, event| {
+                match event {
+                    WindowEvent::Moved(_) | WindowEvent::Resized(_) => {}
+                    // Closing saves at once, so a position held for less than
+                    // the debounce still survives quitting.
+                    WindowEvent::CloseRequested { .. } => {
+                        save_now(window);
+                        return;
+                    }
+                    _ => return,
+                }
+
+                {
+                    let Ok(mut slot) = due.lock() else { return };
+                    *slot = Some(Instant::now() + WINDOW_STATE_DEBOUNCE);
+                }
+                // A drag fires hundreds of these. Only the first starts a thread.
+                if waiting.swap(true, Ordering::SeqCst) {
+                    return;
+                }
+
+                let window = window.clone();
+                let due = Arc::clone(&due);
+                let waiting = Arc::clone(&waiting);
+                std::thread::spawn(move || {
+                    loop {
+                        let remaining = {
+                            let Ok(slot) = due.lock() else { break };
+                            match *slot {
+                                Some(at) => at.saturating_duration_since(Instant::now()),
+                                None => break,
+                            }
+                        };
+                        if !remaining.is_zero() {
+                            std::thread::sleep(remaining);
+                            continue;
+                        }
+                        if let Ok(mut slot) = due.lock() {
+                            *slot = None;
+                        }
+                        save_now(&window);
+                        break;
+                    }
+                    waiting.store(false, Ordering::SeqCst);
+                });
+            }
         })
         .invoke_handler(tauri::generate_handler![
             commands::list_groups,
@@ -57,9 +126,26 @@ pub fn run() {
             commands::load_full_content,
             commands::article_markdown,
             commands::qr_svg,
+            commands::check_for_updates,
+            commands::settle_window,
             commands::read_text_file,
             commands::write_text_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Turbo Reader");
+}
+
+/// Write the window's geometry, if there is a sensible one to write and the
+/// database is free. Never blocks the window event it was called from.
+fn save_now<R: tauri::Runtime>(window: &tauri::Window<R>) {
+    let Some(state) = winstate::capture(window) else {
+        return;
+    };
+    let Some(app_state) = window.app_handle().try_state::<AppState>() else {
+        return;
+    };
+    let Ok(conn) = app_state.db.try_lock() else {
+        return;
+    };
+    winstate::store(&conn, &state);
 }

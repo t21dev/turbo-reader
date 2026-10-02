@@ -1,10 +1,15 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react"
 import { ChevronRight } from "lucide-react"
+import { motionOff } from "@/lib/presence"
 import { cn } from "@/lib/utils"
 
-/** A dropdown anchored to its trigger. Opens with a short scale-and-rise,
-    closes instantly, and flips to the other side when it would run off the
-    window. Keyboard: Escape closes, arrows move, Enter activates. */
+/** The menu's exit is shorter than a panel's; a dropdown that lingers feels
+    unresponsive, because the next click is usually already on its way. */
+const MENU_EXIT_MS = 110
+
+/** A dropdown anchored to its trigger. Scales up from the trigger on open and
+    back down on close, and flips to the other side when it would run off the
+    window. Escape closes it, as does a click anywhere outside. */
 export function Menu({
   trigger,
   children,
@@ -19,19 +24,49 @@ export function Menu({
   label?: string
 }) {
   const [open, setOpen] = useState(false)
+  const [closing, setClosing] = useState(false)
   const [up, setUp] = useState(false)
   const host = useRef<HTMLDivElement>(null)
   const panel = useRef<HTMLDivElement>(null)
+  const timer = useRef<number | null>(null)
+
+  // The panel stays mounted while it animates out, so a close reads as a
+  // close rather than the menu blinking out of existence.
+  const close = useCallback(() => {
+    if (timer.current !== null) return
+    if (motionOff()) {
+      setOpen(false)
+      return
+    }
+    setClosing(true)
+    timer.current = window.setTimeout(() => {
+      timer.current = null
+      setClosing(false)
+      setOpen(false)
+    }, MENU_EXIT_MS)
+  }, [])
+
+  const toggle = useCallback(() => {
+    if (open) close()
+    else setOpen(true)
+  }, [open, close])
+
+  useEffect(
+    () => () => {
+      if (timer.current !== null) window.clearTimeout(timer.current)
+    },
+    [],
+  )
 
   useEffect(() => {
-    if (!open) return
+    if (!open || closing) return
     const onDown = (ev: MouseEvent) => {
-      if (!host.current?.contains(ev.target as Node)) setOpen(false)
+      if (!host.current?.contains(ev.target as Node)) close()
     }
     const onKey = (ev: KeyboardEvent) => {
       if (ev.key === "Escape") {
         ev.stopPropagation()
-        setOpen(false)
+        close()
       }
     }
     window.addEventListener("mousedown", onDown)
@@ -40,18 +75,18 @@ export function Menu({
       window.removeEventListener("mousedown", onDown)
       window.removeEventListener("keydown", onKey, true)
     }
-  }, [open])
+  }, [open, closing, close])
 
   // Flip above the trigger when there is no room below.
   useLayoutEffect(() => {
-    if (!open || !host.current) return
+    if (!open || closing || !host.current) return
     const r = host.current.getBoundingClientRect()
     setUp(window.innerHeight - r.bottom < 260 && r.top > 260)
-  }, [open])
+  }, [open, closing])
 
   return (
     <div ref={host} className="relative">
-      {trigger({ open, toggle: () => setOpen((v) => !v) })}
+      {trigger({ open, toggle })}
       {open && (
         <div
           ref={panel}
@@ -62,10 +97,10 @@ export function Menu({
             "absolute z-50 overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-float",
             align === "end" ? "right-0" : "left-0",
             up ? "bottom-full mb-1.5 origin-bottom" : "top-full mt-1.5 origin-top",
-            "animate-menu",
+            closing ? "animate-menu-out" : "animate-menu",
           )}
         >
-          {typeof children === "function" ? children(() => setOpen(false)) : children}
+          {typeof children === "function" ? children(close) : children}
         </div>
       )}
     </div>

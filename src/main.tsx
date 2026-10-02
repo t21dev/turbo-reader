@@ -1,6 +1,8 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
+import { getCurrentWindow } from "@tauri-apps/api/window"
 import App from "./App"
+import { api } from "./lib/api"
 import { ThemeProvider } from "./lib/theme"
 import "./index.css"
 
@@ -11,3 +13,37 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     </ThemeProvider>
   </React.StrictMode>,
 )
+
+/**
+ * The window starts hidden and is shown once there is something to look at.
+ *
+ * Two frames are waited on rather than one: the first lands after React has
+ * committed, the second after the browser has actually painted that commit.
+ * Showing on the first still catches an empty window on a slow start.
+ */
+function reveal() {
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      const splash = document.getElementById("splash")
+      if (splash) {
+        splash.hidden = true
+        window.setTimeout(() => splash.remove(), 260)
+      }
+      const win = getCurrentWindow()
+      void win
+        .show()
+        .then(() => win.setFocus())
+        // The restored size is corrected here rather than at startup: a window
+        // that has not been shown yet reports sizes that were never laid out.
+        .then(() => api.settleWindow())
+        .catch(() => undefined)
+    }),
+  )
+}
+
+if (document.fonts?.ready) {
+  // Geist loading late would otherwise show one frame of fallback type.
+  void document.fonts.ready.then(reveal).catch(reveal)
+} else {
+  reveal()
+}

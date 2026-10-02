@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react"
-import { X, Download, Upload, Monitor, Sun, Moon, RotateCcw } from "lucide-react"
+import {
+  X,
+  Download,
+  Upload,
+  Monitor,
+  Sun,
+  Moon,
+  RotateCcw,
+  RefreshCw,
+  CheckCircle2,
+  ArrowUpCircle,
+} from "lucide-react"
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog"
 import { openUrl } from "@tauri-apps/plugin-opener"
-import { api, type Stats } from "@/lib/api"
+import { api, type Stats, type UpdateCheck } from "@/lib/api"
 import {
   ACCENTS,
   LINE_WIDTHS,
@@ -13,6 +24,7 @@ import {
   type Mode,
 } from "@/lib/theme"
 import { UI_SCALES, setScale, useScale } from "@/lib/scale"
+import { useDismissible } from "@/lib/presence"
 import { cn } from "@/lib/utils"
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -86,7 +98,10 @@ export function SettingsPanel({
   const [stats, setStats] = useState<Stats | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
-  const [closing, setClosing] = useState(false)
+  const [update, setUpdate] = useState<UpdateCheck | null>(null)
+  const [updateError, setUpdateError] = useState<string | null>(null)
+  const [checking, setChecking] = useState(false)
+  const { closing, dismiss } = useDismissible(onClose, 180)
 
   useEffect(() => {
     api.stats().then(setStats).catch(() => undefined)
@@ -96,13 +111,7 @@ export function SettingsPanel({
     const onKey = (ev: KeyboardEvent) => ev.key === "Escape" && dismiss()
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  })
-
-  /** Let the slide-out finish before the panel leaves the tree. */
-  function dismiss() {
-    setClosing(true)
-    window.setTimeout(onClose, 180)
-  }
+  }, [dismiss])
 
   async function importOpml() {
     const path = await openDialog({
@@ -147,9 +156,24 @@ export function SettingsPanel({
 
   const activeScale = UI_SCALES.find((s) => s.value === scale) ?? UI_SCALES[1]
 
+  async function checkUpdates() {
+    setChecking(true)
+    setUpdateError(null)
+    try {
+      setUpdate(await api.checkForUpdates())
+    } catch (err) {
+      setUpdateError(String(err))
+    } finally {
+      setChecking(false)
+    }
+  }
+
   return (
     <div
-      className={cn("absolute inset-0 z-50 flex justify-end bg-black/40", !closing && "animate-fade")}
+      className={cn(
+        "absolute inset-0 z-50 flex justify-end bg-black/40",
+        closing ? "animate-fade-out" : "animate-fade",
+      )}
       onClick={dismiss}
     >
       <div
@@ -340,6 +364,54 @@ export function SettingsPanel({
             </dl>
           </Section>
         )}
+
+        <Section title="Updates">
+          <button
+            type="button"
+            onClick={checkUpdates}
+            disabled={checking}
+            className="row flex h-9 w-full items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50"
+          >
+            <RefreshCw size={13} className={checking ? "animate-spin" : undefined} />
+            {checking ? "Checking" : "Check for updates"}
+          </button>
+
+          {update && !updateError && (
+            <div className="animate-rise mt-3">
+              {update.newer ? (
+                <>
+                  <p className="flex items-start gap-2 text-[12px] leading-relaxed text-foreground">
+                    <ArrowUpCircle size={14} className="mt-[1px] shrink-0 text-system" />
+                    <span>
+                      Version <span className="tabular">{update.latest}</span> is out.
+                      {update.published ? ` Published ${update.published}.` : ""} You are on{" "}
+                      <span className="tabular">{update.current}</span>.
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void openUrl(update.url)}
+                    className="row mt-2 flex h-9 w-full items-center justify-center gap-2 border border-system bg-elevated text-[12px] text-foreground hover:bg-secondary"
+                  >
+                    <Download size={13} />
+                    Get it from GitHub
+                  </button>
+                </>
+              ) : (
+                <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                  <CheckCircle2 size={14} className="shrink-0 text-system" />
+                  Up to date on <span className="tabular">{update.current}</span>.
+                </p>
+              )}
+            </div>
+          )}
+
+          {updateError && (
+            <p className="animate-rise mt-3 text-[11px] leading-relaxed text-destructive">
+              {updateError}
+            </p>
+          )}
+        </Section>
 
         <Section title="About">
           <p className="text-[12px] leading-relaxed text-muted-foreground">

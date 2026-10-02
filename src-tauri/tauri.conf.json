@@ -22,7 +22,8 @@
         "decorations": false,
         "theme": "Dark",
         "shadow": true,
-        "center": true
+        "visible": false,
+        "backgroundColor": "#0d0d0d"
       }
     ],
     "security": {

@@ -1,6 +1,6 @@
 //! The Tauri command surface. Everything the UI can ask for.
 
-use crate::{db, feed, markdown, opml, readable};
+use crate::{db, feed, markdown, opml, readable, winstate};
 use anyhow::Result;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -947,4 +947,145 @@ mod slug_tests {
         assert_eq!(slug("!!!"), "article");
         assert!(!slug(&"word ".repeat(40)).ends_with('-'));
     }
+}
+
+/* -------------------------------- updates ------------------------------- */
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateCheck {
+    pub current: String,
+    pub latest: Option<String>,
+    pub newer: bool,
+    pub url: String,
+    pub published: Option<String>,
+}
+
+/// Ask GitHub what the newest published release is.
+///
+/// Deliberately not the Tauri updater: that wants a signing key pair and a
+/// signed manifest, and until the binaries are code-signed it would be
+/// ceremony around an unsigned download. This tells you a release exists and
+/// sends you to the page; you decide.
+#[tauri::command]
+pub async fn check_for_updates(state: State<'_, AppState>) -> Result<UpdateCheck, String> {
+    const RELEASES: &str = "https://github.com/t21dev/turbo-reader/releases/latest";
+    let current = env!("CARGO_PKG_VERSION").to_string();
+
+    let res = state
+        .http
+        .get("https://api.github.com/repos/t21dev/turbo-reader/releases/latest")
+        .header(reqwest::header::ACCEPT, "application/vnd.github+json")
+        .send()
+        .await
+        .map_err(|err| format!("Could not reach GitHub: {err}"))?;
+
+    if !res.status().is_success() {
+        return Err(format!("GitHub returned {}", res.status()));
+    }
+
+    // reqwest is built without its json feature, so the body is parsed here.
+    let text = res
+        .text()
+        .await
+        .map_err(|err| format!("Unexpected answer from GitHub: {err}"))?;
+    let body: serde_json::Value = serde_json::from_str(&text)
+        .map_err(|err| format!("Unexpected answer from GitHub: {err}"))?;
+
+    let latest = body
+        .get("tag_name")
+        .and_then(|v| v.as_str())
+        .map(|t| t.trim_start_matches('v').to_string());
+    let published = body
+        .get("published_at")
+        .and_then(|v| v.as_str())
+        .map(|s| s[..10.min(s.len())].to_string());
+    let url = body
+        .get("html_url")
+        .and_then(|v| v.as_str())
+        .unwrap_or(RELEASES)
+        .to_string();
+
+    let newer = latest
+        .as_deref()
+        .map(|l| is_newer(l, &current))
+        .unwrap_or(false);
+
+    Ok(UpdateCheck {
+        current,
+        latest,
+        newer,
+        url,
+        published,
+    })
+}
+
+/// Compare two dotted versions numerically. A segment that is not a number
+/// (`0.2.0-rc1`) compares on the numeric prefix, so a pre-release never reads
+/// as newer than the release it precedes.
+fn is_newer(candidate: &str, current: &str) -> bool {
+    let part = |s: &str| -> Vec<u64> {
+        s.split('.')
+            .map(|seg| {
+                seg.chars()
+                    .take_while(char::is_ascii_digit)
+                    .collect::<String>()
+                    .parse()
+                    .unwrap_or(0)
+            })
+            .collect()
+    };
+    let (a, b) = (part(candidate), part(current));
+    for i in 0..a.len().max(b.len()) {
+        let (x, y) = (
+            a.get(i).copied().unwrap_or(0),
+            b.get(i).copied().unwrap_or(0),
+        );
+        if x != y {
+            return x > y;
+        }
+    }
+    false
+}
+
+#[cfg(test)]
+mod update_tests {
+    use super::is_newer;
+
+    #[test]
+    fn newer_versions_win() {
+        assert!(is_newer("0.2.0", "0.1.0"));
+        assert!(is_newer("1.0.0", "0.9.9"));
+        assert!(is_newer("0.1.10", "0.1.9"));
+        assert!(is_newer("0.1.1", "0.1"));
+    }
+
+    #[test]
+    fn same_or_older_does_not() {
+        assert!(!is_newer("0.1.0", "0.1.0"));
+        assert!(!is_newer("0.1.0", "0.2.0"));
+        assert!(!is_newer("0.1", "0.1.0"));
+        // a pre-release is not newer than the release it leads to
+        assert!(!is_newer("0.2.0-rc1", "0.2.0"));
+    }
+
+    #[test]
+    fn junk_does_not_panic_or_win() {
+        assert!(!is_newer("", "0.1.0"));
+        assert!(!is_newer("vvv", "0.1.0"));
+    }
+}
+
+/// Called by the frontend once the window is on screen. See
+/// [`crate::winstate::settle`] for why the correction cannot happen earlier.
+#[tauri::command]
+pub fn settle_window(window: tauri::Window, state: State<AppState>) -> Result<(), String> {
+    let want = {
+        let conn = state.db.lock().map_err(e)?;
+        winstate::load(&conn)
+    };
+    if let Some(want) = want {
+        winstate::settle(&window, &want);
+    }
+    Ok(())
 }

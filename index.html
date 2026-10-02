@@ -4,9 +4,105 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Turbo Reader</title>
+
+    <!--
+      Paint the right colour before anything else loads. Without this the
+      webview shows one white frame while the stylesheet is still in flight,
+      which on a dark theme reads as a flash. The stored theme is read inline
+      because waiting for the React provider is already too late.
+    -->
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #0d0d0d;
+        overflow: clip;
+      }
+      html.light,
+      html.light body {
+        background: #fbfbfb;
+      }
+      #splash {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: inherit;
+        transition: opacity 220ms cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      #splash[hidden] {
+        display: grid;
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash svg {
+        width: 46px;
+        height: 46px;
+        animation: splash-breathe 1400ms ease-in-out infinite;
+      }
+      @keyframes splash-breathe {
+        0%,
+        100% {
+          opacity: 0.55;
+          transform: scale(0.97);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash svg {
+          animation: none;
+          opacity: 0.8;
+        }
+      }
+    </style>
+    <script>
+      // Mirrors the resolution in lib/theme.tsx. Kept deliberately small: it
+      // only has to get the paper colour right for the first frame.
+      ;(function () {
+        try {
+          var raw = localStorage.getItem("turbo-theme")
+          var mode = raw ? JSON.parse(raw).mode : "system"
+          var dark =
+            mode === "dark" ||
+            (mode !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches)
+          var root = document.documentElement
+          root.classList.toggle("dark", dark)
+          root.classList.toggle("light", !dark)
+          root.style.colorScheme = dark ? "dark" : "light"
+        } catch (e) {
+          /* first run, or storage blocked: the dark default stands */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <div id="splash">
+      <svg viewBox="0 0 20 20" fill="none" aria-label="Turbo Reader">
+        <path
+          d="M4 5.5L8.5 10L4 14.5"
+          stroke="#4d93f0"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M10.5 5.5L15 10L10.5 14.5"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          style="color: #8d8d8d"
+        />
+      </svg>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

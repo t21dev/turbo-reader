@@ -33,8 +33,8 @@ paths.
 | Preset | Base URL | Notes |
 | --- | --- | --- |
 | OpenAI | `https://api.openai.com/v1` | reference implementation |
-| Anthropic | `https://api.anthropic.com/v1` | OpenAI-compatible endpoint; `x-api-key` header |
-| Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | OpenAI-compatible endpoint |
+| Anthropic | `https://api.anthropic.com/v1/` | see the caveat below |
+| Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai/` | trailing slash matters |
 | Moonshot (Kimi) | `https://api.moonshot.ai/v1` | |
 | DeepSeek | `https://api.deepseek.com/v1` | |
 | Groq | `https://api.groq.com/openai/v1` | fast, good for the daily digest |
@@ -44,6 +44,16 @@ paths.
 
 A preset fills in the base URL, the auth header style and a default model. Every
 field stays editable, because a new provider should not need a release.
+
+Checked against each provider's own documentation rather than assumed. Two
+things to carry into the implementation:
+
+- Anthropic describes its OpenAI-compatible endpoint as being for evaluation
+  and testing rather than production. It works, tool calling included, but the
+  settings screen should say so next to the preset rather than let someone find
+  out later.
+- Gemini's base URL needs its trailing slash. Without it the OpenAI client
+  builds a path that returns 404, which looks like a wrong key and is not.
 
 ## The three things it does
 

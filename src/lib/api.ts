@@ -41,6 +41,14 @@ export type ItemFull = {
   starred: boolean
 }
 
+export type UpdateCheck = {
+  current: string
+  latest: string | null
+  newer: boolean
+  url: string
+  published: string | null
+}
+
 export type Scope = "all" | "source" | "group" | "starred"
 
 export type Filter = {
@@ -132,6 +140,8 @@ export const api = {
   articleMarkdown: (id: number) =>
     call<{ filename: string; markdown: string }>("article_markdown", { id }),
   qrSvg: (text: string) => call<string>("qr_svg", { text }),
+  checkForUpdates: () => call<UpdateCheck>("check_for_updates"),
+  settleWindow: () => call<void>("settle_window"),
 
   readTextFile: (path: string) => call<string>("read_text_file", { path }),
   writeTextFile: (path: string, contents: string) =>

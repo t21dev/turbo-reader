@@ -21,6 +21,7 @@ import { openUrl } from "@tauri-apps/plugin-opener"
 import { save as saveDialog } from "@tauri-apps/plugin-dialog"
 import { api, type ItemFull } from "@/lib/api"
 import { READER_FONTS, READER_SIZES, useTheme, type LineWidth } from "@/lib/theme"
+import { EXIT_MS, motionOff } from "@/lib/presence"
 import { cn, hostOf } from "@/lib/utils"
 import { Menu, MenuChoices, MenuGroup, MenuItem, MenuSeparator } from "@/components/Menu"
 
@@ -39,19 +40,27 @@ export function Reader({ item, onStar, onToggleRead, onHide, onContentLoaded, on
   const body = useRef<HTMLDivElement>(null)
   const [loadingFull, setLoadingFull] = useState(false)
   const [note, setNote] = useState<string | null>(null)
+  const [noteLeaving, setNoteLeaving] = useState(false)
   const [qr, setQr] = useState<string | null>(null)
 
   // A new article always starts at the top, and the old one's toast goes away.
   useEffect(() => {
     body.current?.scrollTo({ top: 0 })
     setNote(null)
+    setNoteLeaving(false)
     setQr(null)
   }, [item?.id])
 
+  // The toast fades out on its own rather than blinking away at 2.6s.
   useEffect(() => {
     if (!note) return
-    const t = window.setTimeout(() => setNote(null), 2600)
-    return () => window.clearTimeout(t)
+    setNoteLeaving(false)
+    const leave = window.setTimeout(() => setNoteLeaving(true), 2600)
+    const gone = window.setTimeout(() => setNote(null), 2600 + (motionOff() ? 0 : EXIT_MS))
+    return () => {
+      window.clearTimeout(leave)
+      window.clearTimeout(gone)
+    }
   }, [note])
 
   if (!item) {
@@ -348,7 +357,11 @@ export function Reader({ item, onStar, onToggleRead, onHide, onContentLoaded, on
       {note && (
         <div
           role="status"
-          className="animate-rise no-print pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-popover px-3 py-1.5 text-[11.5px] text-foreground shadow-float"
+          className={cn(
+            "no-print pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5",
+            "rounded-full border border-border bg-popover px-3 py-1.5 text-[11.5px] text-foreground shadow-float",
+            noteLeaving ? "animate-fade-out" : "animate-rise",
+          )}
         >
           <Check size={12} className="text-system" />
           {note}

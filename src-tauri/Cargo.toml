@@ -43,6 +43,15 @@ url = "2"
 quick-xml = "0.36"
 qrcode = { version = "0.14", default-features = false, features = ["svg"] }
 
+[target.'cfg(windows)'.dependencies]
+# Tauri's own inner_size() disagrees with the real client rect on an
+# undecorated window and lags a launch behind, so window geometry is measured
+# straight from the OS. See src/winstate.rs.
+windows-sys = { version = "0.59", features = [
+  "Win32_Foundation",
+  "Win32_UI_WindowsAndMessaging",
+] }
+
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]

@@ -304,6 +304,35 @@
   }
 }
 
+@keyframes tr-pop-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.97) translateY(6px);
+  }
+}
+@keyframes tr-menu-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: scaleY(0.96) translateY(-3px);
+  }
+}
+@keyframes tr-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 .animate-rise {
   animation: tr-rise 260ms var(--ease-out) both;
 }
@@ -324,6 +353,18 @@
 }
 .animate-slide-out {
   animation: tr-slide-out 180ms var(--ease-in) forwards;
+}
+
+/* Exits are quicker than entrances and use ease-in, so a surface leaves
+   decisively instead of lingering on the way out. */
+.animate-pop-out {
+  animation: tr-pop-out 150ms var(--ease-in) forwards;
+}
+.animate-menu-out {
+  animation: tr-menu-out 110ms var(--ease-in) forwards;
+}
+.animate-fade-out {
+  animation: tr-fade-out 150ms linear forwards;
 }
 
 /* The Animations switch in Settings, and the system preference, both land
