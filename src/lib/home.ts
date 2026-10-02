@@ -79,10 +79,12 @@ export function useNow(seconds: boolean, enabled: boolean): Date {
   return now
 }
 
-export const LAYOUTS: { value: BandLayout; label: string }[] = [
-  { value: "cards", label: "Cards" },
-  { value: "compact", label: "Compact" },
-  { value: "headlines", label: "Headlines" },
+export const LAYOUTS: { value: BandLayout; label: string; hint: string }[] = [
+  { value: "cards", label: "Cards", hint: "Cover art, four across" },
+  { value: "mosaic", label: "Mosaic", hint: "One lead tile, the rest around it" },
+  { value: "magazine", label: "Magazine", hint: "One story given room, headlines beside it" },
+  { value: "compact", label: "Compact", hint: "Small cards, no cover art" },
+  { value: "headlines", label: "Headlines", hint: "A numbered list, the densest option" },
 ]
 
 export const WINDOWS: { value: HomeWindow; label: string; countKey: "today" | "week" | "month" }[] =

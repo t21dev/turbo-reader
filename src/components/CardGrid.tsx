@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { EyeOff, Star } from "lucide-react"
 import type { ItemSummary, Source } from "@/lib/api"
 import { cn, relativeTime } from "@/lib/utils"
 import { FeedIcon } from "@/components/FeedIcon"
+import { CoverFallback } from "@/components/CoverFallback"
 
 type Props = {
   items: ItemSummary[]
@@ -17,6 +18,27 @@ type Props = {
 
 /** Grid of article cards with cover art. The counterpart to the dense list;
     this is the view for browsing rather than working through a backlog. */
+/** The article's image, or a tinted panel standing in for it. A card that
+    collapsed its cover would leave a hole in the row; one that kept an empty
+    grey box would look broken. */
+function Cover({ item }: { item: ItemSummary }) {
+  const [failed, setFailed] = useState(false)
+  if (!item.thumbnail || failed) {
+    return <CoverFallback source={{ name: item.sourceName, iconUrl: null }} />
+  }
+  return (
+    <div className="relative aspect-[16/10] w-full overflow-hidden bg-secondary">
+      <img
+        src={item.thumbnail}
+        alt=""
+        loading="lazy"
+        className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.035]"
+        onError={() => setFailed(true)}
+      />
+    </div>
+  )
+}
+
 export function CardGrid({ items, sources, loading, scopeKey, onSelect, onStar, onHide }: Props) {
   const scroller = useRef<HTMLElement>(null)
 
@@ -49,20 +71,7 @@ export function CardGrid({ items, sources, loading, scopeKey, onSelect, onStar, 
               )}
               style={i < 18 ? { animationDelay: `${Math.min(i, 12) * 18}ms` } : undefined}
             >
-              {it.thumbnail && (
-                <div className="relative aspect-[16/10] w-full overflow-hidden bg-secondary">
-                  <img
-                    src={it.thumbnail}
-                    alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.035]"
-                    onError={(e) => {
-                      const el = e.currentTarget.parentElement
-                      if (el) el.style.display = "none"
-                    }}
-                  />
-                </div>
-              )}
+              <Cover item={it} />
 
               <div className="flex min-h-0 flex-1 flex-col p-[var(--card-inset)]">
                 <div className="flex items-center gap-1.5 text-[11px] text-subtle">

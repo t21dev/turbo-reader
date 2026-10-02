@@ -1149,7 +1149,9 @@ pub fn set_group_layout(
     layout: Option<String>,
 ) -> Result<(), String> {
     let layout = match layout.as_deref() {
-        Some("cards") | Some("compact") | Some("headlines") => layout,
+        Some("cards") | Some("mosaic") | Some("magazine") | Some("compact") | Some("headlines") => {
+            layout
+        }
         Some(other) => return Err(format!("unknown layout: {other}")),
         None => None,
     };

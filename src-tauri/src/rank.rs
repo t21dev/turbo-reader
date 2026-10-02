@@ -19,6 +19,9 @@ const HALF_LIFE: f64 = 18.0 * 3600.0;
 pub struct Weights {
     pub recency: f64,
     pub unread: f64,
+    /// A feed the reader pinned. Weighted above affinity because pinning is a
+    /// stated preference, where affinity is only an inferred one.
+    pub favourite: f64,
     pub affinity: f64,
     pub interest: f64,
     pub thumbnail: f64,
@@ -31,6 +34,7 @@ impl Default for Weights {
         Self {
             recency: 1.0,
             unread: 0.35,
+            favourite: 0.9,
             affinity: 0.5,
             interest: 1.2,
             thumbnail: 0.08,
@@ -49,6 +53,8 @@ pub struct Candidate<'a> {
     pub read: bool,
     pub has_thumbnail: bool,
     pub is_duplicate: bool,
+    /// From a feed the reader pinned.
+    pub favourite: bool,
     pub source_id: i64,
 }
 
@@ -147,6 +153,9 @@ pub fn score(
     if c.has_thumbnail {
         s += w.thumbnail;
     }
+    if c.favourite {
+        s += w.favourite;
+    }
     if c.is_duplicate {
         s -= w.duplicate;
     }
@@ -183,6 +192,9 @@ pub fn explain(c: &Candidate, now: i64, interests: &Matcher, mutes: &Matcher) ->
         h if h < 24 => format!("{h} hours old"),
         h => format!("{} days old", h / 24),
     });
+    if c.favourite {
+        parts.push("a feed you pinned".into());
+    }
     if !c.read {
         parts.push("unread".into());
     }
@@ -220,6 +232,7 @@ mod tests {
             read: false,
             has_thumbnail: false,
             is_duplicate: false,
+            favourite: false,
             source_id: 1,
         }
     }
@@ -242,6 +255,42 @@ mod tests {
         let new = candidate("a", NOW - 3600);
         let old = candidate("b", NOW - 7 * 86400);
         assert!(plain_score(&new) > plain_score(&old));
+    }
+
+    #[test]
+    fn a_pinned_feed_outranks_an_equally_fresh_one() {
+        let plain = candidate("a", NOW - 3600);
+        let mut pinned = candidate("a", NOW - 3600);
+        pinned.favourite = true;
+        assert!(plain_score(&pinned) > plain_score(&plain));
+    }
+
+    /// Pinning should lift a feed, not pin it to the top regardless of age.
+    /// A week-old favourite still loses to something from this morning.
+    #[test]
+    fn pinning_is_a_thumb_on_the_scale_not_an_override() {
+        let mut stale_favourite = candidate("a", NOW - 7 * 86400);
+        stale_favourite.favourite = true;
+        let fresh = candidate("b", NOW - 1800);
+        assert!(plain_score(&fresh) > plain_score(&stale_favourite));
+    }
+
+    #[test]
+    fn a_mute_still_beats_a_pin() {
+        let mut pinned = candidate("Crypto moons again", NOW);
+        pinned.favourite = true;
+        let muted = score(
+            &pinned,
+            NOW,
+            &HashMap::new(),
+            &Matcher::default(),
+            &Matcher::parse("crypto"),
+            &Weights::default(),
+        );
+        assert!(
+            muted < 0.0,
+            "an explicit mute outranks an explicit pin: {muted}"
+        );
     }
 
     #[test]

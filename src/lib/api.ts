@@ -50,7 +50,7 @@ export type UpdateCheck = {
 }
 
 export type HomeWindow = "today" | "week" | "month"
-export type BandLayout = "cards" | "compact" | "headlines"
+export type BandLayout = "cards" | "mosaic" | "magazine" | "compact" | "headlines"
 
 export type HomeItem = {
   id: number

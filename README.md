@@ -8,6 +8,14 @@
 
 <sub>Feeds are fetched, parsed and sanitised in Rust, outside the UI, so a malformed article cannot take the window down with it.</sub>
 
+<br />
+
+By **[t21 dev](https://github.com/t21dev)** and **[TriptoAfsin](https://github.com/TriptoAfsin)**
+
+[![Release](https://img.shields.io/github/v/release/t21dev/turbo-reader?style=flat-square&label=release)](https://github.com/t21dev/turbo-reader/releases/latest)
+[![Build](https://img.shields.io/github/actions/workflow/status/t21dev/turbo-reader/build.yml?branch=main&style=flat-square)](https://github.com/t21dev/turbo-reader/actions)
+[![Licence](https://img.shields.io/badge/licence-non--commercial-blue?style=flat-square)](LICENSE)
+
 </div>
 
 ---
@@ -46,6 +54,19 @@ fn geolocation_cannot_survive_sanitising() {
 
 ## Features
 
+**Home**
+- The date, a clock, and one optional line: a quote from a file you can edit,
+  or the top story
+- Counts for today, this week and this month, each one a filter, with a
+  fourteen-day sparkline
+- Search across everything, pinned feeds as a row, and a band per category
+- Five layouts per category: cards, mosaic, magazine, compact and headlines,
+  or auto, which decides from whether that category's feeds carry images
+- Ranking with no API key and no network: freshness, unread, how often you
+  open a feed, the feeds you pinned, and your own interest and mute lists.
+  A line in slashes is a regular expression, anything else a substring
+- Every card says why it is there
+
 **Reading**
 - Two views: a dense three-pane list, or a card grid with cover art
 - Unread, starred and all filters, scoped per feed or per group
@@ -55,6 +76,7 @@ fn geolocation_cannot_survive_sanitising() {
 - Copy link, save as Markdown, save as PDF, QR code to a phone
 - Hide an article, or mark all as read from 1, 3 or 7 days back
 - Keyboard first, with a shortcut sheet on `?`
+- Check for updates, from Settings
 
 **Appearance**
 - Light, dark, or follow the system
@@ -158,16 +180,14 @@ Reader's memory climbing with the size of the library.
 
 ## What is coming
 
-Two features are specified and not yet built:
+The [AI assistant](docs/ai-assistant-spec.md) is specified and not yet built:
+bring your own key, OpenAI-shaped so Claude, Gemini, Kimi, DeepSeek, Groq,
+OpenRouter and a local Ollama all work, with summaries, clustering, a
+connection test and a token ledger.
 
-- [Home page](docs/home-page-spec.md), a daily, weekly and monthly glance with
-  categorised bands, pinned sources, a clock and search.
-- [AI assistant](docs/ai-assistant-spec.md), bring your own key, OpenAI-shaped
-  so Claude, Gemini, Kimi, DeepSeek, Groq, OpenRouter and a local Ollama all
-  work. Summaries and clustering, with a connection test and a token ledger.
-
-Without a key the curation still runs, on local scoring and your own interest
-and mute lists. The assistant makes it better, it is not what makes it work.
+The home page already ranks without it, on local scoring and your own interest
+and mute lists. The assistant is meant to make that better, not to be the thing
+that makes it work.
 
 ## Licence
 

@@ -339,7 +339,7 @@ function GroupRow({
       >
         <option value="">Auto</option>
         {LAYOUTS.map((l) => (
-          <option key={l.value} value={l.value}>
+          <option key={l.value} value={l.value} title={l.hint}>
             {l.label}
           </option>
         ))}

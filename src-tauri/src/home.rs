@@ -6,7 +6,7 @@
 
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::db;
 use crate::rank::{self, Candidate, Matcher, Weights};
@@ -121,6 +121,7 @@ pub fn build(
     let interests = Matcher::parse(&setting(conn, "home_interests"));
     let mutes = Matcher::parse(&setting(conn, "home_mutes"));
     let affinities = affinities(conn)?;
+    let favourites = favourite_ids(conn)?;
     let weights = Weights::default();
 
     let since = window.since(now);
@@ -133,6 +134,7 @@ pub fn build(
             per_band,
             now,
             &affinities,
+            &favourites,
             &interests,
             &mutes,
             &weights,
@@ -220,6 +222,16 @@ fn buckets(conn: &Connection, now: i64, days: i64) -> rusqlite::Result<Vec<Bucke
             }
         })
         .collect())
+}
+
+/// The ids of pinned feeds, so their articles can be lifted in every band
+/// rather than only appearing in the pinned row.
+fn favourite_ids(conn: &Connection) -> rusqlite::Result<HashSet<i64>> {
+    let mut stmt = conn.prepare("SELECT id FROM sources WHERE pinned = 1")?;
+    let rows = stmt
+        .query_map([], |r| r.get::<_, i64>(0))?
+        .collect::<rusqlite::Result<HashSet<_>>>()?;
+    Ok(rows)
 }
 
 fn pinned(conn: &Connection) -> rusqlite::Result<Vec<PinnedSource>> {
@@ -313,6 +325,7 @@ fn band_items(
     want: usize,
     now: i64,
     affinities: &HashMap<i64, f64>,
+    favourites: &HashSet<i64>,
     interests: &Matcher,
     mutes: &Matcher,
     weights: &Weights,
@@ -374,6 +387,7 @@ fn band_items(
                 read: item.read,
                 has_thumbnail: item.thumbnail.is_some(),
                 is_duplicate,
+                favourite: favourites.contains(&item.source_id),
                 source_id: item.source_id,
             };
             let s = rank::score(&c, now, affinities, interests, mutes, weights);

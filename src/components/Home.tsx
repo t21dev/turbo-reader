@@ -4,6 +4,7 @@ import { api, type BandLayout, type Home as HomeData, type HomeItem, type Scope 
 import { HOME_DEFAULTS, WINDOWS, useNow, type HomePrefs } from "@/lib/home"
 import { cn, relativeTime } from "@/lib/utils"
 import { FeedIcon } from "@/components/FeedIcon"
+import { CoverFallback } from "@/components/CoverFallback"
 
 type Props = {
   prefs: HomePrefs
@@ -302,59 +303,167 @@ function BandBody({
   onStar: (i: HomeItem) => void
 }) {
   if (layout === "headlines") return <Headlines items={items} onOpen={onOpen} onStar={onStar} />
+  if (layout === "magazine") return <Magazine items={items} onOpen={onOpen} onStar={onStar} />
+  return <Grid layout={layout} items={items} onOpen={onOpen} onStar={onStar} />
+}
+
+/** Cards, compact cards, or a mosaic where the lead takes four tiles. */
+function Grid({
+  layout,
+  items,
+  onOpen,
+  onStar,
+}: {
+  layout: BandLayout
+  items: HomeItem[]
+  onOpen: (i: HomeItem) => void
+  onStar: (i: HomeItem) => void
+}) {
+  const mosaic = layout === "mosaic"
+  const min = layout === "compact" ? 190 : mosaic ? 210 : 240
   return (
     <div
       className="mt-3 grid gap-4"
       style={{
-        gridTemplateColumns: `repeat(auto-fill, minmax(${layout === "compact" ? 190 : 240}px, 1fr))`,
+        gridTemplateColumns: `repeat(auto-fill, minmax(${min}px, 1fr))`,
+        gridAutoRows: mosaic ? "minmax(0, auto)" : undefined,
       }}
     >
-      {items.map((it) => (
-        <article
+      {items.map((it, i) => (
+        <Card
           key={it.id}
-          title={it.why}
-          onClick={() => onOpen(it)}
+          item={it}
+          onOpen={onOpen}
+          onStar={onStar}
+          cover={layout !== "compact"}
+          lead={mosaic && i === 0}
+        />
+      ))}
+    </div>
+  )
+}
+
+/** One story given room, with the rest as a column of headlines beside it.
+    This is the layout for a category you actually read rather than scan. */
+function Magazine({
+  items,
+  onOpen,
+  onStar,
+}: {
+  items: HomeItem[]
+  onOpen: (i: HomeItem) => void
+  onStar: (i: HomeItem) => void
+}) {
+  const [lead, ...rest] = items
+  if (!lead) return null
+  return (
+    <div className="mt-3 grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+      <article
+        title={lead.why}
+        onClick={() => onOpen(lead)}
+        className={cn(
+          "group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card",
+          "transition-[transform,box-shadow] duration-200 ease-out",
+          "hover:-translate-y-[3px] hover:shadow-float active:translate-y-0 active:duration-100",
+          lead.read && "opacity-[0.72]",
+        )}
+      >
+        <Cover item={lead} aspect="16/9" />
+        <div className="p-4">
+          <Meta item={lead} onStar={onStar} />
+          <h3
+            className={cn(
+              "mt-2 line-clamp-3 text-[1.08rem] font-semibold leading-tight tracking-tight",
+              lead.read ? "text-muted-foreground" : "text-foreground",
+            )}
+          >
+            {lead.title}
+          </h3>
+          {lead.snippet && (
+            <p className="snippet mt-2 line-clamp-3 text-[12.5px] leading-relaxed text-subtle">
+              {lead.snippet}
+            </p>
+          )}
+        </div>
+      </article>
+
+      <div className="min-w-0">
+        <Headlines items={rest} onOpen={onOpen} onStar={onStar} />
+      </div>
+    </div>
+  )
+}
+
+function Card({
+  item,
+  onOpen,
+  onStar,
+  cover,
+  lead,
+}: {
+  item: HomeItem
+  onOpen: (i: HomeItem) => void
+  onStar: (i: HomeItem) => void
+  cover: boolean
+  lead?: boolean
+}) {
+  return (
+    <article
+      title={item.why}
+      onClick={() => onOpen(item)}
+      style={lead ? { gridColumn: "span 2", gridRow: "span 2" } : undefined}
+      className={cn(
+        "group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card",
+        "transition-[transform,box-shadow] duration-200 ease-out",
+        "hover:-translate-y-[3px] hover:shadow-float active:translate-y-0 active:duration-100",
+        item.read && "opacity-[0.72]",
+      )}
+    >
+      {cover && <Cover item={item} aspect={lead ? "16/9" : "16/10"} />}
+      <div className="flex flex-1 flex-col p-3.5">
+        <Meta item={item} onStar={onStar} />
+        <h3
           className={cn(
-            "group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card",
-            "transition-[transform,box-shadow] duration-200 ease-out",
-            "hover:-translate-y-[3px] hover:shadow-float active:translate-y-0 active:duration-100",
-            it.read && "opacity-[0.72]",
+            "mt-2 line-clamp-3 leading-snug tracking-tight",
+            lead ? "text-[1.02rem]" : "text-[13px]",
+            item.read ? "font-normal text-muted-foreground" : "font-semibold text-foreground",
           )}
         >
-          {layout === "cards" && it.thumbnail && (
-            <div className="aspect-[16/10] w-full overflow-hidden bg-secondary">
-              <img
-                src={it.thumbnail}
-                alt=""
-                loading="lazy"
-                className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.035]"
-                onError={(e) => {
-                  const el = e.currentTarget.parentElement
-                  if (el) el.style.display = "none"
-                }}
-              />
-            </div>
-          )}
-          <div className="flex flex-1 flex-col p-3.5">
-            <Meta item={it} onStar={onStar} />
-            <h3
-              className={cn(
-                "mt-2 line-clamp-3 text-[13px] leading-snug tracking-tight",
-                it.read ? "font-normal text-muted-foreground" : "font-semibold text-foreground",
-              )}
-            >
-              {it.title}
-            </h3>
-            {/* A card with no cover art would otherwise be mostly empty, and a
-                grid of half-empty cards reads as broken rather than minimal. */}
-            {!(layout === "cards" && it.thumbnail) && it.snippet && (
-              <p className="snippet mt-2 line-clamp-4 text-[12px] leading-relaxed text-subtle">
-                {it.snippet}
-              </p>
-            )}
-          </div>
-        </article>
-      ))}
+          {item.title}
+        </h3>
+        {(!cover || lead) && item.snippet && (
+          <p className="snippet mt-2 line-clamp-4 text-[12px] leading-relaxed text-subtle">
+            {item.snippet}
+          </p>
+        )}
+      </div>
+    </article>
+  )
+}
+
+/** The article's own image, or a tinted panel standing in for it. Every card
+    in a row keeps the same shape either way, which is the point: a grid with
+    holes punched in it looks broken, not minimal. */
+function Cover({ item, aspect }: { item: HomeItem; aspect: string }) {
+  const [failed, setFailed] = useState(false)
+
+  if (!item.thumbnail || failed) {
+    return (
+      <CoverFallback
+        source={{ name: item.sourceName, iconUrl: null }}
+        aspect={aspect}
+      />
+    )
+  }
+  return (
+    <div style={{ aspectRatio: aspect }} className="w-full overflow-hidden bg-secondary">
+      <img
+        src={item.thumbnail}
+        alt=""
+        loading="lazy"
+        className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.035]"
+        onError={() => setFailed(true)}
+      />
     </div>
   )
 }

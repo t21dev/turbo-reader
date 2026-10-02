@@ -465,7 +465,7 @@ export function SettingsPanel({
 
         <Section title="About">
           <p className="text-[12px] leading-relaxed text-muted-foreground">
-            Turbo Reader <span className="tabular text-subtle">v0.1.0</span> by{" "}
+            Turbo Reader <span className="tabular text-subtle">v0.2.0</span> by{" "}
             <button
               type="button"
               onClick={() => void openUrl("https://github.com/t21dev")}
