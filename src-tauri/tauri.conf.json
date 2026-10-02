@@ -19,8 +19,10 @@
         "minHeight": 560,
         "resizable": true,
         "fullscreen": false,
-        "decorations": true,
-        "theme": "Dark"
+        "decorations": false,
+        "theme": "Dark",
+        "shadow": true,
+        "center": true
       }
     ],
     "security": {
