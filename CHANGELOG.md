@@ -103,7 +103,8 @@ First public release.
 ### Security
 - Feed HTML is fetched, parsed and sanitised in Rust against an allowlist before
   it reaches the webview. An article cannot introduce an element the renderer has
-  to reason about, which is the failure mode that made Fluent Reader open blank.
+  to reason about, which is a failure mode browser engines do not let a page
+  recover from.
 
 [Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/t21dev/turbo-reader/releases/tag/v0.2.0
