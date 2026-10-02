@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react"
-import { ChevronRight, Home as HomeIcon, Inbox, Plus, Star, CircleDot } from "lucide-react"
+import { ChevronRight, FolderPlus, Home as HomeIcon, Inbox, Pin, Plus, Star, CircleDot } from "lucide-react"
+import type { MenuPoint } from "@/components/ContextMenu"
+import type { Target } from "@/components/SidebarMenus"
 import type { Group, Scope, Source } from "@/lib/api"
 import { cn, hostOf } from "@/lib/utils"
 import { FeedIcon } from "@/components/FeedIcon"
@@ -16,6 +18,9 @@ type Props = {
   onSelect: (scope: Scope, id: number | null) => void
   onToggleGroup: (id: number, expanded: boolean) => void
   onAddSource: (url: string) => Promise<void>
+  /** Right-click anywhere in the rail. Null closes whatever is open. */
+  onContextMenu: (target: Target | null) => void
+  onNewGroup: () => void
 }
 
 /** A rail row. Colour-only feedback, so rows never move on hover. */
@@ -26,7 +31,9 @@ function Row({
   count,
   indent,
   onClick,
+  onContextMenu,
   title,
+  badge,
 }: {
   active?: boolean
   icon?: React.ReactNode
@@ -34,12 +41,20 @@ function Row({
   count?: number
   indent?: boolean
   onClick?: () => void
+  onContextMenu?: (at: MenuPoint) => void
   title?: string
+  badge?: React.ReactNode
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      onContextMenu={(ev) => {
+        if (!onContextMenu) return
+        ev.preventDefault()
+        ev.stopPropagation()
+        onContextMenu({ x: ev.clientX, y: ev.clientY })
+      }}
       title={title}
       className={cn(
         "row group relative flex w-full items-center gap-2 pr-2 text-left text-[13px]",
@@ -60,6 +75,7 @@ function Row({
       />
       {icon && <span className="shrink-0 opacity-80">{icon}</span>}
       <span className="min-w-0 flex-1 truncate">{label}</span>
+      {badge}
       {count ? (
         <span className="tabular shrink-0 rounded-full px-1.5 text-[11px] text-subtle">
           {count > 999 ? "999+" : count}
@@ -82,6 +98,8 @@ export function Sidebar(props: Props) {
     onSelect,
     onToggleGroup,
     onAddSource,
+    onContextMenu,
+    onNewGroup,
   } = props
   const [adding, setAdding] = useState(false)
   const [url, setUrl] = useState("")
@@ -149,20 +167,30 @@ export function Sidebar(props: Props) {
 
       <div className="flex items-center justify-between px-3 pb-1 pt-1">
         <span className="text-[11px] font-medium uppercase tracking-wider text-subtle">Feeds</span>
-        <button
-          type="button"
-          onClick={() => setAdding((v) => !v)}
-          title="Add feed (n)"
-          className={cn(
-            "row grid h-6 w-6 place-items-center hover:bg-secondary hover:text-foreground",
-            adding ? "bg-secondary text-foreground" : "text-subtle",
-          )}
-        >
-          <Plus
-            size={13}
-            className={cn("transition-transform duration-200 ease-out", adding && "rotate-45")}
-          />
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={onNewGroup}
+            title="New folder"
+            className="row grid h-6 w-6 place-items-center text-subtle hover:bg-secondary hover:text-foreground"
+          >
+            <FolderPlus size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setAdding((v) => !v)}
+            title="Add feed (n)"
+            className={cn(
+              "row grid h-6 w-6 place-items-center hover:bg-secondary hover:text-foreground",
+              adding ? "bg-secondary text-foreground" : "text-subtle",
+            )}
+          >
+            <Plus
+              size={13}
+              className={cn("transition-transform duration-200 ease-out", adding && "rotate-45")}
+            />
+          </button>
+        </div>
       </div>
 
       <div className="collapse-grid px-2" data-open={adding}>
@@ -180,7 +208,14 @@ export function Sidebar(props: Props) {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-3">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-3"
+        onContextMenu={(ev) => {
+          // Right-clicking the empty part of the rail still offers New folder.
+          ev.preventDefault()
+          onContextMenu({ kind: "rail", at: { x: ev.clientX, y: ev.clientY } })
+        }}
+      >
         {groups.map((g) => {
           const feeds = grouped.get(g.id) ?? []
           const unread = feeds.reduce((n, s) => n + s.unread, 0)
@@ -203,6 +238,7 @@ export function Sidebar(props: Props) {
                   onToggleGroup(g.id, !g.expanded)
                   onSelect("group", g.id)
                 }}
+                onContextMenu={(at) => onContextMenu({ kind: "group", group: g, at })}
               />
               {/* Grid rows animate; height does not, so there is no jump at
                   the end of the transition and no layout thrash during it. */}
@@ -217,7 +253,9 @@ export function Sidebar(props: Props) {
                       title={s.lastError ?? hostOf(s.siteUrl ?? s.url)}
                       count={s.unread}
                       icon={<FeedIcon source={s} />}
+                      badge={s.pinned ? <Pin size={10} className="shrink-0 text-subtle" /> : null}
                       onClick={() => onSelect("source", s.id)}
+                      onContextMenu={(at) => onContextMenu({ kind: "source", source: s, at })}
                     />
                   ))}
                 </div>
@@ -234,14 +272,16 @@ export function Sidebar(props: Props) {
             title={s.lastError ?? hostOf(s.siteUrl ?? s.url)}
             count={s.unread}
             icon={<FeedIcon source={s} />}
+            badge={s.pinned ? <Pin size={10} className="shrink-0 text-subtle" /> : null}
             onClick={() => onSelect("source", s.id)}
+            onContextMenu={(at) => onContextMenu({ kind: "source", source: s, at })}
           />
         ))}
 
         {sources.length === 0 && (
           <p className="px-3 py-6 text-[12px] leading-relaxed text-subtle">
             No feeds yet. Add one with <span className="text-foreground">+</span>, or import an OPML
-            file from Settings.
+            file from Settings. Right-click a feed to rename, move or delete it.
           </p>
         )}
       </div>

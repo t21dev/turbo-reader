@@ -13,6 +13,7 @@ export type Source = {
   lastFetched: number | null
   lastError: string | null
   keepLimit: number
+  pinned: boolean
 }
 
 export type ItemSummary = {

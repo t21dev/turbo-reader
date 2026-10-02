@@ -37,6 +37,7 @@ pub struct Source {
     pub last_fetched: Option<i64>,
     pub last_error: Option<String>,
     pub keep_limit: i64,
+    pub pinned: bool,
 }
 
 #[derive(Serialize)]
@@ -110,7 +111,10 @@ pub struct Stats {
 pub fn list_groups(state: State<AppState>) -> Result<Vec<Group>, String> {
     let conn = state.db.lock().map_err(e)?;
     let mut stmt = conn
-        .prepare("SELECT id, name, position, expanded FROM groups ORDER BY position, name")
+        .prepare(&format!(
+            "SELECT id, name, position, expanded FROM groups ORDER BY {}",
+            order_by(&conn)
+        ))
         .map_err(e)?;
     let rows = stmt
         .query_map([], |r| {
@@ -170,18 +174,29 @@ pub fn set_group_expanded(state: State<AppState>, id: i64, expanded: bool) -> Re
 
 /* ------------------------------- sources ------------------------------- */
 
+/// Feeds and folders are hand-ordered by default and alphabetical on request.
+/// Fluent Reader issue #539 asked for the second one.
+fn order_by(conn: &Connection) -> &'static str {
+    match db::get_setting(conn, "feed_sort").ok().flatten().as_deref() {
+        Some("alpha") => "name COLLATE NOCASE",
+        _ => "position, name COLLATE NOCASE",
+    }
+}
+
 #[tauri::command]
 pub fn list_sources(state: State<AppState>) -> Result<Vec<Source>, String> {
     let conn = state.db.lock().map_err(e)?;
     let mut stmt = conn
-        .prepare(
+        .prepare(&format!(
             "SELECT s.id, s.url, s.name, s.site_url, s.icon_url, s.group_id,
-                    (SELECT COUNT(*) FROM items i WHERE i.source_id = s.id AND i.read = 0 AND i.hidden = 0),
-                    s.last_fetched, s.last_error, s.keep_limit
-               FROM sources s
-              WHERE s.hidden = 0
-              ORDER BY s.position, s.name COLLATE NOCASE",
-        )
+                        (SELECT COUNT(*) FROM items i
+                          WHERE i.source_id = s.id AND i.read = 0 AND i.hidden = 0),
+                        s.last_fetched, s.last_error, s.keep_limit, s.pinned
+                   FROM sources s
+                  WHERE s.hidden = 0
+                  ORDER BY {}",
+            order_by(&conn)
+        ))
         .map_err(e)?;
     let rows = stmt
         .query_map([], |r| {
@@ -196,6 +211,7 @@ pub fn list_sources(state: State<AppState>) -> Result<Vec<Source>, String> {
                 last_fetched: r.get(7)?,
                 last_error: r.get(8)?,
                 keep_limit: r.get(9)?,
+                pinned: r.get::<_, i64>(10)? != 0,
             })
         })
         .map_err(e)?

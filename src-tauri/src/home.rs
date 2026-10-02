@@ -259,8 +259,13 @@ fn pinned(conn: &Connection) -> rusqlite::Result<Vec<PinnedSource>> {
 type GroupRow = (Option<i64>, String, Option<String>);
 
 fn groups(conn: &Connection) -> rusqlite::Result<Vec<GroupRow>> {
-    let mut stmt =
-        conn.prepare("SELECT id, name, home_layout FROM groups ORDER BY position, name")?;
+    let mut stmt = conn.prepare(&format!(
+        "SELECT id, name, home_layout FROM groups ORDER BY {}",
+        match db::get_setting(conn, "feed_sort").ok().flatten().as_deref() {
+            Some("alpha") => "name COLLATE NOCASE",
+            _ => "position, name COLLATE NOCASE",
+        }
+    ))?;
     let mut out = stmt
         .query_map([], |r| {
             Ok((Some(r.get::<_, i64>(0)?), r.get(1)?, r.get(2)?))

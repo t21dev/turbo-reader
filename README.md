@@ -92,6 +92,11 @@ fn geolocation_cannot_survive_sanitising() {
 
 **Feeds**
 - RSS 0.9x, 1.0 and 2.0, Atom, and JSON Feed, detected automatically
+- Right-click a feed to rename, move, pin, set retention or delete it, and a
+  folder to rename or delete it
+- Automatic refresh on a timer, or manual only
+- Sorted as imported or alphabetically
+- YouTube feeds show the video, in the browser or inline
 - OPML import and export, with folder nesting preserved both ways
 - Conditional GET, so an unchanged feed costs one `304` and no parsing
 - Per-feed retention limits
@@ -111,12 +116,12 @@ The feature set is not guesswork. These are the highest-voted open requests on F
 | [#256](https://github.com/yang991178/fluent-reader/issues/256) Identify articles by `guid` | 2 | Shipped |
 | [#629](https://github.com/yang991178/fluent-reader/issues/629) FeedBurner returns 403 | 4 | Shipped, browser User-Agent |
 | [#592](https://github.com/yang991178/fluent-reader/issues/592) Keyboard shortcuts | 2 | Shipped, with a shortcut sheet |
-| [#539](https://github.com/yang991178/fluent-reader/issues/539) Sort groups and feeds alphabetically | 4 | Planned |
+| [#539](https://github.com/yang991178/fluent-reader/issues/539) Sort groups and feeds alphabetically | 4 | Shipped |
 | [#316](https://github.com/yang991178/fluent-reader/issues/316), [#100](https://github.com/yang991178/fluent-reader/issues/100) Tray and background notifications | 21, 16 | Planned |
 | [#169](https://github.com/yang991178/fluent-reader/issues/169) Use the site's favicon | 9 | Shipped |
 | [#190](https://github.com/yang991178/fluent-reader/issues/190) Nested folders | 4 | Planned |
 | [#464](https://github.com/yang991178/fluent-reader/issues/464) HTTP Basic Auth feeds | 7 | Planned |
-| [#211](https://github.com/yang991178/fluent-reader/issues/211), [#663](https://github.com/yang991178/fluent-reader/issues/663) YouTube content and previews | 9, 4 | Planned |
+| [#211](https://github.com/yang991178/fluent-reader/issues/211), [#663](https://github.com/yang991178/fluent-reader/issues/663) YouTube content and previews | 9, 4 | Shipped |
 | [#69](https://github.com/yang991178/fluent-reader/issues/69) Podcast feeds | 3 | Planned |
 | [#4](https://github.com/yang991178/fluent-reader/issues/4), [#23](https://github.com/yang991178/fluent-reader/issues/23) Feedly and sync services | 87, 39 | Under consideration |
 

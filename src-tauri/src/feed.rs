@@ -147,12 +147,20 @@ pub fn parse(
             .filter(|s| !s.is_empty())
             .unwrap_or_else(|| "Untitled".to_owned());
 
-        // Prefer full content; fall back to the summary.
+        // Prefer full content, then the summary, then a media description.
+        // That last one is what YouTube feeds carry: an Atom entry with no
+        // body at all, and the text under media:group. Without it a YouTube
+        // feed reads as a list of titles with nothing behind them.
         let raw = e
             .content
             .as_ref()
             .and_then(|c| c.body.clone())
             .or_else(|| e.summary.as_ref().map(|s| s.content.clone()))
+            .or_else(|| {
+                e.media
+                    .iter()
+                    .find_map(|m| m.description.as_ref().map(|d| text_to_html(&d.content)))
+            })
             .unwrap_or_default();
 
         let content = sanitise(&raw, base.as_ref());
@@ -328,6 +336,17 @@ pub fn sanitise(html: &str, base: Option<&url::Url>) -> String {
         builder.url_relative(ammonia::UrlRelative::RewriteWithBase(b.clone()));
     }
     builder.clean(html).to_string()
+}
+
+/// Wrap plain text as paragraphs. A media description is text, not markup, so
+/// handing it to the sanitiser as-is would collapse every line break.
+fn text_to_html(text: &str) -> String {
+    text.split("\n\n")
+        .map(str::trim)
+        .filter(|p| !p.is_empty())
+        .map(|p| format!("<p>{}</p>", p.replace('\n', "<br>")))
+        .collect::<Vec<_>>()
+        .join("")
 }
 
 fn snippet_of(html: &str) -> String {
@@ -556,6 +575,13 @@ mod tests {
         let a = normalise_link("https://example.com/post?utm_source=rss&id=7");
         let b = normalise_link("https://example.com/post?id=7");
         assert_eq!(a, b);
+    }
+
+    #[test]
+    fn plain_text_becomes_paragraphs() {
+        let html = text_to_html("first line\nsecond line\n\nnew paragraph");
+        assert_eq!(html, "<p>first line<br>second line</p><p>new paragraph</p>");
+        assert_eq!(text_to_html("   \n  "), "");
     }
 
     #[test]

@@ -22,11 +22,15 @@ import { save as saveDialog } from "@tauri-apps/plugin-dialog"
 import { api, type ItemFull } from "@/lib/api"
 import { READER_FONTS, READER_SIZES, useTheme, type LineWidth } from "@/lib/theme"
 import { EXIT_MS, motionOff } from "@/lib/presence"
+import { videoId } from "@/lib/youtube"
+import { VideoBlock } from "@/components/VideoBlock"
 import { cn, hostOf } from "@/lib/utils"
 import { Menu, MenuChoices, MenuGroup, MenuItem, MenuSeparator } from "@/components/Menu"
 
 type Props = {
   item: ItemFull | null
+  /** Play YouTube inline rather than handing off to the browser. */
+  youtubeInline: boolean
   onStar: (item: ItemFull) => void
   onToggleRead: (item: ItemFull) => void
   onHide: (item: ItemFull) => void
@@ -35,7 +39,15 @@ type Props = {
   onBack?: () => void
 }
 
-export function Reader({ item, onStar, onToggleRead, onHide, onContentLoaded, onBack }: Props) {
+export function Reader({
+  item,
+  youtubeInline,
+  onStar,
+  onToggleRead,
+  onHide,
+  onContentLoaded,
+  onBack,
+}: Props) {
   const theme = useTheme()
   const body = useRef<HTMLDivElement>(null)
   const [loadingFull, setLoadingFull] = useState(false)
@@ -70,6 +82,8 @@ export function Reader({ item, onStar, onToggleRead, onHide, onContentLoaded, on
       </section>
     )
   }
+
+  const video = videoId(item.link)
 
   const published = new Date(item.published * 1000).toLocaleString(undefined, {
     dateStyle: "medium",
@@ -345,6 +359,14 @@ export function Reader({ item, onStar, onToggleRead, onHide, onContentLoaded, on
             {item.author ? `${item.author} · ` : ""}
             {published}
           </p>
+          {video && item.link && (
+            <VideoBlock
+              id={video}
+              title={item.title}
+              link={item.link}
+              inline={youtubeInline}
+            />
+          )}
           {/* Sanitised in Rust by feed::sanitise before it was ever stored.
               That allowlist is the security boundary, not this component. */}
           <div

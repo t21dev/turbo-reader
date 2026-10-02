@@ -21,6 +21,7 @@ import {
   type UpdateCheck,
 } from "@/lib/api"
 import { type HomePrefs } from "@/lib/home"
+import { REFRESH_CHOICES, sinceLabel, type AppPrefs } from "@/lib/prefs"
 import { HomeSettings } from "@/components/HomeSettings"
 import {
   ACCENTS,
@@ -102,6 +103,10 @@ export function SettingsPanel({
   homePrefs,
   onHomePrefs,
   onHomeChanged,
+  prefs,
+  onPrefs,
+  lastChecked,
+  onSortChanged,
 }: {
   onClose: () => void
   onImported: () => void
@@ -110,6 +115,10 @@ export function SettingsPanel({
   homePrefs: HomePrefs
   onHomePrefs: (next: HomePrefs) => void
   onHomeChanged: () => void
+  prefs: AppPrefs
+  onPrefs: (next: AppPrefs) => void
+  lastChecked: number | null
+  onSortChanged: () => void
 }) {
   const theme = useTheme()
   const scale = useScale()
@@ -373,6 +382,53 @@ export function SettingsPanel({
         </Section>
 
         <Section title="Feeds">
+          <Field label="Check for new articles">
+            <Segmented
+              value={prefs.refreshMinutes}
+              onChange={(v) => onPrefs({ ...prefs, refreshMinutes: v })}
+              options={REFRESH_CHOICES.map((m) => ({
+                value: m,
+                label: m === 0 ? "Off" : m < 60 ? `${m}m` : `${m / 60}h`,
+                title: m === 0 ? "Only when you press r" : `Every ${m} minutes`,
+              }))}
+            />
+            <p className="mt-1.5 text-[11px] text-subtle">
+              {prefs.refreshMinutes === 0
+                ? "Manual only. Press r, or the refresh button."
+                : `Last checked ${sinceLabel(lastChecked)}.`}
+            </p>
+          </Field>
+
+          <Field label="Order">
+            <Segmented
+              value={prefs.feedSort}
+              onChange={(v) => {
+                onPrefs({ ...prefs, feedSort: v })
+                void api.setSetting("feed_sort", v).then(onSortChanged)
+              }}
+              options={[
+                { value: "manual", label: "As imported" },
+                { value: "alpha", label: "Alphabetical" },
+              ]}
+            />
+          </Field>
+
+          <Field label="YouTube videos">
+            <Segmented
+              value={prefs.youtubeInline ? "inline" : "browser"}
+              onChange={(v) => onPrefs({ ...prefs, youtubeInline: v === "inline" })}
+              options={[
+                { value: "browser", label: "Open in browser" },
+                { value: "inline", label: "Play here" },
+              ]}
+            />
+            <p className="mt-1.5 text-[11px] leading-relaxed text-subtle">
+              Playing here embeds YouTube's own player, so Google sees the view. The
+              privacy-enhanced domain is used either way.
+            </p>
+          </Field>
+
+          <Field label="OPML">
           <div className="grid grid-cols-2 gap-1.5">
             <button
               type="button"
@@ -393,6 +449,7 @@ export function SettingsPanel({
               Export OPML
             </button>
           </div>
+          </Field>
           {note && <p className="animate-rise mt-2 text-[11px] text-subtle">{note}</p>}
         </Section>
 

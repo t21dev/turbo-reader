@@ -8,6 +8,8 @@ import { Reader } from "@/components/Reader"
 import { SettingsPanel } from "@/components/SettingsPanel"
 import { Shortcuts } from "@/components/Shortcuts"
 import { Home } from "@/components/Home"
+import { Prompt, type PromptSpec } from "@/components/Prompt"
+import { SidebarContextMenu, type Target } from "@/components/SidebarMenus"
 import { readHomePrefs, writeHomePrefs, type HomePrefs } from "@/lib/home"
 import { installScale } from "@/lib/scale"
 import {
@@ -19,6 +21,7 @@ import {
   type Scope,
   type Source,
 } from "@/lib/api"
+import { readPrefs, writePrefs, type AppPrefs } from "@/lib/prefs"
 import { cn } from "@/lib/utils"
 
 export default function App() {
@@ -50,6 +53,10 @@ export default function App() {
   // first thing you see.
   const [atHome, setAtHome] = useState(() => readHomePrefs().enabled)
   const [homeRevision, setHomeRevision] = useState(0)
+  const [menuTarget, setMenuTarget] = useState<Target | null>(null)
+  const [prompt, setPrompt] = useState<PromptSpec | null>(null)
+  const [prefs, setPrefs] = useState<AppPrefs>(readPrefs)
+  const [lastChecked, setLastChecked] = useState<number | null>(null)
   const searchTimer = useRef<number | null>(null)
 
   // The identity of the list on screen. Changing it means a different set of
@@ -103,6 +110,22 @@ export default function App() {
     void loadItems()
   }, [loadItems])
 
+  // Poll on a timer. Before this the app fetched once at launch and then not
+  // again until someone pressed r, which is not what a feed reader is for.
+  // The interval is checked every minute rather than slept through, so a
+  // laptop that was closed for an hour catches up when it wakes.
+  useEffect(() => {
+    if (prefs.refreshMinutes <= 0) return
+    const tick = () => {
+      if (busy) return
+      const due = (lastChecked ?? 0) + prefs.refreshMinutes * 60_000
+      if (Date.now() >= due) void refresh()
+    }
+    const id = window.setInterval(tick, 60_000)
+    return () => window.clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefs.refreshMinutes, lastChecked, busy])
+
   // The input stays instant; the query it drives is debounced, so typing
   // doesn't fire a round trip per keystroke.
   const onSearch = (q: string) => {
@@ -118,12 +141,96 @@ export default function App() {
     [],
   )
 
+  function updatePrefs(next: AppPrefs) {
+    setPrefs(next)
+    writePrefs(next)
+  }
+
+  /* ----------------------------- feed admin ---------------------------- */
+
+  async function afterTreeChange() {
+    await Promise.all([loadTree(), loadItems()])
+    setHomeRevision((n) => n + 1)
+  }
+
+  const sidebarActions = {
+    renameSource: (s: Source) =>
+      setPrompt({
+        title: "Rename feed",
+        field: { label: "Name", value: s.name },
+        confirmLabel: "Rename",
+        onConfirm: async (name) => {
+          await api.updateSource(s.id, { name })
+          await afterTreeChange()
+        },
+      }),
+
+    moveSource: (s: Source, groupId: number | null) =>
+      void api.updateSource(s.id, { groupId }).then(afterTreeChange),
+
+    setKeepLimit: (s: Source, keepLimit: number) =>
+      void api.updateSource(s.id, { keepLimit }).then(afterTreeChange),
+
+    togglePin: (s: Source) => void api.setPinned(s.id, !s.pinned).then(afterTreeChange),
+
+    deleteSource: (s: Source) =>
+      setPrompt({
+        title: `Delete ${s.name}?`,
+        detail:
+          "The feed and every article it brought in are removed. Starred articles go too. " +
+          "This cannot be undone.",
+        confirmLabel: "Delete",
+        destructive: true,
+        onConfirm: async () => {
+          await api.deleteSource(s.id)
+          if (scope === "source" && scopeId === s.id) select("all", null)
+          await afterTreeChange()
+        },
+      }),
+
+    renameGroup: (g: Group) =>
+      setPrompt({
+        title: "Rename folder",
+        field: { label: "Name", value: g.name },
+        confirmLabel: "Rename",
+        onConfirm: async (name) => {
+          await api.renameGroup(g.id, name)
+          await afterTreeChange()
+        },
+      }),
+
+    deleteGroup: (g: Group) =>
+      setPrompt({
+        title: `Delete the folder ${g.name}?`,
+        detail: "Its feeds are kept and moved out of the folder. No articles are removed.",
+        confirmLabel: "Delete folder",
+        destructive: true,
+        onConfirm: async () => {
+          await api.deleteGroup(g.id)
+          if (scope === "group" && scopeId === g.id) select("all", null)
+          await afterTreeChange()
+        },
+      }),
+
+    newGroup: () =>
+      setPrompt({
+        title: "New folder",
+        field: { label: "Name", value: "", placeholder: "Reading" },
+        confirmLabel: "Create",
+        onConfirm: async (name) => {
+          await api.createGroup(name)
+          await afterTreeChange()
+        },
+      }),
+  }
+
   async function refresh() {
     setBusy(true)
     try {
       await api.fetchAll()
       await Promise.all([loadTree(), loadItems()])
       setHomeRevision((n) => n + 1)
+      setLastChecked(Date.now())
     } finally {
       setBusy(false)
     }
@@ -401,8 +508,10 @@ export default function App() {
             }}
             onAddSource={async (url) => {
               await api.addSource(url)
-              await Promise.all([loadTree(), loadItems()])
+              await afterTreeChange()
             }}
+            onContextMenu={setMenuTarget}
+            onNewGroup={sidebarActions.newGroup}
           />
         </div>
 
@@ -438,6 +547,7 @@ export default function App() {
             />
             <Reader
               item={current}
+              youtubeInline={prefs.youtubeInline}
               onStar={(it) => void toggleStar(it.id, !it.starred)}
               onToggleRead={(it) =>
                 void toggleRead(it.id, items.find((x) => x.id === it.id)?.sourceId, !it.read)
@@ -451,6 +561,7 @@ export default function App() {
         ) : current ? (
           <Reader
             item={current}
+            youtubeInline={prefs.youtubeInline}
             onStar={(it) => void toggleStar(it.id, !it.starred)}
             onToggleRead={(it) =>
               void toggleRead(it.id, items.find((x) => x.id === it.id)?.sourceId, !it.read)
@@ -480,6 +591,10 @@ export default function App() {
           sources={sources}
           homePrefs={homePrefs}
           onHomePrefs={updateHomePrefs}
+          prefs={prefs}
+          onPrefs={updatePrefs}
+          lastChecked={lastChecked}
+          onSortChanged={afterTreeChange}
           onHomeChanged={() => setHomeRevision((n) => n + 1)}
           onClose={() => setSettingsOpen(false)}
           onImported={async () => {
@@ -489,6 +604,14 @@ export default function App() {
       )}
 
       {shortcutsOpen && <Shortcuts onClose={() => setShortcutsOpen(false)} />}
+
+      <SidebarContextMenu
+        target={menuTarget}
+        groups={groups}
+        onClose={() => setMenuTarget(null)}
+        actions={sidebarActions}
+      />
+      <Prompt spec={prompt} onClose={() => setPrompt(null)} />
     </div>
   )
 }

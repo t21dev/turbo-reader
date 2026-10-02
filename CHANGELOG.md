@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Feed and folder management. Right-click a feed to rename it, move it between
+  folders, pin it to home, set how many articles it keeps, open its website,
+  copy its URL or delete it. Right-click a folder to rename or delete it, and
+  there is a new folder button beside the add feed button. The commands behind
+  all of this shipped in 0.1 with nothing calling them, so until now the only
+  way to organise anything was to import an OPML file.
+- Automatic refresh, every 15 minutes, 30, an hour, three hours, or off, with
+  a line saying when it last checked. Before this the app fetched once at
+  launch and then not again until you pressed `r`.
+- Feeds and folders can be sorted alphabetically instead of in the order they
+  were imported (#539).
+- YouTube feeds show the video. A poster that opens in the browser by default,
+  or the player inline if you turn that on in Settings, in which case the
+  privacy-enhanced domain is used and nothing loads until you press play
+  (#211, #663).
+- YouTube entries carry their text under `media:group` rather than in the body,
+  so those feeds used to read as a list of titles with nothing behind them.
+  The description is now used when there is no body.
+
+
 ## [0.2.0] - 2026-10-02
 
 ### Added
