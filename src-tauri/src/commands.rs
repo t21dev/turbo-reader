@@ -1,11 +1,11 @@
 //! The Tauri command surface. Everything the UI can ask for.
 
-use crate::{db, feed, markdown, opml, readable, winstate};
+use crate::{db, feed, home, markdown, opml, readable, winstate};
 use anyhow::Result;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use tauri::State;
+use tauri::{Manager, State};
 
 pub struct AppState {
     pub db: Mutex<Connection>,
@@ -1088,4 +1088,84 @@ pub fn settle_window(window: tauri::Window, state: State<AppState>) -> Result<()
         winstate::settle(&window, &want);
     }
     Ok(())
+}
+
+/* --------------------------------- home --------------------------------- */
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HomeRequest {
+    pub window: Option<home::Window>,
+    pub per_band: Option<usize>,
+    /// "off" | "quote" | "headline". Only "quote" costs anything here.
+    pub masthead: Option<String>,
+}
+
+/// The whole home page in one call. Seven queries under one lock beats seven
+/// IPC round trips, and a page that paints in pieces looks broken.
+#[tauri::command]
+pub fn home_summary(
+    app: tauri::AppHandle,
+    state: State<AppState>,
+    req: HomeRequest,
+) -> Result<home::Home, String> {
+    let now = chrono::Utc::now().timestamp();
+    let window = req.window.unwrap_or(home::Window::Today);
+    let per_band = req.per_band.unwrap_or(8).clamp(1, 24);
+
+    let conn = state.db.lock().map_err(e)?;
+    let mut page = home::build(&conn, window, per_band, now).map_err(e)?;
+
+    if req.masthead.as_deref() == Some("quote") {
+        let custom = app
+            .path()
+            .app_data_dir()
+            .map(|dir| home::custom_quotes(&dir))
+            .unwrap_or_default();
+        page.quote = home::quote_for(now / 86_400, &custom);
+    }
+    Ok(page)
+}
+
+/// Pin or unpin a feed, which is what puts it in the home page's own row.
+#[tauri::command]
+pub fn set_pinned(state: State<AppState>, id: i64, pinned: bool) -> Result<(), String> {
+    let conn = state.db.lock().map_err(e)?;
+    let at = pinned.then(|| chrono::Utc::now().timestamp());
+    conn.execute(
+        "UPDATE sources SET pinned = ?2, pinned_at = ?3 WHERE id = ?1",
+        params![id, i64::from(pinned), at],
+    )
+    .map_err(e)?;
+    Ok(())
+}
+
+/// How one group's band is laid out. `None` goes back to deciding from
+/// whether that group's feeds actually carry images.
+#[tauri::command]
+pub fn set_group_layout(
+    state: State<AppState>,
+    id: i64,
+    layout: Option<String>,
+) -> Result<(), String> {
+    let layout = match layout.as_deref() {
+        Some("cards") | Some("compact") | Some("headlines") => layout,
+        Some(other) => return Err(format!("unknown layout: {other}")),
+        None => None,
+    };
+    let conn = state.db.lock().map_err(e)?;
+    conn.execute(
+        "UPDATE groups SET home_layout = ?2 WHERE id = ?1",
+        params![id, layout],
+    )
+    .map_err(e)?;
+    Ok(())
+}
+
+/// Where the user's own quotes file lives, so Settings can point at it and
+/// create it on first use.
+#[tauri::command]
+pub fn quotes_path(app: tauri::AppHandle) -> Result<String, String> {
+    let dir = app.path().app_data_dir().map_err(e)?;
+    Ok(dir.join("quotes.json").to_string_lossy().into_owned())
 }

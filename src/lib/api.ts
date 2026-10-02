@@ -49,6 +49,38 @@ export type UpdateCheck = {
   published: string | null
 }
 
+export type HomeWindow = "today" | "week" | "month"
+export type BandLayout = "cards" | "compact" | "headlines"
+
+export type HomeItem = {
+  id: number
+  sourceId: number
+  sourceName: string
+  title: string
+  link: string | null
+  published: number
+  snippet: string
+  thumbnail: string | null
+  read: boolean
+  starred: boolean
+  /** Why the ranking put this here, for the tooltip. */
+  why: string
+}
+
+export type Home = {
+  counts: { today: number; week: number; month: number }
+  buckets: { day: number; count: number }[]
+  pinned: { id: number; name: string; iconUrl: string | null; unread: number }[]
+  bands: {
+    groupId: number | null
+    name: string
+    layout: BandLayout
+    unread: number
+    items: HomeItem[]
+  }[]
+  quote: { text: string; author: string | null } | null
+}
+
 export type Scope = "all" | "source" | "group" | "starred"
 
 export type Filter = {
@@ -142,6 +174,13 @@ export const api = {
   qrSvg: (text: string) => call<string>("qr_svg", { text }),
   checkForUpdates: () => call<UpdateCheck>("check_for_updates"),
   settleWindow: () => call<void>("settle_window"),
+
+  home: (req: { window?: HomeWindow; perBand?: number; masthead?: string }) =>
+    call<Home>("home_summary", { req }),
+  setPinned: (id: number, pinned: boolean) => call<void>("set_pinned", { id, pinned }),
+  setGroupLayout: (id: number, layout: BandLayout | null) =>
+    call<void>("set_group_layout", { id, layout }),
+  quotesPath: () => call<string>("quotes_path"),
 
   readTextFile: (path: string) => call<string>("read_text_file", { path }),
   writeTextFile: (path: string, contents: string) =>

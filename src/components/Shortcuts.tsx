@@ -15,6 +15,7 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
       ["Esc", "Back to the list"],
       [`${MOD} B`, "Show or hide the sidebar"],
       ["v", "Switch between cards and list"],
+      ["g", "Home"],
     ],
   },
   {

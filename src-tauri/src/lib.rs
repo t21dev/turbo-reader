@@ -8,8 +8,10 @@
 mod commands;
 mod db;
 mod feed;
+mod home;
 mod markdown;
 mod opml;
+mod rank;
 mod readable;
 mod winstate;
 
@@ -127,6 +129,10 @@ pub fn run() {
             commands::article_markdown,
             commands::qr_svg,
             commands::check_for_updates,
+            commands::home_summary,
+            commands::set_pinned,
+            commands::set_group_layout,
+            commands::quotes_path,
             commands::settle_window,
             commands::read_text_file,
             commands::write_text_file,

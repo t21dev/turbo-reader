@@ -10,7 +10,7 @@ use anyhow::Result;
 use rusqlite::{Connection, OptionalExtension};
 use std::path::Path;
 
-pub const SCHEMA_VERSION: i32 = 1;
+pub const SCHEMA_VERSION: i32 = 2;
 
 pub fn open(path: &Path) -> Result<Connection> {
     if let Some(dir) = path.parent() {
@@ -32,6 +32,12 @@ fn migrate(conn: &Connection) -> Result<()> {
     }
     if current < 1 {
         conn.execute_batch(SCHEMA_V1)?;
+    }
+    if current < 2 {
+        add_column(conn, "sources", "pinned", "INTEGER NOT NULL DEFAULT 0");
+        add_column(conn, "sources", "pinned_at", "INTEGER");
+        add_column(conn, "groups", "home_layout", "TEXT");
+        conn.execute_batch(SCHEMA_V2)?;
     }
     conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     Ok(())
@@ -127,6 +133,24 @@ CREATE TABLE IF NOT EXISTS settings (
 
 COMMIT;
 "#;
+
+/// Home page support: pinned sources, a per-group layout, and an index that
+/// serves the "since midnight" and "last 14 days" counts without a scan.
+///
+/// `ALTER TABLE ... ADD COLUMN` has no `IF NOT EXISTS`, so each one is run on
+/// its own and a duplicate-column error is swallowed. That keeps the migration
+/// safe to re-run against a database that a newer build already touched.
+const SCHEMA_V2: &str = r#"
+CREATE INDEX IF NOT EXISTS idx_items_pub_read ON items(published DESC, read);
+CREATE INDEX IF NOT EXISTS idx_items_hidden   ON items(hidden, published DESC);
+"#;
+
+fn add_column(conn: &Connection, table: &str, column: &str, decl: &str) {
+    let _ = conn.execute(
+        &format!("ALTER TABLE {table} ADD COLUMN {column} {decl}"),
+        [],
+    );
+}
 
 pub fn get_setting(conn: &Connection, key: &str) -> Result<Option<String>> {
     Ok(conn

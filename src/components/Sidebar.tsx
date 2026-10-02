@@ -1,10 +1,13 @@
 import { useMemo, useState } from "react"
-import { ChevronRight, Inbox, Plus, Star, CircleDot } from "lucide-react"
+import { ChevronRight, Home as HomeIcon, Inbox, Plus, Star, CircleDot } from "lucide-react"
 import type { Group, Scope, Source } from "@/lib/api"
 import { cn, hostOf } from "@/lib/utils"
 import { FeedIcon } from "@/components/FeedIcon"
 
 type Props = {
+  atHome: boolean
+  homeEnabled: boolean
+  onHome: () => void
   groups: Group[]
   sources: Source[]
   scope: Scope
@@ -67,8 +70,19 @@ function Row({
 }
 
 export function Sidebar(props: Props) {
-  const { groups, sources, scope, scopeId, unreadOnly, onSelect, onToggleGroup, onAddSource } =
-    props
+  const {
+    atHome,
+    homeEnabled,
+    onHome,
+    groups,
+    sources,
+    scope,
+    scopeId,
+    unreadOnly,
+    onSelect,
+    onToggleGroup,
+    onAddSource,
+  } = props
   const [adding, setAdding] = useState(false)
   const [url, setUrl] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -102,22 +116,31 @@ export function Sidebar(props: Props) {
   return (
     <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-border bg-background">
       <nav className="flex flex-col gap-0.5 px-1.5 pb-2 pt-2">
+        {homeEnabled && (
+          <Row
+            active={atHome}
+            icon={<HomeIcon size={14} />}
+            label="Home"
+            title="What happened since you last looked (g)"
+            onClick={onHome}
+          />
+        )}
         <Row
-          active={scope === "all" && !unreadOnly}
+          active={!atHome && scope === "all" && !unreadOnly}
           icon={<Inbox size={14} />}
           label="All articles"
           count={totalUnread}
           onClick={() => onSelect("all", null)}
         />
         <Row
-          active={scope === "all" && unreadOnly}
+          active={!atHome && scope === "all" && unreadOnly}
           icon={<CircleDot size={14} />}
           label="Unread"
           count={totalUnread}
           onClick={() => onSelect("all", -1)}
         />
         <Row
-          active={scope === "starred"}
+          active={!atHome && scope === "starred"}
           icon={<Star size={14} />}
           label="Starred"
           onClick={() => onSelect("starred", null)}
@@ -164,7 +187,7 @@ export function Sidebar(props: Props) {
           return (
             <div key={g.id}>
               <Row
-                active={scope === "group" && scopeId === g.id}
+                active={!atHome && scope === "group" && scopeId === g.id}
                 icon={
                   <ChevronRight
                     size={13}
@@ -189,7 +212,7 @@ export function Sidebar(props: Props) {
                     <Row
                       key={s.id}
                       indent
-                      active={scope === "source" && scopeId === s.id}
+                      active={!atHome && scope === "source" && scopeId === s.id}
                       label={s.name}
                       title={s.lastError ?? hostOf(s.siteUrl ?? s.url)}
                       count={s.unread}
@@ -206,7 +229,7 @@ export function Sidebar(props: Props) {
         {(grouped.get(null) ?? []).map((s) => (
           <Row
             key={s.id}
-            active={scope === "source" && scopeId === s.id}
+            active={!atHome && scope === "source" && scopeId === s.id}
             label={s.name}
             title={s.lastError ?? hostOf(s.siteUrl ?? s.url)}
             count={s.unread}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Keyboard, LayoutGrid, List as ListIcon, RefreshCw, Settings2 } from "lucide-react"
+import { Home as HomeIcon, Keyboard, LayoutGrid, List as ListIcon, RefreshCw, Settings2 } from "lucide-react"
 import { TitleBar } from "@/components/TitleBar"
 import { Sidebar } from "@/components/Sidebar"
 import { ArticleList } from "@/components/ArticleList"
@@ -7,8 +7,18 @@ import { CardGrid } from "@/components/CardGrid"
 import { Reader } from "@/components/Reader"
 import { SettingsPanel } from "@/components/SettingsPanel"
 import { Shortcuts } from "@/components/Shortcuts"
+import { Home } from "@/components/Home"
+import { readHomePrefs, writeHomePrefs, type HomePrefs } from "@/lib/home"
 import { installScale } from "@/lib/scale"
-import { api, type Group, type ItemFull, type ItemSummary, type Scope, type Source } from "@/lib/api"
+import {
+  api,
+  type Group,
+  type HomeItem,
+  type ItemFull,
+  type ItemSummary,
+  type Scope,
+  type Source,
+} from "@/lib/api"
 import { cn } from "@/lib/utils"
 
 export default function App() {
@@ -35,6 +45,11 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(
     () => localStorage.getItem("turbo-sidebar") !== "closed",
   )
+  const [homePrefs, setHomePrefs] = useState<HomePrefs>(readHomePrefs)
+  // Home opens on launch when it is enabled: the point of it is being the
+  // first thing you see.
+  const [atHome, setAtHome] = useState(() => readHomePrefs().enabled)
+  const [homeRevision, setHomeRevision] = useState(0)
   const searchTimer = useRef<number | null>(null)
 
   // The identity of the list on screen. Changing it means a different set of
@@ -108,9 +123,21 @@ export default function App() {
     try {
       await api.fetchAll()
       await Promise.all([loadTree(), loadItems()])
+      setHomeRevision((n) => n + 1)
     } finally {
       setBusy(false)
     }
+  }
+
+  function updateHomePrefs(next: HomePrefs) {
+    setHomePrefs(next)
+    writeHomePrefs(next)
+  }
+
+  /** Opening anything from home leaves home and shows the reader. */
+  async function openFromHome(it: HomeItem) {
+    setAtHome(false)
+    await selectItem({ ...it, author: null } as ItemSummary)
   }
 
   async function selectItem(it: ItemSummary) {
@@ -161,6 +188,7 @@ export default function App() {
   }
 
   function select(nextScope: Scope, id: number | null) {
+    setAtHome(false)
     // the Unread entry reuses the "all" scope with the filter switched on
     if (nextScope === "all" && id === -1) {
       setScope("all")
@@ -262,6 +290,9 @@ export default function App() {
         case "v":
           toggleView()
           break
+        case "g":
+          if (homePrefs.enabled) setAtHome((v) => !v)
+          break
         case "n":
           if (!sidebarOpen) toggleSidebar()
           break
@@ -296,6 +327,19 @@ export default function App() {
         sidebarOpen={sidebarOpen}
         onToggleSidebar={toggleSidebar}
       >
+        {homePrefs.enabled && (
+          <button
+            type="button"
+            onClick={() => setAtHome((v) => !v)}
+            title="Home (g)"
+            className={cn(
+              "row grid h-7 w-7 place-items-center hover:bg-secondary hover:text-foreground",
+              atHome ? "bg-secondary text-foreground" : "text-muted-foreground",
+            )}
+          >
+            <HomeIcon size={14} />
+          </button>
+        )}
         <button
           type="button"
           onClick={toggleView}
@@ -342,6 +386,9 @@ export default function App() {
           )}
         >
           <Sidebar
+            atHome={atHome}
+            homeEnabled={homePrefs.enabled}
+            onHome={() => setAtHome(true)}
             groups={groups}
             sources={sources}
             scope={scope}
@@ -359,7 +406,16 @@ export default function App() {
           />
         </div>
 
-        {view === "list" ? (
+        {atHome && homePrefs.enabled ? (
+          <Home
+            prefs={homePrefs}
+            onPrefs={updateHomePrefs}
+            onOpen={(it) => void openFromHome(it)}
+            onStar={(it) => void toggleStar(it.id, !it.starred)}
+            onScope={select}
+            revision={homeRevision}
+          />
+        ) : view === "list" ? (
           <>
             <ArticleList
               items={items}
@@ -420,6 +476,11 @@ export default function App() {
 
       {settingsOpen && (
         <SettingsPanel
+          groups={groups}
+          sources={sources}
+          homePrefs={homePrefs}
+          onHomePrefs={updateHomePrefs}
+          onHomeChanged={() => setHomeRevision((n) => n + 1)}
           onClose={() => setSettingsOpen(false)}
           onImported={async () => {
             await Promise.all([loadTree(), loadItems()])

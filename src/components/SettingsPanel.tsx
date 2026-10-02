@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   X,
   Download,
@@ -13,7 +13,15 @@ import {
 } from "lucide-react"
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog"
 import { openUrl } from "@tauri-apps/plugin-opener"
-import { api, type Stats, type UpdateCheck } from "@/lib/api"
+import {
+  api,
+  type Group,
+  type Source,
+  type Stats,
+  type UpdateCheck,
+} from "@/lib/api"
+import { type HomePrefs } from "@/lib/home"
+import { HomeSettings } from "@/components/HomeSettings"
 import {
   ACCENTS,
   LINE_WIDTHS,
@@ -89,9 +97,19 @@ function Segmented<T extends string | number>({
 export function SettingsPanel({
   onClose,
   onImported,
+  groups,
+  sources,
+  homePrefs,
+  onHomePrefs,
+  onHomeChanged,
 }: {
   onClose: () => void
   onImported: () => void
+  groups: Group[]
+  sources: Source[]
+  homePrefs: HomePrefs
+  onHomePrefs: (next: HomePrefs) => void
+  onHomeChanged: () => void
 }) {
   const theme = useTheme()
   const scale = useScale()
@@ -155,6 +173,25 @@ export function SettingsPanel({
   ]
 
   const activeScale = UI_SCALES.find((s) => s.value === scale) ?? UI_SCALES[1]
+
+  const home = homePrefs
+  const setHome = (patch: Partial<HomePrefs>) => onHomePrefs({ ...home, ...patch })
+
+  // Interests and mutes live in the database, because the ranking that reads
+  // them runs in Rust. Debounced, so typing is not a write per keystroke.
+  const listTimer = useRef<number | null>(null)
+  function saveList(key: "home_interests" | "home_mutes", value: string) {
+    if (listTimer.current) window.clearTimeout(listTimer.current)
+    listTimer.current = window.setTimeout(() => {
+      void api.setSetting(key, value).then(onHomeChanged)
+    }, 400)
+  }
+  useEffect(
+    () => () => {
+      if (listTimer.current) window.clearTimeout(listTimer.current)
+    },
+    [],
+  )
 
   async function checkUpdates() {
     setChecking(true)
@@ -320,6 +357,19 @@ export function SettingsPanel({
               ]}
             />
           </Field>
+        </Section>
+
+        <Section title="Home">
+          <HomeSettings
+            home={home}
+            setHome={setHome}
+            saveList={saveList}
+            groups={groups}
+            sources={sources}
+            onChanged={onHomeChanged}
+            Field={Field}
+            Segmented={Segmented}
+          />
         </Section>
 
         <Section title="Feeds">
