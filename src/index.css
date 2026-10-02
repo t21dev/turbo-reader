@@ -1,5 +1,5 @@
 /* Hallmark · genre: modern-minimal · scope: desktop app · theme: Porter (shared with t21/porter-app)
- * paper: #0d0d0d dark / near-white light · accent: none — signal hues only
+ * paper: #0d0d0d dark / near-white light · accent: none, signal hues only
  * type: Geist + Geist Mono · motion: transform/opacity only, ease-out-expo
  */
 @import "@fontsource-variable/geist";
@@ -36,6 +36,19 @@
     --starred: 38 92% 44%;
     --system: 215 78% 50%;
     --radius: 0.625rem;
+
+    /* Density. Every list surface measures itself from these, so the
+       Comfortable / Compact switch is one place rather than twenty. */
+    --row-h: 2rem;
+    --card-min: 255px;
+    --card-gap: 1rem;
+    --card-pad: 1.25rem;
+    --card-inset: 0.875rem;
+
+    /* Reading. Set from the theme provider. */
+    --reader-font: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+    --reader-size: 0.94rem;
+    --reader-width: 68ch;
 
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
@@ -121,7 +134,7 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Rows never move on hover — colour only. */
+  /* Rows never move on hover. Colour only. */
   .row {
     @apply rounded-lg transition-colors duration-150 ease-in-out;
   }
@@ -140,7 +153,9 @@
 
   /* Sanitised feed HTML. Styled here so article bodies inherit the system. */
   .prose-feed {
-    @apply text-[0.94rem] leading-[1.7] text-foreground/90;
+    @apply leading-[1.7] text-foreground/90;
+    font-family: var(--reader-font);
+    font-size: var(--reader-size);
   }
   .prose-feed p {
     @apply my-4;
@@ -194,6 +209,164 @@
   .prose-feed th,
   .prose-feed td {
     @apply border border-border px-3 py-2 text-left;
+  }
+}
+
+:root[data-density="compact"] {
+  --row-h: 1.75rem;
+  --card-min: 215px;
+  --card-gap: 0.625rem;
+  --card-pad: 0.75rem;
+  --card-inset: 0.625rem;
+}
+
+/* Compact drops the second line of prose and shrinks the thumbnails; that is
+   what actually buys back vertical space in a long list. */
+:root[data-density="compact"] .snippet {
+  display: none;
+}
+:root[data-density="compact"] .thumb {
+  height: 2.5rem;
+  width: 2.5rem;
+}
+:root[data-density="compact"] article h3 {
+  font-size: 12.5px;
+}
+
+/* ------------------------------ motion ------------------------------ */
+
+@keyframes tr-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes tr-card {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes tr-menu {
+  from {
+    opacity: 0;
+    transform: scaleY(0.94) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes tr-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes tr-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes tr-slide-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes tr-slide-out {
+  from {
+    transform: none;
+    opacity: 1;
+  }
+  to {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+}
+
+.animate-rise {
+  animation: tr-rise 260ms var(--ease-out) both;
+}
+.animate-card {
+  animation: tr-card 300ms var(--ease-out) both;
+}
+.animate-menu {
+  animation: tr-menu 140ms var(--ease-out);
+}
+.animate-pop {
+  animation: tr-pop 220ms var(--ease-out);
+}
+.animate-fade {
+  animation: tr-fade 160ms linear;
+}
+.animate-slide-in {
+  animation: tr-slide-in 220ms var(--ease-out);
+}
+.animate-slide-out {
+  animation: tr-slide-out 180ms var(--ease-in) forwards;
+}
+
+/* The Animations switch in Settings, and the system preference, both land
+   here. Transitions are cut to a frame rather than removed, so state still
+   lands in the right place. */
+:root[data-motion="none"] *,
+:root[data-motion="none"] *::before,
+:root[data-motion="none"] *::after {
+  animation-duration: 1ms !important;
+  animation-delay: 0ms !important;
+  transition-duration: 1ms !important;
+}
+
+/* ------------------------------ printing ----------------------------- */
+
+@media print {
+  .no-print,
+  aside,
+  section[class*="w-[380px]"] {
+    display: none !important;
+  }
+  html,
+  body,
+  #root {
+    height: auto;
+    overflow: visible;
+    background: #fff;
+    color: #000;
+  }
+  .reader-column {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  .prose-feed a {
+    color: #000;
+    text-decoration: underline;
+  }
+  .prose-feed pre,
+  .prose-feed blockquote {
+    break-inside: avoid;
+  }
+  .prose-feed img {
+    max-width: 100% !important;
   }
 }
 
