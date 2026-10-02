@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-03
+
 ### Added
 - Feed and folder management. Right-click a feed to rename it, move it between
   folders, pin it to home, set how many articles it keeps, open its website,
@@ -26,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - YouTube entries carry their text under `media:group` rather than in the body,
   so those feeds used to read as a list of titles with nothing behind them.
   The description is now used when there is no body.
+
+### Changed
+- The README and the in-app About lead with what Turbo Reader is rather than
+  with a comparison to another reader.
 
 
 ## [0.2.0] - 2026-10-02
@@ -106,6 +112,7 @@ First public release.
   to reason about, which is a failure mode browser engines do not let a page
   recover from.
 
-[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/t21dev/turbo-reader/releases/tag/v0.3.0
 [0.2.0]: https://github.com/t21dev/turbo-reader/releases/tag/v0.2.0
 [0.1.0]: https://github.com/t21dev/turbo-reader/releases/tag/v0.1.0
