@@ -26,7 +26,7 @@ pub fn parse(xml: &str) -> Result<Vec<OpmlFeed>> {
     loop {
         let event = reader.read_event_into(&mut buf)?;
 
-        // `Empty` is a self-closing <outline/> — always a leaf, never a folder
+        // `Empty` is a self-closing <outline/>, always a leaf and never a folder
         let (tag, self_closing) = match &event {
             Event::Start(e) => (Some(e.to_owned()), false),
             Event::Empty(e) => (Some(e.to_owned()), true),

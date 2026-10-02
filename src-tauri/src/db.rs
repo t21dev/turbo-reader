@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS sources (
     -- conditional GET, so a poll that changes nothing costs one 304
     etag           TEXT,
     last_modified  TEXT,
-    -- cap retained items per source (0 = unlimited) — issue #334
+    -- cap retained items per source (0 = unlimited). Issue #334
     keep_limit     INTEGER NOT NULL DEFAULT 0,
     hidden         INTEGER NOT NULL DEFAULT 0,
     position       INTEGER NOT NULL DEFAULT 0
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS sources (
 CREATE TABLE IF NOT EXISTS items (
     id           INTEGER PRIMARY KEY,
     source_id    INTEGER NOT NULL REFERENCES sources(id) ON DELETE CASCADE,
-    -- identity is the feed's own guid where it gives one — issue #256
+    -- identity is the feed's own guid where it gives one. Issue #256
     guid         TEXT    NOT NULL,
     title        TEXT    NOT NULL,
     link         TEXT,
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS items (
     snippet      TEXT    NOT NULL,
     thumbnail    TEXT,
     -- hash of title+link, so the same story syndicated across feeds can be
-    -- collapsed — issues #144, #334, #533
+    -- collapsed. Issues #144, #334, #533
     dedupe_hash  TEXT    NOT NULL,
     read         INTEGER NOT NULL DEFAULT 0,
     starred      INTEGER NOT NULL DEFAULT 0,

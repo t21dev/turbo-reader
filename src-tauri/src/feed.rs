@@ -3,7 +3,7 @@
 //! This is the whole reason the app is built this way. Fluent Reader parsed raw
 //! feed HTML inside the renderer; an article containing `<geolocation>` made
 //! Blink instantiate that element and the renderer process was terminated
-//! outright — a blank window that came back blank on every launch, because the
+//! outright, leaving a blank window that came back blank on every launch, because the
 //! article was already stored. Here the webview never sees feed HTML that has
 //! not been through `ammonia` first, with an allowlist that cannot emit an
 //! unknown element at all.
@@ -16,7 +16,7 @@ use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 /// Feeds behind FeedBurner (and a few CDNs) reject requests that look like a
-/// bot — Fluent Reader issue #629, and the reason two feeds silently failed to
+/// bot. That is Fluent Reader issue #629, and the reason two feeds silently failed to
 /// import on this machine. A real browser UA fixes both.
 const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
                           (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
@@ -34,7 +34,7 @@ pub struct FetchOutcome {
     pub icon_url: Option<String>,
     pub etag: Option<String>,
     pub last_modified: Option<String>,
-    /// server answered 304 — nothing changed, nothing to write
+    /// server answered 304, so nothing changed and there is nothing to write
     pub not_modified: bool,
 }
 
@@ -184,7 +184,7 @@ pub fn parse(
             .unwrap_or_else(|| chrono::Utc::now().timestamp());
 
         // Cross-source duplicate detection keys on the destination, not the
-        // feed it arrived through — issues #144 / #334 / #533.
+        // feed it arrived through. Issues #144, #334 and #533.
         let dedupe_hash = hash(&[
             &normalise_link(link.as_deref().unwrap_or("")),
             &title.to_lowercase(),
@@ -222,7 +222,7 @@ pub fn parse(
 
 /// The allowlist. Anything not named here is dropped, so feed HTML can never
 /// introduce an element the renderer has to reason about.
-fn sanitise(html: &str, base: Option<&url::Url>) -> String {
+pub fn sanitise(html: &str, base: Option<&url::Url>) -> String {
     let mut tags: HashSet<&str> = HashSet::new();
     for t in [
         "p", "br", "hr", "span", "div", "a", "em", "i", "strong", "b", "u", "s", "sub", "sup",
@@ -367,4 +367,106 @@ mod tests {
         let s = snippet_of("<p>Hello <b>there</b></p>");
         assert_eq!(s, "Hello there");
     }
+}
+
+/* ------------------------------- favicons ------------------------------- */
+
+static ICON_LINK: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"(?is)<link[^>]+rel\s*=\s*["']([^"']*icon[^"']*)["'][^>]*>"#).unwrap()
+});
+static HREF: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"(?i)href\s*=\s*["']([^"']+)["']"#).unwrap());
+static SIZES: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"(?i)sizes\s*=\s*["'](\d+)x\d+["']"#).unwrap());
+
+/// Fetch a site's favicon and return it as a data URI.
+///
+/// Stored inline rather than on disk: a favicon is a couple of kilobytes, and
+/// keeping it in the row means no cache directory to manage, no second request
+/// at render time, and nothing to clean up when a feed is deleted.
+/// Fluent Reader issue #169 asked for this.
+pub async fn fetch_favicon(client: &reqwest::Client, site_url: &str) -> Result<String> {
+    let base = url::Url::parse(site_url)?;
+    let origin = format!(
+        "{}://{}",
+        base.scheme(),
+        base.host_str().ok_or_else(|| anyhow!("no host"))?
+    );
+
+    // Prefer what the page declares, largest first, then fall back to /favicon.ico
+    let mut candidates: Vec<String> = Vec::new();
+    if let Ok(res) = client.get(&origin).send().await {
+        if res.status().is_success() {
+            if let Ok(html) = res.text().await {
+                let mut declared: Vec<(u32, String)> = Vec::new();
+                for m in ICON_LINK.captures_iter(&html) {
+                    let tag = m.get(0).map(|t| t.as_str()).unwrap_or("");
+                    if let Some(href) = HREF.captures(tag).and_then(|c| c.get(1)) {
+                        let size = SIZES
+                            .captures(tag)
+                            .and_then(|c| c.get(1))
+                            .and_then(|s| s.as_str().parse::<u32>().ok())
+                            .unwrap_or(0);
+                        declared.push((size, absolutise(href.as_str(), Some(&base))));
+                    }
+                }
+                // a 32px icon beats a 180px one for a 16px slot, but any
+                // declared icon beats guessing
+                declared.sort_by_key(|(size, _)| if *size == 0 { 33 } else { (*size as i64 - 32).unsigned_abs() as u32 });
+                candidates.extend(declared.into_iter().map(|(_, href)| href));
+            }
+        }
+    }
+    candidates.push(format!("{origin}/favicon.ico"));
+
+    for href in candidates.into_iter().take(4) {
+        let Ok(res) = client.get(&href).send().await else { continue };
+        if !res.status().is_success() {
+            continue;
+        }
+        let mime = res
+            .headers()
+            .get("content-type")
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.split(';').next().unwrap_or(s).trim().to_owned())
+            .filter(|m| m.starts_with("image/"))
+            .unwrap_or_else(|| guess_mime(&href));
+        let Ok(bytes) = res.bytes().await else { continue };
+        // anything bigger than this is a logo, not a favicon
+        if bytes.is_empty() || bytes.len() > 128 * 1024 {
+            continue;
+        }
+        return Ok(format!("data:{};base64,{}", mime, b64(&bytes)));
+    }
+    Err(anyhow!("no favicon found"))
+}
+
+fn guess_mime(href: &str) -> String {
+    let lower = href.to_lowercase();
+    if lower.ends_with(".png") {
+        "image/png"
+    } else if lower.ends_with(".svg") {
+        "image/svg+xml"
+    } else if lower.ends_with(".jpg") || lower.ends_with(".jpeg") {
+        "image/jpeg"
+    } else if lower.ends_with(".gif") {
+        "image/gif"
+    } else {
+        "image/x-icon"
+    }
+    .to_owned()
+}
+
+fn b64(data: &[u8]) -> String {
+    const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(data.len().div_ceil(3) * 4);
+    for chunk in data.chunks(3) {
+        let b = [chunk[0], *chunk.get(1).unwrap_or(&0), *chunk.get(2).unwrap_or(&0)];
+        let n = ((b[0] as u32) << 16) | ((b[1] as u32) << 8) | b[2] as u32;
+        out.push(T[(n >> 18 & 63) as usize] as char);
+        out.push(T[(n >> 12 & 63) as usize] as char);
+        out.push(if chunk.len() > 1 { T[(n >> 6 & 63) as usize] as char } else { '=' });
+        out.push(if chunk.len() > 2 { T[(n & 63) as usize] as char } else { '=' });
+    }
+    out
 }

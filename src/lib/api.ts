@@ -52,6 +52,8 @@ export type Filter = {
   sort?: "newest" | "oldest"
   limit?: number
   offset?: number
+  /** Unix seconds. mark_all_read only: stop at items published before this. */
+  before?: number
 }
 
 export type FetchReport = {
@@ -123,4 +125,15 @@ export const api = {
   getSettings: () => call<Record<string, unknown>>("get_settings"),
   setSetting: (key: string, value: unknown) => call<void>("set_setting", { key, value }),
   stats: () => call<Stats>("stats"),
+
+  setHidden: (ids: number[], hidden: boolean) =>
+    call<void>("set_hidden", { ids, hidden }),
+  loadFullContent: (id: number) => call<string>("load_full_content", { id }),
+  articleMarkdown: (id: number) =>
+    call<{ filename: string; markdown: string }>("article_markdown", { id }),
+  qrSvg: (text: string) => call<string>("qr_svg", { text }),
+
+  readTextFile: (path: string) => call<string>("read_text_file", { path }),
+  writeTextFile: (path: string, contents: string) =>
+    call<void>("write_text_file", { path, contents }),
 }

@@ -1,6 +1,6 @@
 //! The Tauri command surface. Everything the UI can ask for.
 
-use crate::{db, feed, opml};
+use crate::{db, feed, markdown, opml, readable};
 use anyhow::Result;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -62,7 +62,7 @@ pub struct ItemFull {
     pub link: Option<String>,
     pub author: Option<String>,
     pub published: i64,
-    /// already sanitised — see feed::sanitise
+    /// already sanitised, see feed::sanitise
     pub content: String,
     pub read: bool,
     pub starred: bool,
@@ -77,10 +77,13 @@ pub struct Filter {
     pub unread_only: Option<bool>,
     pub search: Option<String>,
     pub hide_duplicates: Option<bool>,
-    /// "newest" | "oldest" — issues #246, #554
+    /// "newest" | "oldest". Issues #246, #554
     pub sort: Option<String>,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
+    /// Unix seconds. Only used by `mark_all_read`, which marks items published
+    /// at or before this instant. Fluent Reader offers the same 1/3/7 day cuts.
+    pub before: Option<i64>,
 }
 
 #[derive(Serialize)]
@@ -307,7 +310,7 @@ fn insert_entries(conn: &Connection, source_id: i64, outcome: &feed::FetchOutcom
 pub async fn fetch_all(state: State<'_, AppState>) -> Result<FetchReport, String> {
     let started = std::time::Instant::now();
     // Collect into an owned Vec and bind it, so the guard and the statement
-    // are both released before the block ends — nothing may be held across
+    // are both released before the block ends. Nothing may be held across
     // the .await below.
     let targets: Vec<(i64, String, Option<String>, Option<String>)> = {
         let conn = state.db.lock().map_err(e)?;
@@ -334,32 +337,94 @@ pub async fn fetch_all(state: State<'_, AppState>) -> Result<FetchReport, String
         errors: vec![],
         elapsed_ms: 0,
     };
-    let conn = state.db.lock().map_err(e)?;
-    for (id, url, res) in results {
-        report.sources += 1;
-        match res {
-            Ok(outcome) => {
-                if outcome.not_modified {
-                    report.not_modified += 1;
-                    continue;
+    // The guard lives in its own scope. A MutexGuard is not Send, so leaving it
+    // alive across the favicon .await below would make the whole future !Send.
+    {
+        let conn = state.db.lock().map_err(e)?;
+        for (id, url, res) in results {
+            report.sources += 1;
+            match res {
+                Ok(outcome) => {
+                    if outcome.not_modified {
+                        report.not_modified += 1;
+                        continue;
+                    }
+                    match insert_entries(&conn, id, &outcome) {
+                        Ok(n) => report.new_items += n,
+                        Err(err) => report.errors.push((url, err.to_string())),
+                    }
                 }
-                match insert_entries(&conn, id, &outcome) {
-                    Ok(n) => report.new_items += n,
-                    Err(err) => report.errors.push((url, err.to_string())),
+                Err(err) => {
+                    let msg = err.to_string();
+                    let _ = conn.execute(
+                        "UPDATE sources SET last_error = ?2, last_fetched = ?3 WHERE id = ?1",
+                        params![id, msg, chrono::Utc::now().timestamp()],
+                    );
+                    report.errors.push((url, msg));
                 }
-            }
-            Err(err) => {
-                let msg = err.to_string();
-                let _ = conn.execute(
-                    "UPDATE sources SET last_error = ?2, last_fetched = ?3 WHERE id = ?1",
-                    params![id, msg, chrono::Utc::now().timestamp()],
-                );
-                report.errors.push((url, msg));
             }
         }
     }
+
+    // Second pass: fill in missing favicons. Separate from the feed fetch
+    // because a site's icon lives at the site, not in the feed document, and a
+    // slow or missing icon must never hold up articles.
+    let needing: Vec<(i64, String)> = {
+        let conn = state.db.lock().map_err(e)?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, COALESCE(site_url, url) FROM sources
+                  WHERE hidden = 0 AND (icon_url IS NULL OR icon_url = '')",
+            )
+            .map_err(e)?;
+        let rows = stmt
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+            .map_err(e)?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(e)?;
+        rows
+    };
+    if !needing.is_empty() {
+        let icons = fetch_icons(needing, state.http.clone()).await;
+        {
+            let conn = state.db.lock().map_err(e)?;
+            for (id, icon) in icons {
+                let _ = conn.execute(
+                    "UPDATE sources SET icon_url = ?2 WHERE id = ?1",
+                    params![id, icon],
+                );
+            }
+        }
+    }
+
     report.elapsed_ms = started.elapsed().as_millis();
     Ok(report)
+}
+
+async fn fetch_icons(
+    targets: Vec<(i64, String)>,
+    http: reqwest::Client,
+) -> Vec<(i64, String)> {
+    use std::sync::Arc;
+    use tokio::sync::Semaphore;
+
+    let sem = Arc::new(Semaphore::new(8));
+    let mut handles = Vec::with_capacity(targets.len());
+    for (id, site) in targets {
+        let http = http.clone();
+        let sem = sem.clone();
+        handles.push(tokio::spawn(async move {
+            let _permit = sem.acquire().await;
+            feed::fetch_favicon(&http, &site).await.ok().map(|icon| (id, icon))
+        }));
+    }
+    let mut out = Vec::new();
+    for h in handles {
+        if let Ok(Some(pair)) = h.await {
+            out.push(pair);
+        }
+    }
+    out
 }
 
 /// Fetch every target with a concurrency cap, preserving which source each
@@ -539,17 +604,29 @@ pub fn mark_all_read(state: State<AppState>, filter: Filter) -> Result<usize, St
     let conn = state.db.lock().map_err(e)?;
     let scope = filter.scope.as_deref().unwrap_or("all");
     let id = filter.id.unwrap_or(0);
+    // i64::MAX stands in for "no cutoff" so every arm binds the same shape.
+    let before = filter.before.unwrap_or(i64::MAX);
     let n = match scope {
         "source" => conn.execute(
-            "UPDATE items SET read = 1 WHERE read = 0 AND source_id = ?1",
-            params![id],
+            "UPDATE items SET read = 1
+               WHERE read = 0 AND source_id = ?1 AND published <= ?2",
+            params![id, before],
         ),
         "group" => conn.execute(
-            "UPDATE items SET read = 1 WHERE read = 0 AND source_id IN
-               (SELECT id FROM sources WHERE group_id = ?1)",
-            params![id],
+            "UPDATE items SET read = 1
+               WHERE read = 0 AND published <= ?2 AND source_id IN
+                 (SELECT id FROM sources WHERE group_id = ?1)",
+            params![id, before],
         ),
-        _ => conn.execute("UPDATE items SET read = 1 WHERE read = 0", []),
+        "starred" => conn.execute(
+            "UPDATE items SET read = 1
+               WHERE read = 0 AND starred = 1 AND published <= ?1",
+            params![before],
+        ),
+        _ => conn.execute(
+            "UPDATE items SET read = 1 WHERE read = 0 AND published <= ?1",
+            params![before],
+        ),
     }
     .map_err(e)?;
     Ok(n)
@@ -679,4 +756,175 @@ pub fn stats(state: State<AppState>) -> Result<Stats, String> {
         starred: one("SELECT COUNT(*) FROM items WHERE starred = 1")?,
         db_bytes: page_count * page_size,
     })
+}
+
+/* ------------------------------ plain files ----------------------------- */
+
+/// Read a file the user picked in the open dialog. Doing this here instead of
+/// through the fs plugin keeps the webview from holding any filesystem reach
+/// of its own: the only paths it can name are ones a dialog handed it.
+#[tauri::command]
+pub fn read_text_file(path: String) -> Result<String, String> {
+    std::fs::read_to_string(&path).map_err(|err| format!("{path}: {err}"))
+}
+
+/// Write a file the user picked in the save dialog. Same reasoning.
+#[tauri::command]
+pub fn write_text_file(path: String, contents: String) -> Result<(), String> {
+    std::fs::write(&path, contents).map_err(|err| format!("{path}: {err}"))
+}
+
+/* ------------------------- article side actions ------------------------- */
+
+/// Hide an article from every list without deleting it, the way Fluent
+/// Reader's "Hide article" works. Dedupe still sees the row, so a hidden
+/// story does not reappear through a second feed.
+#[tauri::command]
+pub fn set_hidden(state: State<AppState>, ids: Vec<i64>, hidden: bool) -> Result<(), String> {
+    let conn = state.db.lock().map_err(e)?;
+    for id in ids {
+        conn.execute(
+            "UPDATE items SET hidden = ?2, read = CASE WHEN ?2 = 1 THEN 1 ELSE read END
+              WHERE id = ?1",
+            params![id, i64::from(hidden)],
+        )
+        .map_err(e)?;
+    }
+    Ok(())
+}
+
+/// Fetch the article's own page and replace the stored body with the real
+/// one. Feeds that publish a teaser are the reason this exists. The fetched
+/// HTML goes through the same allowlist as feed content.
+#[tauri::command]
+pub async fn load_full_content(state: State<'_, AppState>, id: i64) -> Result<String, String> {
+    let (link, current) = {
+        let conn = state.db.lock().map_err(e)?;
+        conn.query_row(
+            "SELECT link, content FROM items WHERE id = ?1",
+            params![id],
+            |r| Ok((r.get::<_, Option<String>>(0)?, r.get::<_, String>(1)?)),
+        )
+        .map_err(e)?
+    };
+    let link = link.ok_or("This article has no link to load from.")?;
+
+    match readable::fetch(&state.http, &link).await? {
+        Some(body) if body.len() > current.len() => {
+            let conn = state.db.lock().map_err(e)?;
+            conn.execute(
+                "UPDATE items SET content = ?2 WHERE id = ?1",
+                params![id, &body],
+            )
+            .map_err(e)?;
+            Ok(body)
+        }
+        _ => Err("Could not find a fuller article on that page.".into()),
+    }
+}
+
+/// The article as a Markdown document, front matter and all.
+#[tauri::command]
+pub fn article_markdown(state: State<AppState>, id: i64) -> Result<MarkdownExport, String> {
+    let conn = state.db.lock().map_err(e)?;
+    let (source, title, link, author, published, content) = conn
+        .query_row(
+            "SELECT s.name, i.title, i.link, i.author, i.published, i.content
+               FROM items i JOIN sources s ON s.id = i.source_id
+              WHERE i.id = ?1",
+            params![id],
+            |r| {
+                Ok((
+                    r.get::<_, String>(0)?,
+                    r.get::<_, String>(1)?,
+                    r.get::<_, Option<String>>(2)?,
+                    r.get::<_, Option<String>>(3)?,
+                    r.get::<_, i64>(4)?,
+                    r.get::<_, String>(5)?,
+                ))
+            },
+        )
+        .map_err(e)?;
+
+    let date = chrono::DateTime::from_timestamp(published, 0)
+        .map(|d| d.format("%Y-%m-%d").to_string())
+        .unwrap_or_default();
+
+    Ok(MarkdownExport {
+        filename: format!("{}.md", slug(&title)),
+        markdown: markdown::document(
+            &title,
+            author.as_deref(),
+            &source,
+            link.as_deref(),
+            &date,
+            &content,
+        ),
+    })
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarkdownExport {
+    pub filename: String,
+    pub markdown: String,
+}
+
+/// A QR code for the article link, as an inline SVG. Handy for carrying a
+/// story to a phone, which is what Fluent Reader's reader menu uses it for.
+#[tauri::command]
+pub fn qr_svg(text: String) -> Result<String, String> {
+    use qrcode::render::svg;
+    use qrcode::{EcLevel, QrCode};
+
+    let code = QrCode::with_error_correction_level(text.as_bytes(), EcLevel::M)
+        .map_err(|err| err.to_string())?;
+    Ok(code
+        .render::<svg::Color>()
+        .min_dimensions(192, 192)
+        .quiet_zone(true)
+        .dark_color(svg::Color("#000000"))
+        .light_color(svg::Color("#ffffff"))
+        .build())
+}
+
+/// A filesystem-safe stem for an article title.
+fn slug(title: &str) -> String {
+    let mut out = String::with_capacity(title.len());
+    let mut dash = false;
+    for c in title.chars() {
+        if c.is_alphanumeric() {
+            out.extend(c.to_lowercase());
+            dash = false;
+        } else if !dash && !out.is_empty() {
+            out.push('-');
+            dash = true;
+        }
+    }
+    let trimmed = out.trim_matches('-');
+    let cut = trimmed
+        .char_indices()
+        .take_while(|(i, _)| *i < 60)
+        .last()
+        .map(|(i, c)| i + c.len_utf8())
+        .unwrap_or(0);
+    let s = trimmed[..cut].trim_matches('-');
+    if s.is_empty() {
+        "article".into()
+    } else {
+        s.to_string()
+    }
+}
+
+#[cfg(test)]
+mod slug_tests {
+    use super::slug;
+
+    #[test]
+    fn titles_become_safe_filenames() {
+        assert_eq!(slug("Hello, World! / Part 2"), "hello-world-part-2");
+        assert_eq!(slug("   "), "article");
+        assert_eq!(slug("!!!"), "article");
+        assert!(!slug(&"word ".repeat(40)).ends_with('-'));
+    }
 }
