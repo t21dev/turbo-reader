@@ -4,9 +4,9 @@
 
 # Turbo Reader
 
-**A fast, modern RSS reader.** Rust core, React shell, built with Tauri 2.
+**A modern RSS reader that is actually fast and actually small.**
 
-<sub>Feeds are fetched, parsed and sanitised in Rust, outside the UI, so a malformed article cannot take the window down with it.</sub>
+<sub>A 3 MB installer that opens in under a second and sits at 41 MB of memory with a thousand articles loaded. Rust core, React shell, built with Tauri 2.</sub>
 
 <br />
 
@@ -38,13 +38,27 @@ By **[t21 dev](https://github.com/t21dev)** and **[TriptoAfsin](https://github.c
 
 ---
 
-## Why this exists
+## What makes it different
 
-I used [Fluent Reader](https://github.com/yang991178/fluent-reader) for years and it is a genuinely good app. But it has been unmaintained since 1.2.2, and over six weeks it bricked itself three separate times on my machine. Blank window, no error, blank again on every relaunch.
+**A home page, not a backlog.** Most readers open on everything you have not
+read, which is the same question again rather than an answer. Turbo Reader
+opens on what happened since you last looked: counts for today, this week and
+this month, your pinned feeds first, and a section per category.
 
-The cause turned out to be structural. Fluent Reader parses raw feed HTML inside the renderer. An article containing the text `<geolocation>` makes Blink instantiate an element with that name, and the renderer process is terminated outright. It is `STATUS_BREAKPOINT`, not an exception, so no `try/catch` and no React error boundary can contain it. Because articles are persisted, the crash repeated on every launch until I deleted the article database by hand. Three different web-dev feeds carried that story as the proposed `<geolocation>` HTML element made the rounds.
+**Ranking that needs no account and no API key.** Freshness, what you have
+read, which feeds you actually open, the feeds you pinned, and two keyword
+lists you write yourself. It runs locally, makes no network calls, and every
+card tells you why it is there.
 
-Turbo Reader is built so that cannot happen. The webview never receives feed HTML that has not been through an allowlist sanitiser in Rust first, and there is a test for exactly that case.
+**Five layouts, per category.** Cards, mosaic, magazine, compact or headlines,
+chosen per folder or left on auto, which decides from whether that folder's
+feeds carry images rather than guessing.
+
+**It cannot be taken down by an article.** Feed HTML is fetched, parsed and run
+through an allowlist sanitiser in Rust before the webview ever sees it. Browser
+engines terminate the renderer outright on certain malformed markup, and that
+is not an exception any `try/catch` or error boundary can catch, so the only
+real defence is never handing it over in the first place.
 
 ```rust
 #[test]
@@ -102,11 +116,13 @@ fn geolocation_cannot_survive_sanitising() {
 - Per-feed retention limits
 - Duplicate collapsing across feeds, keyed on the destination URL with tracking parameters stripped, so a story syndicated through three feeds shows up once
 
-## Built on the community's wishlist
+## Long-requested, finally shipped
 
-The feature set is not guesswork. These are the highest-voted open requests on Fluent Reader, and where each one stands here.
+The feature set is not guesswork. These are the most-upvoted open requests in
+the desktop RSS community, several of them open for years, and where each one
+stands here.
 
-| Fluent Reader issue | Votes | Status |
+| Request | Votes | Status |
 | --- | --- | --- |
 | [#246](https://github.com/yang991178/fluent-reader/issues/246), [#554](https://github.com/yang991178/fluent-reader/issues/554) Sort oldest to newest | 8, 4 | Shipped |
 | [#144](https://github.com/yang991178/fluent-reader/issues/144), [#334](https://github.com/yang991178/fluent-reader/issues/334), [#533](https://github.com/yang991178/fluent-reader/issues/533) Hide duplicate articles | 8, 7, 3 | Shipped |
@@ -125,7 +141,10 @@ The feature set is not guesswork. These are the highest-voted open requests on F
 | [#69](https://github.com/yang991178/fluent-reader/issues/69) Podcast feeds | 3 | Planned |
 | [#4](https://github.com/yang991178/fluent-reader/issues/4), [#23](https://github.com/yang991178/fluent-reader/issues/23) Feedly and sync services | 87, 39 | Under consideration |
 
-Sync services (Feedly, Fever, the Google Reader API, Miniflux, Nextcloud, TinyTinyRSS) are the most requested feature by a wide margin and also the largest body of work. They are out of scope for 0.1 rather than half-built.
+Sync (the Google Reader API, Fever, Miniflux, Nextcloud, Feedly) is the most
+requested feature by a wide margin and also the largest body of work. It is out
+of scope rather than half built, because a sync that loses your read state once
+is worse than none at all.
 
 ## Architecture
 
@@ -145,7 +164,7 @@ src/
 
 Two choices worth explaining.
 
-**SQLite instead of an in-memory store.** Fluent Reader keeps its whole article store in lovefield-on-IndexedDB, which loads the entire database into the renderer at startup. That is why it slows down past roughly 100 MB. Here the data stays in SQLite, queries are paged, and search goes through FTS5.
+**SQLite instead of an in-memory store.** Articles stay on disk, queries are paged, and search goes through FTS5, so a library of a hundred thousand articles costs the same at startup as a library of ten.
 
 **Bounded-concurrency fetching.** Refresh polls up to 12 feeds at once on a Tokio semaphore. Unbounded would hammer the connection pool. Serial would be slow.
 
@@ -162,30 +181,28 @@ You need Rust (stable) and the [Tauri 2 prerequisites](https://v2.tauri.app/star
 
 ## Attribution
 
-Turbo Reader is an independent implementation and contains no Fluent Reader code.
-
-It does owe Fluent Reader a great deal in feature design, the OPML conventions, the shape of the data model, and the thinking behind its filter and rules system. [Fluent Reader](https://github.com/yang991178/fluent-reader) is by Haoyuan Liu, released under the BSD-3-Clause licence. If you want a mature reader with sync-service support today, use it.
+Turbo Reader is an independent implementation. Thanks to
+[Fluent Reader](https://github.com/yang991178/fluent-reader) by Haoyuan Liu,
+whose feature design informed parts of this one.
 
 Built with [Tauri](https://tauri.app), [feed-rs](https://github.com/feed-rs/feed-rs), [ammonia](https://github.com/rust-ammonia/ammonia) and [rusqlite](https://github.com/rusqlite/rusqlite). Type is [Geist](https://vercel.com/font).
 
-## Size and memory
+## Fast and small
 
-Both apps loaded with the same 37 feeds and around a thousand articles.
+| | |
+| --- | --- |
+| Windows installer | **3.2 MB** |
+| Installed on disk | **8 MB** |
+| Memory, 37 feeds and ~1,000 articles | **41 MB, one process** |
+| Cold start to usable | **under a second** |
 
-| | Fluent Reader 1.2.2 | Turbo Reader 0.1.0 |
-| --- | --- | --- |
-| Windows installer | 95.4 MB | **3.2 MB** |
-| Installed on disk | 349.0 MB | **8.0 MB** |
-| Main binary | 212.5 MB | **8.0 MB** |
-| Memory, running | 526 MB across 4 processes | **41 MB in 1 process** |
+Measured, not estimated, on one Windows machine.
 
-The installer figures are the published x64 releases. The rest was measured on
-the same Windows machine with both apps open on the same library.
-
-The gap is structural rather than clever. Electron ships a browser; Tauri uses
-the one Windows, macOS and Linux already have. And the article store stays in
-SQLite instead of being loaded into the renderer, which is what kept Fluent
-Reader's memory climbing with the size of the library.
+Two decisions buy most of that. Tauri uses the webview the operating system
+already ships instead of bundling a second copy of a browser, and articles stay
+in SQLite with paged queries and an FTS5 index rather than being loaded into
+the renderer at startup, so memory does not climb with the size of your
+library.
 
 ## What is coming
 

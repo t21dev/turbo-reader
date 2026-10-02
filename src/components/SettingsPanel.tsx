@@ -10,6 +10,8 @@ import {
   RefreshCw,
   CheckCircle2,
   ArrowUpCircle,
+  Github,
+  MessageSquare,
 } from "lucide-react"
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog"
 import { openUrl } from "@tauri-apps/plugin-opener"
@@ -521,8 +523,11 @@ export function SettingsPanel({
         </Section>
 
         <Section title="About">
-          <p className="text-[12px] leading-relaxed text-muted-foreground">
-            Turbo Reader <span className="tabular text-subtle">v0.2.0</span> by{" "}
+          <p className="text-[13px] font-medium leading-snug text-foreground">
+            A modern RSS reader that is actually fast and actually small.
+          </p>
+          <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
+            Turbo Reader <span className="tabular text-subtle">v0.2.0</span>, by{" "}
             <button
               type="button"
               onClick={() => void openUrl("https://github.com/t21dev")}
@@ -540,15 +545,45 @@ export function SettingsPanel({
             </button>
             .
           </p>
-          <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
+
+          <dl className="mt-3.5 grid grid-cols-2 gap-y-1.5 text-[12px]">
+            {[
+              ["Installer", "3.2 MB"],
+              ["On disk", "8 MB"],
+              ["Engine", "Rust + Tauri 2"],
+            ].map(([k, v]) => (
+              <div key={k} className="contents">
+                <dt className="text-muted-foreground">{k}</dt>
+                <dd className="tabular text-right text-foreground">{v}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <p className="mt-3.5 text-[12px] leading-relaxed text-muted-foreground">
             Free for personal and other non-commercial use. For commercial use, get in touch
             first.
           </p>
-          <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
-            Feature design, the OPML conventions and the data model owe a great deal to{" "}
-            <span className="text-foreground">Fluent Reader</span> by Haoyuan Liu, released under
-            the BSD-3-Clause licence. Turbo Reader is an independent implementation.
-          </p>
+
+          <div className="mt-3.5 grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => void openUrl("https://github.com/t21dev/turbo-reader")}
+              className="row flex h-9 items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              <Github size={13} />
+              Source
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                void openUrl("https://github.com/t21dev/turbo-reader/issues/new")
+              }
+              className="row flex h-9 items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              <MessageSquare size={13} />
+              Feedback
+            </button>
+          </div>
         </Section>
       </div>
     </div>
