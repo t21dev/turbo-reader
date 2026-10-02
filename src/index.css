@@ -1,0 +1,207 @@
+/* Hallmark · genre: modern-minimal · scope: desktop app · theme: Porter (shared with t21/porter-app)
+ * paper: #0d0d0d dark / near-white light · accent: none — signal hues only
+ * type: Geist + Geist Mono · motion: transform/opacity only, ease-out-expo
+ */
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98.4%;
+    --foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+    --elevated: 0 0% 94.5%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 40%;
+    --subtle: 0 0% 58%;
+    --accent: 0 0% 95.5%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 90%;
+    --input: 0 0% 88%;
+    --ring: 0 0% 45%;
+    --unread: 215 78% 50%;
+    --starred: 38 92% 44%;
+    --system: 215 78% 50%;
+    --radius: 0.625rem;
+
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  .dark {
+    --background: 0 0% 5.1%;
+    --foreground: 0 0% 93%;
+    --card: 0 0% 7.3%;
+    --card-foreground: 0 0% 93%;
+    --popover: 0 0% 8.6%;
+    --popover-foreground: 0 0% 93%;
+    --elevated: 0 0% 12%;
+    --primary: 0 0% 93%;
+    --primary-foreground: 0 0% 6%;
+    --secondary: 0 0% 11%;
+    --secondary-foreground: 0 0% 93%;
+    --muted: 0 0% 11%;
+    --muted-foreground: 0 0% 58%;
+    --subtle: 0 0% 40%;
+    --accent: 0 0% 10.5%;
+    --accent-foreground: 0 0% 93%;
+    --destructive: 0 75% 62%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 12.5%;
+    --input: 0 0% 15%;
+    --ring: 0 0% 55%;
+    --unread: 215 90% 68%;
+    --starred: 38 92% 60%;
+    --system: 215 90% 68%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: clip;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    user-select: none;
+  }
+  input,
+  textarea,
+  [contenteditable] {
+    user-select: text;
+  }
+  ::selection {
+    background: hsl(var(--foreground) / 0.18);
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-elevated;
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-input;
+    border-width: 2px;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Rows never move on hover — colour only. */
+  .row {
+    @apply rounded-lg transition-colors duration-150 ease-in-out;
+  }
+
+  /* Expanding region without animating height. */
+  .collapse-grid {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows 320ms var(--ease-in-out), opacity 220ms var(--ease-out);
+  }
+  .collapse-grid[data-open="true"] {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  /* Sanitised feed HTML. Styled here so article bodies inherit the system. */
+  .prose-feed {
+    @apply text-[0.94rem] leading-[1.7] text-foreground/90;
+  }
+  .prose-feed p {
+    @apply my-4;
+  }
+  .prose-feed h1,
+  .prose-feed h2,
+  .prose-feed h3 {
+    @apply mt-8 mb-3 font-semibold tracking-tight text-foreground;
+  }
+  .prose-feed h1 {
+    @apply text-xl;
+  }
+  .prose-feed h2 {
+    @apply text-lg;
+  }
+  .prose-feed a {
+    @apply text-system underline underline-offset-2 decoration-system/40 hover:decoration-system;
+  }
+  .prose-feed img,
+  .prose-feed video {
+    @apply my-5 rounded-lg max-w-full h-auto;
+  }
+  .prose-feed pre {
+    @apply my-5 overflow-x-auto rounded-lg bg-secondary p-4 font-mono text-[0.82rem];
+  }
+  .prose-feed code {
+    @apply font-mono text-[0.86em];
+  }
+  .prose-feed blockquote {
+    @apply my-5 border-l-2 border-border pl-4 text-muted-foreground;
+  }
+  .prose-feed ul,
+  .prose-feed ol {
+    @apply my-4 pl-6;
+  }
+  .prose-feed ul {
+    @apply list-disc;
+  }
+  .prose-feed ol {
+    @apply list-decimal;
+  }
+  .prose-feed li {
+    @apply my-1.5;
+  }
+  .prose-feed hr {
+    @apply my-8 border-border;
+  }
+  .prose-feed table {
+    @apply my-5 w-full text-sm;
+  }
+  .prose-feed th,
+  .prose-feed td {
+    @apply border border-border px-3 py-2 text-left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 150ms !important;
+    transition-duration: 150ms !important;
+  }
+}
