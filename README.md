@@ -24,13 +24,13 @@ By **[t21 dev](https://github.com/t21dev)** and **[TriptoAfsin](https://github.c
 
 ![The home page: counts, search, pinned feeds and a band per category](docs/screenshot-home.png)
 
-| Dark | Light |
+| Feed management | The reader |
 | --- | --- |
-| ![Home in dark](docs/screenshot-home.png) | ![Home in light](docs/screenshot-light.png) |
+| ![Rename, pin, move, retention, delete](docs/screenshot-feed-menu.png) | ![An article with its full text loaded](docs/screenshot-reader.png) |
 
-| The reader | Article actions |
+| Article actions | Light |
 | --- | --- |
-| ![An article with its full text loaded](docs/screenshot-reader.png) | ![Copy link, Markdown, PDF, font, QR code](docs/screenshot-menu.png) |
+| ![Copy link, Markdown, PDF, font, QR code](docs/screenshot-menu.png) | ![Home in light](docs/screenshot-light.png) |
 
 | Settings | Shortcuts |
 | --- | --- |
