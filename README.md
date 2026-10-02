@@ -22,15 +22,19 @@ By **[t21 dev](https://github.com/t21dev)** and **[TriptoAfsin](https://github.c
 
 ## Screenshots
 
-![Card view with source favicons and cover art](docs/screenshot-cards.png)
+![The home page: counts, search, pinned feeds and a band per category](docs/screenshot-home.png)
+
+| Dark | Light |
+| --- | --- |
+| ![Home in dark](docs/screenshot-home.png) | ![Home in light](docs/screenshot-light.png) |
 
 | The reader | Article actions |
 | --- | --- |
-| ![Reading an article](docs/screenshot-reader.png) | ![Copy link, Markdown, PDF, font, QR](docs/screenshot-menu.png) |
+| ![An article with its full text loaded](docs/screenshot-reader.png) | ![Copy link, Markdown, PDF, font, QR code](docs/screenshot-menu.png) |
 
 | Settings | Shortcuts |
 | --- | --- |
-| ![Appearance, reading, OPML and library stats](docs/screenshot-settings.png) | ![Keyboard shortcuts](docs/screenshot-shortcuts.png) |
+| ![Appearance, reading, home and library settings](docs/screenshot-settings.png) | ![The keyboard shortcut sheet](docs/screenshot-shortcuts.png) |
 
 ---
 
