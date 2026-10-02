@@ -128,9 +128,12 @@ CREATE TABLE IF NOT EXISTS settings (
 COMMIT;
 "#;
 
+#[allow(dead_code)] // read by the settings commands once they need a typed getter
 pub fn get_setting(conn: &Connection, key: &str) -> Result<Option<String>> {
     Ok(conn
-        .query_row("SELECT value FROM settings WHERE key = ?1", [key], |r| r.get(0))
+        .query_row("SELECT value FROM settings WHERE key = ?1", [key], |r| {
+            r.get(0)
+        })
         .optional()?)
 }
 

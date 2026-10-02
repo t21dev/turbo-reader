@@ -225,24 +225,94 @@ pub fn parse(
 pub fn sanitise(html: &str, base: Option<&url::Url>) -> String {
     let mut tags: HashSet<&str> = HashSet::new();
     for t in [
-        "p", "br", "hr", "span", "div", "a", "em", "i", "strong", "b", "u", "s", "sub", "sup",
-        "blockquote", "q", "cite", "code", "pre", "kbd", "samp", "var", "mark", "small",
-        "h1", "h2", "h3", "h4", "h5", "h6",
-        "ul", "ol", "li", "dl", "dt", "dd",
-        "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption", "colgroup", "col",
-        "img", "figure", "figcaption", "picture", "source", "video", "audio", "track",
-        "abbr", "time", "data", "ruby", "rt", "rp", "wbr",
+        "p",
+        "br",
+        "hr",
+        "span",
+        "div",
+        "a",
+        "em",
+        "i",
+        "strong",
+        "b",
+        "u",
+        "s",
+        "sub",
+        "sup",
+        "blockquote",
+        "q",
+        "cite",
+        "code",
+        "pre",
+        "kbd",
+        "samp",
+        "var",
+        "mark",
+        "small",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "ul",
+        "ol",
+        "li",
+        "dl",
+        "dt",
+        "dd",
+        "table",
+        "thead",
+        "tbody",
+        "tfoot",
+        "tr",
+        "th",
+        "td",
+        "caption",
+        "colgroup",
+        "col",
+        "img",
+        "figure",
+        "figcaption",
+        "picture",
+        "source",
+        "video",
+        "audio",
+        "track",
+        "abbr",
+        "time",
+        "data",
+        "ruby",
+        "rt",
+        "rp",
+        "wbr",
     ] {
         tags.insert(t);
     }
 
     let mut attrs: HashMap<&str, HashSet<&str>> = HashMap::new();
     attrs.insert("a", ["href", "title"].into_iter().collect());
-    attrs.insert("img", ["src", "alt", "title", "width", "height", "srcset"].into_iter().collect());
-    attrs.insert("source", ["src", "srcset", "type", "media"].into_iter().collect());
-    attrs.insert("video", ["src", "poster", "width", "height", "controls"].into_iter().collect());
+    attrs.insert(
+        "img",
+        ["src", "alt", "title", "width", "height", "srcset"]
+            .into_iter()
+            .collect(),
+    );
+    attrs.insert(
+        "source",
+        ["src", "srcset", "type", "media"].into_iter().collect(),
+    );
+    attrs.insert(
+        "video",
+        ["src", "poster", "width", "height", "controls"]
+            .into_iter()
+            .collect(),
+    );
     attrs.insert("audio", ["src", "controls"].into_iter().collect());
-    attrs.insert("track", ["src", "kind", "srclang", "label"].into_iter().collect());
+    attrs.insert(
+        "track",
+        ["src", "kind", "srclang", "label"].into_iter().collect(),
+    );
     attrs.insert("td", ["colspan", "rowspan"].into_iter().collect());
     attrs.insert("th", ["colspan", "rowspan", "scope"].into_iter().collect());
     attrs.insert("time", ["datetime"].into_iter().collect());
@@ -341,43 +411,7 @@ fn hash(parts: &[&str]) -> String {
     format!("{:x}", h.finalize())[..32].to_owned()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// The exact construct that bricked Fluent Reader three times.
-    #[test]
-    fn geolocation_cannot_survive_sanitising() {
-        let hostile = r#"<p>a <geolocation> b</p><script>alert(1)</script>"#;
-        let out = sanitise(hostile, None);
-        assert!(!out.contains("<geolocation"), "unknown element survived: {out}");
-        assert!(!out.contains("<script"), "script survived: {out}");
-        assert!(out.contains("a") && out.contains("b"));
-    }
-
-    #[test]
-    fn tracking_params_do_not_defeat_dedupe() {
-        let a = normalise_link("https://example.com/post?utm_source=rss&id=7");
-        let b = normalise_link("https://example.com/post?id=7");
-        assert_eq!(a, b);
-    }
-
-    #[test]
-    fn snippet_strips_markup() {
-        let s = snippet_of("<p>Hello <b>there</b></p>");
-        assert_eq!(s, "Hello there");
-    }
-}
-
 /* ------------------------------- favicons ------------------------------- */
-
-static ICON_LINK: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"(?is)<link[^>]+rel\s*=\s*["']([^"']*icon[^"']*)["'][^>]*>"#).unwrap()
-});
-static HREF: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r#"(?i)href\s*=\s*["']([^"']+)["']"#).unwrap());
-static SIZES: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r#"(?i)sizes\s*=\s*["'](\d+)x\d+["']"#).unwrap());
 
 /// Fetch a site's favicon and return it as a data URI.
 ///
@@ -412,7 +446,13 @@ pub async fn fetch_favicon(client: &reqwest::Client, site_url: &str) -> Result<S
                 }
                 // a 32px icon beats a 180px one for a 16px slot, but any
                 // declared icon beats guessing
-                declared.sort_by_key(|(size, _)| if *size == 0 { 33 } else { (*size as i64 - 32).unsigned_abs() as u32 });
+                declared.sort_by_key(|(size, _)| {
+                    if *size == 0 {
+                        33
+                    } else {
+                        (*size as i64 - 32).unsigned_abs() as u32
+                    }
+                });
                 candidates.extend(declared.into_iter().map(|(_, href)| href));
             }
         }
@@ -420,7 +460,9 @@ pub async fn fetch_favicon(client: &reqwest::Client, site_url: &str) -> Result<S
     candidates.push(format!("{origin}/favicon.ico"));
 
     for href in candidates.into_iter().take(4) {
-        let Ok(res) = client.get(&href).send().await else { continue };
+        let Ok(res) = client.get(&href).send().await else {
+            continue;
+        };
         if !res.status().is_success() {
             continue;
         }
@@ -431,7 +473,9 @@ pub async fn fetch_favicon(client: &reqwest::Client, site_url: &str) -> Result<S
             .map(|s| s.split(';').next().unwrap_or(s).trim().to_owned())
             .filter(|m| m.starts_with("image/"))
             .unwrap_or_else(|| guess_mime(&href));
-        let Ok(bytes) = res.bytes().await else { continue };
+        let Ok(bytes) = res.bytes().await else {
+            continue;
+        };
         // anything bigger than this is a logo, not a favicon
         if bytes.is_empty() || bytes.len() > 128 * 1024 {
             continue;
@@ -461,12 +505,62 @@ fn b64(data: &[u8]) -> String {
     const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::with_capacity(data.len().div_ceil(3) * 4);
     for chunk in data.chunks(3) {
-        let b = [chunk[0], *chunk.get(1).unwrap_or(&0), *chunk.get(2).unwrap_or(&0)];
+        let b = [
+            chunk[0],
+            *chunk.get(1).unwrap_or(&0),
+            *chunk.get(2).unwrap_or(&0),
+        ];
         let n = ((b[0] as u32) << 16) | ((b[1] as u32) << 8) | b[2] as u32;
         out.push(T[(n >> 18 & 63) as usize] as char);
         out.push(T[(n >> 12 & 63) as usize] as char);
-        out.push(if chunk.len() > 1 { T[(n >> 6 & 63) as usize] as char } else { '=' });
-        out.push(if chunk.len() > 2 { T[(n & 63) as usize] as char } else { '=' });
+        out.push(if chunk.len() > 1 {
+            T[(n >> 6 & 63) as usize] as char
+        } else {
+            '='
+        });
+        out.push(if chunk.len() > 2 {
+            T[(n & 63) as usize] as char
+        } else {
+            '='
+        });
     }
     out
+}
+
+static ICON_LINK: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"(?is)<link[^>]+rel\s*=\s*["']([^"']*icon[^"']*)["'][^>]*>"#).unwrap()
+});
+static HREF: Lazy<Regex> = Lazy::new(|| Regex::new(r#"(?i)href\s*=\s*["']([^"']+)["']"#).unwrap());
+static SIZES: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"(?i)sizes\s*=\s*["'](\d+)x\d+["']"#).unwrap());
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The exact construct that bricked Fluent Reader three times.
+    #[test]
+    fn geolocation_cannot_survive_sanitising() {
+        let hostile = r#"<p>a <geolocation> b</p><script>alert(1)</script>"#;
+        let out = sanitise(hostile, None);
+        assert!(
+            !out.contains("<geolocation"),
+            "unknown element survived: {out}"
+        );
+        assert!(!out.contains("<script"), "script survived: {out}");
+        assert!(out.contains("a") && out.contains("b"));
+    }
+
+    #[test]
+    fn tracking_params_do_not_defeat_dedupe() {
+        let a = normalise_link("https://example.com/post?utm_source=rss&id=7");
+        let b = normalise_link("https://example.com/post?id=7");
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn snippet_strips_markup() {
+        let s = snippet_of("<p>Hello <b>there</b></p>");
+        assert_eq!(s, "Hello there");
+    }
 }

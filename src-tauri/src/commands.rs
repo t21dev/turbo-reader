@@ -141,8 +141,11 @@ pub fn create_group(state: State<AppState>, name: String) -> Result<i64, String>
 #[tauri::command]
 pub fn rename_group(state: State<AppState>, id: i64, name: String) -> Result<(), String> {
     let conn = state.db.lock().map_err(e)?;
-    conn.execute("UPDATE groups SET name = ?2 WHERE id = ?1", params![id, name])
-        .map_err(e)?;
+    conn.execute(
+        "UPDATE groups SET name = ?2 WHERE id = ?1",
+        params![id, name],
+    )
+    .map_err(e)?;
     Ok(())
 }
 
@@ -209,10 +212,7 @@ pub async fn add_source(
 ) -> Result<i64, String> {
     let http = state.http.clone();
     let outcome = feed::fetch(&http, &url, None, None).await.map_err(e)?;
-    let name = outcome
-        .feed_title
-        .clone()
-        .unwrap_or_else(|| url.clone());
+    let name = outcome.feed_title.clone().unwrap_or_else(|| url.clone());
 
     let conn = state.db.lock().map_err(e)?;
     conn.execute(
@@ -223,7 +223,9 @@ pub async fn add_source(
     )
     .map_err(e)?;
     let id: i64 = conn
-        .query_row("SELECT id FROM sources WHERE url = ?1", params![url], |r| r.get(0))
+        .query_row("SELECT id FROM sources WHERE url = ?1", params![url], |r| {
+            r.get(0)
+        })
         .map_err(e)?;
     insert_entries(&conn, id, &outcome).map_err(e)?;
     Ok(id)
@@ -251,12 +253,18 @@ pub fn update_source(
             .map_err(e)?;
     }
     if let Some(g) = group_id {
-        conn.execute("UPDATE sources SET group_id = ?2 WHERE id = ?1", params![id, g])
-            .map_err(e)?;
+        conn.execute(
+            "UPDATE sources SET group_id = ?2 WHERE id = ?1",
+            params![id, g],
+        )
+        .map_err(e)?;
     }
     if let Some(k) = keep_limit {
-        conn.execute("UPDATE sources SET keep_limit = ?2 WHERE id = ?1", params![id, k])
-            .map_err(e)?;
+        conn.execute(
+            "UPDATE sources SET keep_limit = ?2 WHERE id = ?1",
+            params![id, k],
+        )
+        .map_err(e)?;
         db::enforce_keep_limit(&conn, id).map_err(e)?;
     }
     Ok(())
@@ -264,7 +272,11 @@ pub fn update_source(
 
 /* -------------------------------- fetch -------------------------------- */
 
-fn insert_entries(conn: &Connection, source_id: i64, outcome: &feed::FetchOutcome) -> Result<usize> {
+fn insert_entries(
+    conn: &Connection,
+    source_id: i64,
+    outcome: &feed::FetchOutcome,
+) -> Result<usize> {
     let mut inserted = 0usize;
     let mut stmt = conn.prepare(
         "INSERT INTO items(source_id, guid, title, link, author, published, fetched,
@@ -401,10 +413,7 @@ pub async fn fetch_all(state: State<'_, AppState>) -> Result<FetchReport, String
     Ok(report)
 }
 
-async fn fetch_icons(
-    targets: Vec<(i64, String)>,
-    http: reqwest::Client,
-) -> Vec<(i64, String)> {
+async fn fetch_icons(targets: Vec<(i64, String)>, http: reqwest::Client) -> Vec<(i64, String)> {
     use std::sync::Arc;
     use tokio::sync::Semaphore;
 
@@ -415,7 +424,10 @@ async fn fetch_icons(
         let sem = sem.clone();
         handles.push(tokio::spawn(async move {
             let _permit = sem.acquire().await;
-            feed::fetch_favicon(&http, &site).await.ok().map(|icon| (id, icon))
+            feed::fetch_favicon(&http, &site)
+                .await
+                .ok()
+                .map(|icon| (id, icon))
         }));
     }
     let mut out = Vec::new();
@@ -433,8 +445,8 @@ async fn futures_lite_join(
     targets: Vec<(i64, String, Option<String>, Option<String>)>,
     http: reqwest::Client,
 ) -> Vec<(i64, String, Result<feed::FetchOutcome>)> {
-    use tokio::sync::Semaphore;
     use std::sync::Arc;
+    use tokio::sync::Semaphore;
 
     let sem = Arc::new(Semaphore::new(12));
     let mut handles = Vec::with_capacity(targets.len());
@@ -696,7 +708,9 @@ pub fn export_opml(state: State<AppState>) -> Result<String, String> {
             .map_err(e)?;
         for (gid, gname) in list {
             let mut ss = conn
-                .prepare("SELECT name, url FROM sources WHERE group_id = ?1 ORDER BY position, name")
+                .prepare(
+                    "SELECT name, url FROM sources WHERE group_id = ?1 ORDER BY position, name",
+                )
                 .map_err(e)?;
             let feeds = ss
                 .query_map(params![gid], |r| Ok((r.get(0)?, r.get(1)?)))
@@ -729,13 +743,20 @@ pub fn get_settings(state: State<AppState>) -> Result<serde_json::Value, String>
         .map_err(e)?;
     for row in rows {
         let (k, v) = row.map_err(e)?;
-        map.insert(k, serde_json::from_str(&v).unwrap_or(serde_json::Value::String(v)));
+        map.insert(
+            k,
+            serde_json::from_str(&v).unwrap_or(serde_json::Value::String(v)),
+        );
     }
     Ok(serde_json::Value::Object(map))
 }
 
 #[tauri::command]
-pub fn set_setting(state: State<AppState>, key: String, value: serde_json::Value) -> Result<(), String> {
+pub fn set_setting(
+    state: State<AppState>,
+    key: String,
+    value: serde_json::Value,
+) -> Result<(), String> {
     let conn = state.db.lock().map_err(e)?;
     db::set_setting(&conn, &key, &value.to_string()).map_err(e)?;
     Ok(())
@@ -744,9 +765,8 @@ pub fn set_setting(state: State<AppState>, key: String, value: serde_json::Value
 #[tauri::command]
 pub fn stats(state: State<AppState>) -> Result<Stats, String> {
     let conn = state.db.lock().map_err(e)?;
-    let one = |sql: &str| -> Result<i64, String> {
-        conn.query_row(sql, [], |r| r.get(0)).map_err(e)
-    };
+    let one =
+        |sql: &str| -> Result<i64, String> { conn.query_row(sql, [], |r| r.get(0)).map_err(e) };
     let page_count = one("PRAGMA page_count")?;
     let page_size = one("PRAGMA page_size")?;
     Ok(Stats {

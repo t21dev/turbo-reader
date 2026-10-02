@@ -19,8 +19,8 @@ use crate::feed;
 /// regex per tag, because `regex` has no backreference to close the pair with.
 static SCRIPTISH: Lazy<Vec<Regex>> = Lazy::new(|| {
     [
-        "script", "style", "noscript", "svg", "iframe", "form", "nav", "header", "footer",
-        "aside", "template",
+        "script", "style", "noscript", "svg", "iframe", "form", "nav", "header", "footer", "aside",
+        "template",
     ]
     .iter()
     .map(|t| Regex::new(&format!(r"(?is)<{t}\b[^>]*>.*?</\s*{t}\s*>")).unwrap())
@@ -36,16 +36,47 @@ const CONTAINERS: &[&str] = &["article", "main", "section", "div"];
 
 /// Class and id fragments that mark a container as the article body.
 const GOOD: &[&str] = &[
-    "article", "articlebody", "article-body", "post-content", "postcontent", "entry-content",
-    "entry-body", "story-body", "storybody", "post-body", "content__article", "main-content",
-    "rich-text", "markdown-body", "prose",
+    "article",
+    "articlebody",
+    "article-body",
+    "post-content",
+    "postcontent",
+    "entry-content",
+    "entry-body",
+    "story-body",
+    "storybody",
+    "post-body",
+    "content__article",
+    "main-content",
+    "rich-text",
+    "markdown-body",
+    "prose",
 ];
 
 /// Fragments that mark a container as furniture, never the body.
 const BAD: &[&str] = &[
-    "comment", "share", "sidebar", "footer", "header", "nav", "menu", "promo", "related",
-    "recommend", "newsletter", "subscribe", "paywall", "cookie", "banner", "advert", "sponsor",
-    "social", "breadcrumb", "pagination", "tags", "meta",
+    "comment",
+    "share",
+    "sidebar",
+    "footer",
+    "header",
+    "nav",
+    "menu",
+    "promo",
+    "related",
+    "recommend",
+    "newsletter",
+    "subscribe",
+    "paywall",
+    "cookie",
+    "banner",
+    "advert",
+    "sponsor",
+    "social",
+    "breadcrumb",
+    "pagination",
+    "tags",
+    "meta",
 ];
 
 /// Fetch `url` and return sanitised article HTML, or `None` if nothing on the
@@ -166,14 +197,21 @@ fn score(block: &str) -> f64 {
     if BAD.iter().any(|b| head.contains(b)) {
         return 0.0;
     }
-    let bonus = if GOOD.iter().any(|g| head.contains(g)) { 1.6 } else { 1.0 };
+    let bonus = if GOOD.iter().any(|g| head.contains(g)) {
+        1.6
+    } else {
+        1.0
+    };
 
     let paragraphs = PARAGRAPH.find_iter(block).count() as f64;
     total * (1.0 - link_density) * bonus * (1.0 + paragraphs.min(40.0) / 40.0)
 }
 
 fn text_len(html: &str) -> usize {
-    TAG.replace_all(html, " ").split_whitespace().map(str::len).sum()
+    TAG.replace_all(html, " ")
+        .split_whitespace()
+        .map(str::len)
+        .sum()
 }
 
 #[cfg(test)]
@@ -217,7 +255,13 @@ mod tests {
 
     #[test]
     fn hostile_input_cannot_panic() {
-        for s in ["<article", "</article>", "<div><div><div>", "", "<article>&#x3c;</article>"] {
+        for s in [
+            "<article",
+            "</article>",
+            "<div><div><div>",
+            "",
+            "<article>&#x3c;</article>",
+        ] {
             let _ = extract(s);
         }
     }

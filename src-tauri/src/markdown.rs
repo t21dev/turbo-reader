@@ -10,7 +10,18 @@ use quick_xml::Reader;
 
 /// Elements that force a blank line around themselves.
 const BLOCK: &[&str] = &[
-    "p", "div", "blockquote", "figure", "figcaption", "table", "dl", "h1", "h2", "h3", "h4", "h5",
+    "p",
+    "div",
+    "blockquote",
+    "figure",
+    "figcaption",
+    "table",
+    "dl",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
     "h6",
 ];
 
@@ -40,7 +51,13 @@ pub fn from_html(html: &str) -> String {
             Event::Start(e) => open(&e, &mut out, &mut lists, &mut link, &mut in_pre),
             Event::Empty(e) => {
                 open(&e, &mut out, &mut lists, &mut link, &mut in_pre);
-                close(&local_name(e.name().as_ref()), &mut out, &mut lists, &mut link, &mut in_pre);
+                close(
+                    &local_name(e.name().as_ref()),
+                    &mut out,
+                    &mut lists,
+                    &mut link,
+                    &mut in_pre,
+                );
             }
             Event::End(e) => close(
                 &local_name(e.name().as_ref()),
@@ -325,14 +342,28 @@ mod tests {
 
     #[test]
     fn hostile_input_cannot_panic() {
-        for s in ["<p>unclosed", "<<>>", "<a href>x</a>", "", "&amp;&#x3c;", "<li>loose"] {
+        for s in [
+            "<p>unclosed",
+            "<<>>",
+            "<a href>x</a>",
+            "",
+            "&amp;&#x3c;",
+            "<li>loose",
+        ] {
             let _ = from_html(s);
         }
     }
 
     #[test]
     fn front_matter_quotes_are_escaped() {
-        let doc = document("A \"quoted\" title", None, "Feed", None, "2026-01-01", "<p>x</p>");
+        let doc = document(
+            "A \"quoted\" title",
+            None,
+            "Feed",
+            None,
+            "2026-01-01",
+            "<p>x</p>",
+        );
         assert!(doc.contains("title: \"A \\\"quoted\\\" title\""), "{doc}");
     }
 }

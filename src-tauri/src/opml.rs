@@ -9,6 +9,8 @@ use quick_xml::Reader;
 pub struct OpmlFeed {
     pub title: String,
     pub xml_url: String,
+    /// The site behind the feed, kept so an export round-trips what it read.
+    #[allow(dead_code)]
     pub html_url: Option<String>,
     pub group: Option<String>,
 }
@@ -55,7 +57,11 @@ pub fn parse(xml: &str) -> Result<Vec<OpmlFeed>> {
 
             match xml_url {
                 Some(url) if !url.trim().is_empty() => feeds.push(OpmlFeed {
-                    title: if label.trim().is_empty() { url.clone() } else { label },
+                    title: if label.trim().is_empty() {
+                        url.clone()
+                    } else {
+                        label
+                    },
                     xml_url: url,
                     html_url,
                     group: group_stack.last().cloned(),
@@ -142,7 +148,10 @@ mod tests {
 
     #[test]
     fn round_trips() {
-        let groups = vec![("News".to_string(), vec![("A".to_string(), "https://a.example/feed".to_string())])];
+        let groups = vec![(
+            "News".to_string(),
+            vec![("A".to_string(), "https://a.example/feed".to_string())],
+        )];
         let xml = build(&groups, &[]);
         let back = parse(&xml).unwrap();
         assert_eq!(back.len(), 1);
