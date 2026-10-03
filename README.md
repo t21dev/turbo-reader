@@ -6,7 +6,7 @@
 
 **A modern RSS reader that is actually fast and actually small.**
 
-<sub>A 3 MB installer that opens in under a second and sits at 41 MB of memory with a thousand articles loaded. Rust core, React shell, built with Tauri 2.</sub>
+<sub>A 3 MB installer that opens in under a second and holds 20,000 articles in a 14 MB core process. Rust core, React shell, built with Tauri 2.</sub>
 
 <br />
 
@@ -206,10 +206,21 @@ Built with [Tauri](https://tauri.app), [feed-rs](https://github.com/feed-rs/feed
 | --- | --- |
 | Windows installer | **3.2 MB** |
 | Installed on disk | **8 MB** |
-| Memory, 37 feeds and ~1,000 articles | **41 MB, one process** |
-| Cold start to usable | **under a second** |
+| Memory, 500 feeds and 20,000 articles | **14 MB** app process, **~270 MB** with the system webview |
+| Refresh 500 feeds from a local test server | **0.2 s** |
+| Cold start to usable | **under half a second** |
 
 Measured, not estimated, on one Windows machine.
+
+**Where the memory goes.** The Rust process that holds your library, the
+database and the fetcher uses about 14 MB, and that number barely moves as the
+library grows. Most of the rest belongs to WebView2, the system webview that
+draws the window, which runs its own processes: about half of the total is its
+GPU process, the hardware-accelerated drawing every Chromium-based window pays
+for, and the page itself takes about 60 MB. The app's own JavaScript heap is
+under 5 MB. With nothing loaded the whole app sits around 220 MB; Task
+Manager's figure is lower, because about half of the GPU process's share is
+graphics memory rather than RAM.
 
 Two decisions buy most of that. Tauri uses the webview the operating system
 already ships instead of bundling a second copy of a browser, and articles stay
