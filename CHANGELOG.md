@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-04
+
 ### Added
 - Turbo Reader checks for a new release when it opens and shows "Update to"
   in the title bar when there is one, which opens the release page. Turn it off
@@ -187,7 +189,8 @@ First public release.
   to reason about, which is a failure mode browser engines do not let a page
   recover from.
 
-[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/t21dev/turbo-reader/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/t21dev/turbo-reader/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/t21dev/turbo-reader/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/t21dev/turbo-reader/releases/tag/v0.4.0
