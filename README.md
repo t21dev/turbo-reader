@@ -80,6 +80,8 @@ fn geolocation_cannot_survive_sanitising() {
 - Search across everything, pinned feeds as a row, and a band per category
 - Five layouts per category: cards, mosaic, magazine, compact and headlines,
   or auto, which decides from whether that category's feeds carry images
+- Put the sections in any order, hide the ones you do not use, give categories
+  a home order separate from the sidebar, and choose small, medium or large cards
 - Ranking with no API key and no network: freshness, unread, how often you
   open a feed, the feeds you pinned, and your own interest and mute lists.
   A line in slashes is a regular expression, anything else a substring

@@ -1,7 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowRight, Pin, Search, Star } from "lucide-react"
 import { api, type BandLayout, type Home as HomeData, type HomeItem, type Scope } from "@/lib/api"
-import { HOME_DEFAULTS, WINDOWS, useNow, type HomePrefs } from "@/lib/home"
+import {
+  CARD_WIDTH,
+  HOME_DEFAULTS,
+  WINDOWS,
+  ordered,
+  useNow,
+  type CardSize,
+  type HomePrefs,
+  type Section,
+} from "@/lib/home"
 import { cn, relativeTime } from "@/lib/utils"
 import { FeedIcon } from "@/components/FeedIcon"
 import { CoverFallback } from "@/components/CoverFallback"
@@ -77,8 +86,14 @@ export function Home({ prefs, onPrefs, onOpen, onStar, onScope, revision }: Prop
 
   const bands = useMemo(
     () =>
-      (data?.bands ?? []).filter((b) => !prefs.hiddenGroups.includes(String(b.groupId ?? "none"))),
-    [data, prefs.hiddenGroups],
+      ordered(
+        (data?.bands ?? []).filter(
+          (b) => !prefs.hiddenGroups.includes(String(b.groupId ?? "none")),
+        ),
+        (b) => String(b.groupId ?? "none"),
+        prefs.groupOrder,
+      ),
+    [data, prefs.hiddenGroups, prefs.groupOrder],
   )
 
   const dateLine = now.toLocaleDateString(undefined, {
@@ -93,6 +108,149 @@ export function Home({ prefs, onPrefs, onOpen, onStar, onScope, revision }: Prop
   })
 
   const topHeadline = bands[0]?.items[0] ?? null
+
+  // One block per section, so the reader's order decides the page. While a
+  // search is live its results stand in for pinned feeds and categories.
+  const sections: Record<Section, React.ReactNode> = {
+    glance: (
+      <>
+        {/* Glance */}
+        {prefs.bands.glance && data && (
+          <div className="animate-rise mt-7 flex flex-wrap items-end gap-x-8 gap-y-4">
+            {WINDOWS.map((w) => (
+              <button
+                key={w.value}
+                type="button"
+                onClick={() => onPrefs({ ...prefs, window: w.value })}
+                className={cn(
+                  "group text-left transition-colors duration-150 ease-out",
+                  prefs.window === w.value ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
+                <span className="tabular block text-[1.6rem] font-semibold leading-none tracking-tight">
+                  {data.counts[w.countKey].toLocaleString()}
+                </span>
+                <span
+                  className={cn(
+                    "mt-1.5 block text-[11px] uppercase tracking-wider",
+                    prefs.window === w.value
+                      ? "text-system"
+                      : "text-subtle group-hover:text-muted-foreground",
+                  )}
+                >
+                  {w.label}
+                </span>
+              </button>
+            ))}
+            <div className="flex-1" />
+            <Sparkline buckets={data.buckets} />
+          </div>
+        )}
+      </>
+    ),
+    search: (
+      <>
+        {/* Search */}
+        {prefs.bands.search && (
+          <div className="animate-rise relative mt-7">
+            <Search
+              size={14}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-subtle"
+            />
+            <input
+              id="turbo-home-search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && setQuery("")}
+              placeholder="Search everything"
+              className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-[13px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
+            />
+          </div>
+        )}
+        {results && (
+          <div className="mt-6">
+            <SectionHead title={`${results.length} result${results.length === 1 ? "" : "s"}`} />
+            {results.length === 0 ? (
+              <p className="py-10 text-center text-[12px] text-subtle">
+                Nothing in your feeds matches that.
+              </p>
+            ) : (
+              <Headlines items={results} onOpen={onOpen} onStar={onStar} />
+            )}
+          </div>
+        )}
+      </>
+    ),
+    pinned: !results && (
+      <>
+        {/* Pinned */}
+        {prefs.bands.pinned && (data?.pinned.length ?? 0) > 0 && (
+          <div className="animate-rise mt-7">
+            <SectionHead title="Pinned" icon={<Pin size={12} />} />
+            <div className="mt-2.5 flex flex-wrap gap-2">
+              {data!.pinned.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => onScope("source", p.id)}
+                  className={cn(
+                    "row flex h-9 items-center gap-2 border border-border bg-card px-3 text-[12.5px]",
+                    "transition-[transform,border-color] duration-200 ease-out",
+                    "hover:-translate-y-[2px] hover:border-system/60 active:translate-y-0",
+                  )}
+                >
+                  <FeedIcon source={{ name: p.name, iconUrl: p.iconUrl }} size={14} />
+                  <span className="max-w-[18ch] truncate">{p.name}</span>
+                  {p.unread > 0 && (
+                    <span className="tabular rounded-full bg-secondary px-1.5 text-[10.5px] text-muted-foreground">
+                      {p.unread > 999 ? "999+" : p.unread}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    ),
+    categories: !results && (
+      <>
+        {/* Categories */}
+        {prefs.bands.categories &&
+          bands.map((band, i) => (
+            <div
+              key={`${band.groupId ?? "none"}`}
+              className="animate-rise mt-9"
+              style={{ animationDelay: `${Math.min(i, 8) * 35}ms` }}
+            >
+              <SectionHead
+                title={band.name}
+                count={band.unread}
+                action={
+                  band.groupId !== null ? (
+                    <button
+                      type="button"
+                      onClick={() => onScope("group", band.groupId!)}
+                      className="flex items-center gap-1 text-[12px] text-subtle transition-colors duration-150 hover:text-foreground"
+                    >
+                      See all
+                      <ArrowRight size={12} />
+                    </button>
+                  ) : undefined
+                }
+              />
+              <BandBody
+                layout={band.layout}
+                size={prefs.cardSize}
+                items={band.items}
+                onOpen={onOpen}
+                onStar={onStar}
+              />
+            </div>
+          ))}
+      </>
+    ),
+  }
 
   return (
     <section className="min-h-0 flex-1 overflow-y-auto bg-background">
@@ -127,138 +285,16 @@ export function Home({ prefs, onPrefs, onOpen, onStar, onScope, revision }: Prop
           )}
         </header>
 
-        {/* Glance */}
-        {prefs.bands.glance && data && (
-          <div className="animate-rise mt-7 flex flex-wrap items-end gap-x-8 gap-y-4">
-            {WINDOWS.map((w) => (
-              <button
-                key={w.value}
-                type="button"
-                onClick={() => onPrefs({ ...prefs, window: w.value })}
-                className={cn(
-                  "group text-left transition-colors duration-150 ease-out",
-                  prefs.window === w.value ? "text-foreground" : "text-muted-foreground",
-                )}
-              >
-                <span className="tabular block text-[1.6rem] font-semibold leading-none tracking-tight">
-                  {data.counts[w.countKey].toLocaleString()}
-                </span>
-                <span
-                  className={cn(
-                    "mt-1.5 block text-[11px] uppercase tracking-wider",
-                    prefs.window === w.value ? "text-system" : "text-subtle group-hover:text-muted-foreground",
-                  )}
-                >
-                  {w.label}
-                </span>
-              </button>
-            ))}
-            <div className="flex-1" />
-            <Sparkline buckets={data.buckets} />
-          </div>
-        )}
+        {prefs.order.map((key) => (
+          <Fragment key={key}>{sections[key]}</Fragment>
+        ))}
 
-        {/* Search */}
-        {prefs.bands.search && (
-          <div className="animate-rise relative mt-7">
-            <Search
-              size={14}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-subtle"
-            />
-            <input
-              id="turbo-home-search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Escape" && setQuery("")}
-              placeholder="Search everything"
-              className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-[13px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
-            />
-          </div>
-        )}
-
-        {results ? (
-          <div className="mt-6">
-            <SectionHead title={`${results.length} result${results.length === 1 ? "" : "s"}`} />
-            {results.length === 0 ? (
-              <p className="py-10 text-center text-[12px] text-subtle">
-                Nothing in your feeds matches that.
-              </p>
-            ) : (
-              <Headlines items={results} onOpen={onOpen} onStar={onStar} />
-            )}
-          </div>
-        ) : (
-          <>
-            {/* Pinned */}
-            {prefs.bands.pinned && (data?.pinned.length ?? 0) > 0 && (
-              <div className="animate-rise mt-7">
-                <SectionHead title="Pinned" icon={<Pin size={12} />} />
-                <div className="mt-2.5 flex flex-wrap gap-2">
-                  {data!.pinned.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => onScope("source", p.id)}
-                      className={cn(
-                        "row flex h-9 items-center gap-2 border border-border bg-card px-3 text-[12.5px]",
-                        "transition-[transform,border-color] duration-200 ease-out",
-                        "hover:-translate-y-[2px] hover:border-system/60 active:translate-y-0",
-                      )}
-                    >
-                      <FeedIcon source={{ name: p.name, iconUrl: p.iconUrl }} size={14} />
-                      <span className="max-w-[18ch] truncate">{p.name}</span>
-                      {p.unread > 0 && (
-                        <span className="tabular rounded-full bg-secondary px-1.5 text-[10.5px] text-muted-foreground">
-                          {p.unread > 999 ? "999+" : p.unread}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Categories */}
-            {prefs.bands.categories &&
-              bands.map((band, i) => (
-                <div
-                  key={`${band.groupId ?? "none"}`}
-                  className="animate-rise mt-9"
-                  style={{ animationDelay: `${Math.min(i, 8) * 35}ms` }}
-                >
-                  <SectionHead
-                    title={band.name}
-                    count={band.unread}
-                    action={
-                      band.groupId !== null ? (
-                        <button
-                          type="button"
-                          onClick={() => onScope("group", band.groupId!)}
-                          className="flex items-center gap-1 text-[12px] text-subtle transition-colors duration-150 hover:text-foreground"
-                        >
-                          See all
-                          <ArrowRight size={12} />
-                        </button>
-                      ) : undefined
-                    }
-                  />
-                  <BandBody
-                    layout={band.layout}
-                    items={band.items}
-                    onOpen={onOpen}
-                    onStar={onStar}
-                  />
-                </div>
-              ))}
-
-            {!loading && bands.length === 0 && (data?.pinned.length ?? 0) === 0 && (
-              <p className="animate-rise py-16 text-center text-[12px] leading-relaxed text-subtle">
-                Nothing published in this window.
-                <br />
-                Try a wider one, or refresh with <span className="text-foreground">r</span>.
-              </p>
-            )}
-          </>
+        {!results && !loading && bands.length === 0 && (data?.pinned.length ?? 0) === 0 && (
+          <p className="animate-rise py-16 text-center text-[12px] leading-relaxed text-subtle">
+            Nothing published in this window.
+            <br />
+            Try a wider one, or refresh with <span className="text-foreground">r</span>.
+          </p>
         )}
       </div>
     </section>
@@ -293,34 +329,39 @@ function SectionHead({
 
 function BandBody({
   layout,
+  size,
   items,
   onOpen,
   onStar,
 }: {
   layout: BandLayout
+  size: CardSize
   items: HomeItem[]
   onOpen: (i: HomeItem) => void
   onStar: (i: HomeItem) => void
 }) {
   if (layout === "headlines") return <Headlines items={items} onOpen={onOpen} onStar={onStar} />
   if (layout === "magazine") return <Magazine items={items} onOpen={onOpen} onStar={onStar} />
-  return <Grid layout={layout} items={items} onOpen={onOpen} onStar={onStar} />
+  return <Grid layout={layout} size={size} items={items} onOpen={onOpen} onStar={onStar} />
 }
 
 /** Cards, compact cards, or a mosaic where the lead takes four tiles. */
 function Grid({
   layout,
+  size,
   items,
   onOpen,
   onStar,
 }: {
   layout: BandLayout
+  size: CardSize
   items: HomeItem[]
   onOpen: (i: HomeItem) => void
   onStar: (i: HomeItem) => void
 }) {
   const mosaic = layout === "mosaic"
-  const min = layout === "compact" ? 190 : mosaic ? 210 : 240
+  const widths = CARD_WIDTH[size]
+  const min = layout === "compact" ? widths.compact : mosaic ? widths.mosaic : widths.cards
   return (
     <div
       className="mt-3 grid gap-4"
@@ -448,12 +489,7 @@ function Cover({ item, aspect }: { item: HomeItem; aspect: string }) {
   const [failed, setFailed] = useState(false)
 
   if (!item.thumbnail || failed) {
-    return (
-      <CoverFallback
-        source={{ name: item.sourceName, iconUrl: null }}
-        aspect={aspect}
-      />
-    )
+    return <CoverFallback source={{ name: item.sourceName, iconUrl: null }} aspect={aspect} />
   }
   return (
     <div style={{ aspectRatio: aspect }} className="w-full overflow-hidden bg-secondary">

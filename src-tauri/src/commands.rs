@@ -26,6 +26,8 @@ pub struct Group {
     pub name: String,
     pub position: i64,
     pub expanded: bool,
+    /// How the category is laid out on home, or None for automatic.
+    pub home_layout: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -115,7 +117,7 @@ pub fn list_groups(state: State<AppState>) -> Result<Vec<Group>, String> {
     let conn = state.db.lock().map_err(e)?;
     let mut stmt = conn
         .prepare(&format!(
-            "SELECT id, name, position, expanded FROM groups ORDER BY {}",
+            "SELECT id, name, position, expanded, home_layout FROM groups ORDER BY {}",
             order_by(&conn)
         ))
         .map_err(e)?;
@@ -126,6 +128,7 @@ pub fn list_groups(state: State<AppState>) -> Result<Vec<Group>, String> {
                 name: r.get(1)?,
                 position: r.get(2)?,
                 expanded: r.get::<_, i64>(3)? != 0,
+                home_layout: r.get(4)?,
             })
         })
         .map_err(e)?

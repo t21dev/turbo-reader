@@ -675,7 +675,11 @@ export default function App() {
           onPrefs={updatePrefs}
           lastChecked={lastChecked}
           onSortChanged={afterTreeChange}
-          onHomeChanged={() => setHomeRevision((n) => n + 1)}
+          onHomeChanged={() => {
+              setHomeRevision((n) => n + 1)
+              // A category's layout lives on the group, so reload those too.
+              void loadTree()
+            }}
           onClose={() => setSettingsOpen(false)}
           confirm={setPrompt}
           onImported={async () => {

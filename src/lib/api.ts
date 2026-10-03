@@ -1,6 +1,12 @@
 import { invoke } from "@tauri-apps/api/core"
 
-export type Group = { id: number; name: string; position: number; expanded: boolean }
+export type Group = {
+  id: number
+  name: string
+  position: number
+  expanded: boolean
+  homeLayout: BandLayout | null
+}
 
 export type Source = {
   id: number

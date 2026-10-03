@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react"
-import { ChevronDown, Eye, EyeOff, Pin } from "lucide-react"
+import { ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, Pin } from "lucide-react"
 import { api, type BandLayout, type Group, type Source } from "@/lib/api"
-import { LAYOUTS, WINDOWS, type HomePrefs } from "@/lib/home"
+import {
+  LAYOUTS,
+  SECTIONS,
+  WINDOWS,
+  moved,
+  ordered,
+  type CardSize,
+  type HomePrefs,
+} from "@/lib/home"
 import { cn } from "@/lib/utils"
 
 type Props = {
@@ -31,6 +39,8 @@ export function HomeSettings({
   Field,
   Segmented,
 }: Props) {
+  // Categories in the order home shows them, which can differ from the sidebar.
+  const homeGroups = ordered(groups, (g) => String(g.id), home.groupOrder)
   return (
     <>
       <Field label="Show the home page">
@@ -87,31 +97,37 @@ export function HomeSettings({
             />
           </Field>
 
+          <Field label="Card size">
+            <Segmented
+              value={home.cardSize}
+              onChange={(v) => setHome({ cardSize: v as CardSize })}
+              options={[
+                { value: "small", label: "Small" },
+                { value: "medium", label: "Medium" },
+                { value: "large", label: "Large" },
+              ]}
+            />
+          </Field>
+
           <Field label="Sections">
-            <div className="grid grid-cols-2 gap-1.5">
-              {(
-                [
-                  ["glance", "Glance"],
-                  ["search", "Search"],
-                  ["pinned", "Pinned"],
-                  ["categories", "Categories"],
-                ] as const
-              ).map(([key, label]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setHome({ bands: { ...home.bands, [key]: !home.bands[key] } })}
-                  className={cn(
-                    "row flex h-9 items-center justify-center border text-[12px]",
-                    "transition-[background-color,border-color,transform] duration-200 ease-out active:scale-[0.97]",
-                    home.bands[key]
-                      ? "border-system bg-elevated text-foreground"
-                      : "border-border text-subtle hover:bg-secondary",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
+            <div className="space-y-1.5" data-home-sections>
+              {home.order.map((key, i) => {
+                const label = SECTIONS.find((x) => x.key === key)!.label
+                const on = home.bands[key]
+                return (
+                  <OrderRow
+                    key={key}
+                    label={label}
+                    shown={on}
+                    first={i === 0}
+                    last={i === home.order.length - 1}
+                    onToggle={() => setHome({ bands: { ...home.bands, [key]: !on } })}
+                    onMove={(by) =>
+                      setHome({ order: moved(home.order, key, by) as HomePrefs["order"] })
+                    }
+                  />
+                )
+              })}
             </div>
           </Field>
 
@@ -121,11 +137,22 @@ export function HomeSettings({
 
           {groups.length > 0 && (
             <Field label="Categories">
-              <div className="space-y-1.5">
-                {groups.map((g) => (
+              <div className="space-y-1.5" data-home-categories>
+                {homeGroups.map((g, i) => (
                   <GroupRow
                     key={g.id}
                     group={g}
+                    first={i === 0}
+                    last={i === homeGroups.length - 1}
+                    onMove={(by) =>
+                      setHome({
+                        groupOrder: moved(
+                          homeGroups.map((x) => String(x.id)),
+                          String(g.id),
+                          by,
+                        ),
+                      })
+                    }
                     hidden={home.hiddenGroups.includes(String(g.id))}
                     onToggleHidden={() =>
                       setHome({
@@ -304,17 +331,108 @@ function PinPicker({ sources, onChanged }: { sources: Source[]; onChanged: () =>
   )
 }
 
+/** Up and down buttons for anything the reader can put in order. */
+function MoveButtons({
+  label,
+  first,
+  last,
+  onMove,
+}: {
+  label: string
+  first: boolean
+  last: boolean
+  onMove: (by: -1 | 1) => void
+}) {
+  const cls =
+    "row grid h-8 w-7 shrink-0 place-items-center border border-border text-muted-foreground hover:bg-secondary hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={`Move ${label} up`}
+        title="Move up"
+        disabled={first}
+        onClick={() => onMove(-1)}
+        className={cls}
+      >
+        <ArrowUp size={12} />
+      </button>
+      <button
+        type="button"
+        aria-label={`Move ${label} down`}
+        title="Move down"
+        disabled={last}
+        onClick={() => onMove(1)}
+        className={cls}
+      >
+        <ArrowDown size={12} />
+      </button>
+    </>
+  )
+}
+
+function OrderRow({
+  label,
+  shown,
+  first,
+  last,
+  onToggle,
+  onMove,
+}: {
+  label: string
+  shown: boolean
+  first: boolean
+  last: boolean
+  onToggle: () => void
+  onMove: (by: -1 | 1) => void
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={`${shown ? "Hide" : "Show"} ${label}`}
+        aria-pressed={shown}
+        title={shown ? "Shown on home" : "Hidden from home"}
+        className={cn(
+          "row grid h-8 w-8 shrink-0 place-items-center border border-border",
+          shown ? "text-system" : "text-subtle",
+        )}
+      >
+        {shown ? <Eye size={13} /> : <EyeOff size={13} />}
+      </button>
+      <span
+        className={cn(
+          "min-w-0 flex-1 truncate text-[12px]",
+          shown ? "text-foreground" : "text-subtle",
+        )}
+      >
+        {label}
+      </span>
+      <MoveButtons label={label} first={first} last={last} onMove={onMove} />
+    </div>
+  )
+}
+
 function GroupRow({
   group,
   hidden,
+  first,
+  last,
   onToggleHidden,
+  onMove,
   onLayout,
 }: {
   group: Group
   hidden: boolean
+  first: boolean
+  last: boolean
   onToggleHidden: () => void
+  onMove: (by: -1 | 1) => void
   onLayout: (layout: BandLayout | null) => void
 }) {
+  // Kept here as well, since the group list is not reloaded after a change.
+  const [layout, setLayout] = useState<string>(group.homeLayout ?? "")
   return (
     <div className="flex items-center gap-1.5">
       <button
@@ -331,9 +449,14 @@ function GroupRow({
       <span className="min-w-0 flex-1 truncate text-[12px] text-muted-foreground">
         {group.name}
       </span>
+      <MoveButtons label={group.name} first={first} last={last} onMove={onMove} />
       <select
-        defaultValue=""
-        onChange={(e) => onLayout((e.target.value || null) as BandLayout | null)}
+        aria-label={`Layout for ${group.name}`}
+        value={layout}
+        onChange={(e) => {
+          setLayout(e.target.value)
+          onLayout((e.target.value || null) as BandLayout | null)
+        }}
         title="How this category is laid out. Auto decides from whether its feeds carry images."
         className="h-8 shrink-0 rounded-md border border-border bg-background px-2 text-[11.5px] text-muted-foreground outline-none focus:border-system"
       >

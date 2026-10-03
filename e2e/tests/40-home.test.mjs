@@ -157,17 +157,12 @@ test("D7b editing both lists quickly keeps both, and closing mid-edit still save
 test("D8 sections and categories switched off leave home", shot("D8", async () => {
   await goHome()
   await ctx.settings()
-  const search = await ctx.s.waitFor(
-    () => ctx.s.exec(`return [...document.querySelectorAll('[role=dialog] button')].find(b => b.textContent.trim() === 'Search') ?? null`),
-    "the Search section toggle",
-  )
-  await ctx.s.exec(`arguments[0].click()`, search)
+  await (await ctx.s.waitFor(() => ctx.s.byLabel("Hide Search"), "the Search section toggle")).click()
   await ctx.closeSettings()
   await ctx.s.waitFor(() => ctx.s.exec(`return !document.getElementById('turbo-home-search')`), "the search box gone")
 
   await ctx.settings()
-  const back = await ctx.s.exec(`return [...document.querySelectorAll('[role=dialog] button')].find(b => b.textContent.trim() === 'Search')`)
-  await ctx.s.exec(`arguments[0].click()`, back)
+  await (await ctx.s.byLabel("Show Search")).click()
   const eye = await ctx.s.exec(
     `const row = [...document.querySelectorAll('[role=dialog] span')].find(s => s.textContent.trim() === 'News')?.parentElement;
      return row?.querySelector('button') ?? null`,
@@ -194,4 +189,90 @@ test("D9 a category layout override sticks", shot("D9", async () => {
   ctx = await ctx.restart()
   const home = await ctx.home({ window: "today" })
   assert.equal(home.bands.find((b) => b.name === "News").layout, "headlines", "still headlines after restart")
+}))
+
+/* ---------------------------------------------------------- arranging home */
+
+const bandTitles = () =>
+  ctx.s.exec(`return [...document.querySelectorAll('h2')].map(h => h.textContent.trim())`)
+/** True when the first element comes before the second in the page. */
+const before_ = (a, b) =>
+  ctx.s.exec(
+    `const a = ${a}, b = ${b};
+     return !!a && !!b && !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)`,
+  )
+const SEARCH = `document.getElementById('turbo-home-search')`
+const GLANCE = `[...document.querySelectorAll('section button')].find(b => /This week/i.test(b.textContent) && /[0-9]/.test(b.textContent))`
+
+test("D10 sections can be put in a different order, and it sticks", shot("D10", async () => {
+  await goHome()
+  assert.ok(await before_(GLANCE, SEARCH), "glance comes first by default")
+  await ctx.settings()
+  const up = await ctx.s.waitFor(() => ctx.s.byLabel("Move Search up"), "the move button")
+  assert.equal(await ctx.s.exec(`return document.querySelector('[aria-label="Move Glance up"]').disabled`), true, "the first one cannot go higher")
+  await up.click()
+  await ctx.closeSettings()
+  await ctx.s.waitFor(() => before_(SEARCH, GLANCE), "search to move above glance")
+
+  await ctx.reloadAndCheck()
+  await goHome()
+  assert.ok(await before_(SEARCH, GLANCE), "still above after reopening")
+}))
+
+test("D11 categories have their own order on home, apart from the sidebar", shot("D11", async () => {
+  const tech = await ctx.s.invoke("create_group", { name: "Tech" })
+  await ctx.s.invoke("add_source", { url: ctx.url("/feed.json"), groupId: tech })
+  await ctx.s.invoke("set_group_layout", { id: gid, layout: null })
+  await ctx.reloadUi()
+  await goHome()
+  // a month, so both feeds have something to show
+  await (await ctx.s.waitFor(() => ctx.s.byText("section button", "This month"), "This month")).click()
+  await ctx.s.waitFor(async () => (await bandTitles()).includes("Tech"), "the Tech band")
+  const order = (t) => [t.indexOf("News"), t.indexOf("Tech")]
+  let [news, techAt] = order(await bandTitles())
+  assert.ok(news < techAt, "sidebar order to begin with")
+
+  await ctx.settings()
+  await (await ctx.s.waitFor(() => ctx.s.byLabel("Move Tech up"), "Tech's move button")).click()
+  await ctx.closeSettings()
+  await ctx.s.waitFor(async () => {
+    const [n, t] = order(await bandTitles())
+    return t < n
+  }, "Tech above News on home")
+
+  const sidebar = (await ctx.groups()).map((g) => g.name)
+  assert.ok(sidebar.indexOf("News") < sidebar.indexOf("Tech"), "the sidebar keeps its own order")
+
+  await ctx.reloadAndCheck()
+  await goHome()
+  ;[news, techAt] = order(await bandTitles())
+  assert.ok(techAt < news, "still first after reopening")
+}))
+
+test("D12 card size widens the cards, and the layout picker shows what was chosen", shot("D12", async () => {
+  await goHome()
+  await ctx.settings()
+  const select = await ctx.s.waitFor(() => ctx.s.byLabel("Layout for Tech"), "Tech's layout picker")
+  await ctx.s.exec(
+    `const el = arguments[0];
+     Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(el, 'cards');
+     el.dispatchEvent(new Event('change', { bubbles: true }))`,
+    select,
+  )
+  await (await ctx.s.byText("[role=dialog] button", "Large")).click()
+  await ctx.closeSettings()
+
+  const columns = () =>
+    ctx.s.exec(
+      `const h = [...document.querySelectorAll('h2')].find(h => h.textContent.trim() === 'Tech');
+       return h?.closest('div.mt-9')?.querySelector('.grid')?.style.gridTemplateColumns ?? null`,
+    )
+  await ctx.s.waitFor(async () => /minmax\(320px/.test((await columns()) ?? ""), "large cards")
+
+  await ctx.settings()
+  const shown = await ctx.s.exec(`return document.querySelector('[aria-label="Layout for Tech"]').value`)
+  assert.equal(shown, "cards", "the picker shows the saved layout, not Auto")
+  await (await ctx.s.byText("[role=dialog] button", "Small")).click()
+  await ctx.closeSettings()
+  await ctx.s.waitFor(async () => /minmax\(190px/.test((await columns()) ?? ""), "small cards")
 }))
