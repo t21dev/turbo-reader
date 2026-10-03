@@ -7,7 +7,54 @@ on:
   workflow_dispatch:
 
 jobs:
+  # One draft release, created before any build starts. The build jobs used
+  # to each create it if they found none, and running in parallel they all
+  # found none: v0.4.0 came out as three drafts with the files split up.
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_id: ${{ steps.create.outputs.id }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create the draft release
+        id: create
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION=${TAG#v}
+          NOTES=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d' | tail -n +2)
+          if [ -z "$NOTES" ]; then
+            NOTES="See CHANGELOG.md for details."
+          fi
+          cat > body.md <<EOF
+          ## What's changed
+          $NOTES
+
+          ## Downloads
+          Pick the installer for your platform below.
+
+          - Windows: \`.msi\` or \`.exe\`
+          - macOS: \`.dmg\`, with separate Apple silicon and Intel builds
+          - Linux: \`.AppImage\` or \`.deb\`
+
+          ## Note on unsigned builds
+          These binaries are not code-signed. Windows SmartScreen and macOS
+          Gatekeeper will warn on first run. On macOS, right-click the app and
+          choose Open, or run \`xattr -cr "/Applications/Turbo Reader.app"\`.
+          EOF
+          ID=$(gh api -X POST "repos/${{ github.repository }}/releases" \
+            -f tag_name="$TAG" -f name="Turbo Reader v$VERSION" \
+            -F draft=true -F prerelease=false -F body=@body.md --jq .id)
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+
   release:
+    needs: create-release
     permissions:
       contents: write
     strategy:
@@ -54,41 +101,10 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Extract changelog
-        id: changelog
-        shell: bash
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          CHANGELOG=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d' | tail -n +2)
-          if [ -z "$CHANGELOG" ]; then
-            CHANGELOG="See CHANGELOG.md for details."
-          fi
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
       - name: Build the app
         uses: tauri-apps/tauri-action@v0.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Turbo Reader v__VERSION__'
-          releaseBody: |
-            ## What's changed
-            ${{ steps.changelog.outputs.notes }}
-
-            ## Downloads
-            Pick the installer for your platform below.
-
-            - Windows: `.msi` or `.exe`
-            - macOS: `.dmg`, with separate Apple silicon and Intel builds
-            - Linux: `.AppImage` or `.deb`
-
-            ## Note on unsigned builds
-            These binaries are not code-signed. Windows SmartScreen and macOS
-            Gatekeeper will warn on first run. On macOS, right-click the app and
-            choose Open, or run `xattr -cr "/Applications/Turbo Reader.app"`.
-          releaseDraft: true
-          prerelease: false
+          releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
