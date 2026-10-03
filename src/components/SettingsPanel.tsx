@@ -19,6 +19,7 @@ import { openUrl } from "@tauri-apps/plugin-opener"
 import { api, type Group, type Source, type Stats, type UpdateCheck } from "@/lib/api"
 import { type HomePrefs } from "@/lib/home"
 import { REFRESH_CHOICES, sinceLabel, type AppPrefs } from "@/lib/prefs"
+import { recordUpdateCheck } from "@/lib/updates"
 import { HomeSettings } from "@/components/HomeSettings"
 import type { PromptSpec } from "@/components/Prompt"
 import {
@@ -328,7 +329,10 @@ export function SettingsPanel({
     setChecking(true)
     setUpdateError(null)
     try {
-      setUpdate(await api.checkForUpdates())
+      const result = await api.checkForUpdates()
+      setUpdate(result)
+      // So the title bar's update pill agrees with what this says.
+      recordUpdateCheck(result)
     } catch (err) {
       setUpdateError(String(err))
     } finally {
@@ -627,6 +631,21 @@ export function SettingsPanel({
         )}
 
         <Section title="Updates" hidden={onlyHome}>
+          <Field label="Check at launch">
+            <Segmented
+              value={prefs.updateCheck ? "on" : "off"}
+              onChange={(v) => onPrefs({ ...prefs, updateCheck: v === "on" })}
+              options={[
+                { value: "on", label: "On" },
+                { value: "off", label: "Off" },
+              ]}
+            />
+            <p className="mt-1.5 text-[11px] leading-relaxed text-subtle">
+              Asks GitHub for the newest release each time Turbo Reader opens, and shows
+              a note in the title bar when there is one. Nothing about your feeds is sent.
+            </p>
+          </Field>
+
           <button
             type="button"
             onClick={checkUpdates}

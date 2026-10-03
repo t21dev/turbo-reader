@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Home as HomeIcon, Keyboard, LayoutGrid, List as ListIcon, RefreshCw, Settings2 } from "lucide-react"
 import { listen } from "@tauri-apps/api/event"
+import { useUpdateCheck } from "@/lib/updates"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { TitleBar } from "@/components/TitleBar"
 import { Sidebar } from "@/components/Sidebar"
@@ -64,6 +65,8 @@ export default function App() {
   const [prompt, setPrompt] = useState<PromptSpec | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [prefs, setPrefs] = useState<AppPrefs>(readPrefs)
+  // A newer release on GitHub, checked at launch unless switched off.
+  const update = useUpdateCheck(prefs.updateCheck)
   // When any feed was last checked, from the database, so it is right after a
   // restart and reflects scheduled refreshes as well as manual ones.
   const lastChecked = useMemo(() => {
@@ -517,6 +520,7 @@ export default function App() {
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden">
       <TitleBar
+        update={update}
         unread={totalUnread}
         busy={busy}
         sidebarOpen={sidebarOpen}

@@ -118,7 +118,7 @@ fn geolocation_cannot_survive_sanitising() {
 - Copy link, save as Markdown, save as PDF, QR code to a phone
 - Hide an article, or mark all as read from 1, 3 or 7 days back
 - Keyboard first, with a shortcut sheet on `?`
-- Check for updates, from Settings
+- Checks for a new release at launch and shows it in the title bar (can be switched off), plus a manual check in Settings
 
 **Appearance**
 - Light, dark, or follow the system

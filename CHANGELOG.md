@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Turbo Reader checks for a new release when it opens and shows "Update to"
+  in the title bar when there is one, which opens the release page. Turn it off
+  under Settings > Updates, where the manual check still lives.
+
+### Changed
+- Articles without an image show a faint picture outline instead of the feed
+  icon in a frosted chip, which looked like a video's play button.
+
 ## [0.6.0] - 2026-10-04
 
 ### Added

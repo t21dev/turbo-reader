@@ -1,4 +1,4 @@
-import { FeedIcon } from "@/components/FeedIcon"
+import { Image as ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 /** A stable hue per source, so the same feed always looks the same and two
@@ -19,8 +19,9 @@ function hueOf(name: string): number {
  * The alternative is a card that is mostly empty, or a stretched grid with
  * holes in it. This keeps the shape of the row intact without pretending to be
  * a photograph: a low-contrast wash tinted from the source's own hue, a soft
- * highlight, and the feed's favicon at the middle, quiet enough to read as
- * texture rather than as content.
+ * highlight, and a faint picture outline, the usual sign for "no image here".
+ * It used to centre the feed's icon in a frosted chip, which on a picture
+ * frame read as a video's play button.
  */
 export function CoverFallback({
   source,
@@ -63,9 +64,7 @@ export function CoverFallback({
       <div className="absolute inset-0 ring-1 ring-inset ring-foreground/[0.045]" />
 
       <div className="absolute inset-0 grid place-items-center">
-        <div className="grid h-9 w-9 place-items-center rounded-[10px] bg-background/45 opacity-80 ring-1 ring-inset ring-foreground/[0.06] backdrop-blur-[2px]">
-          <FeedIcon source={source} size={17} className="opacity-90" />
-        </div>
+        <ImageIcon size={26} strokeWidth={1.25} className="text-foreground/20" />
       </div>
     </div>
   )

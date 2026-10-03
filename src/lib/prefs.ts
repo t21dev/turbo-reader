@@ -6,6 +6,8 @@ export type AppPrefs = {
   feedSort: "manual" | "alpha"
   /** Play YouTube videos inside the reader rather than in the browser. */
   youtubeInline: boolean
+  /** Ask GitHub for a newer release at launch. */
+  updateCheck: boolean
 }
 
 export const REFRESH_CHOICES = [0, 15, 30, 60, 180] as const
@@ -14,6 +16,7 @@ export const PREF_DEFAULTS: AppPrefs = {
   refreshMinutes: 30,
   feedSort: "manual",
   youtubeInline: false,
+  updateCheck: true,
 }
 
 const KEY = "turbo-prefs"
@@ -29,6 +32,7 @@ export function readPrefs(): AppPrefs {
         : PREF_DEFAULTS.refreshMinutes,
       feedSort: o.feedSort === "alpha" ? "alpha" : "manual",
       youtubeInline: o.youtubeInline === true,
+      updateCheck: o.updateCheck !== false,
     }
   } catch {
     return PREF_DEFAULTS

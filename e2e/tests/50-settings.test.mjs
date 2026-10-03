@@ -194,3 +194,27 @@ test("E10 a custom accent from the picker or a typed hex code", shot("E10", asyn
   assert.equal(saved, "#111111")
   await ctx.closeSettings()
 }))
+
+test("E11 update check: a note in the title bar, a setting to stop it, and the manual check", shot("E11", async () => {
+  const pill = () => ctx.s.exec(`return [...document.querySelectorAll('button')].find(b => /Update to/.test(b.textContent))?.textContent.trim() ?? null`)
+  // A check that already found a newer release: the note shows after a reload.
+  await ctx.s.exec(`localStorage.setItem('turbo-update-check', JSON.stringify({ at: Date.now(), latest: '99.0.0', url: 'https://github.com/t21dev/turbo-reader/releases/tag/v99.0.0' }))`)
+  await ctx.reloadUi()
+  await ctx.s.waitFor(async () => /Update to 99\.0\.0/.test((await pill()) ?? ""), "the update note in the title bar")
+
+  // Switched off, the note goes away.
+  await ctx.settings()
+  await segmentIn("Check at launch", "Off")
+  await ctx.s.waitFor(async () => (await pill()) === null, "the note to go when checking is off")
+  const saved = await ctx.s.exec(`return JSON.parse(localStorage.getItem('turbo-prefs')).updateCheck`)
+  assert.equal(saved, false, "the setting is saved")
+  await segmentIn("Check at launch", "On")
+  await ctx.s.waitFor(async () => (await pill()) !== null, "back on")
+
+  // A manual check that finds nothing newer clears the note, in both places.
+  await ctx.trap("check_for_updates", { current: "0.6.0", latest: "0.6.0", newer: false, url: "https://github.com/t21dev/turbo-reader/releases/tag/v0.6.0", published: "2026-10-04" })
+  await (await ctx.s.byText("[role=dialog] button", "Check for updates")).click()
+  await ctx.waitText("Up to date on")
+  await ctx.s.waitFor(async () => (await pill()) === null, "the note to clear after an up-to-date check")
+  await ctx.closeSettings()
+}))

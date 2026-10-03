@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react"
+import { openUrl } from "@tauri-apps/plugin-opener"
+import { ArrowUpCircle, PanelLeftClose, PanelLeftOpen } from "lucide-react"
 import { isMac } from "@/lib/platform"
 import { cn } from "@/lib/utils"
 
@@ -12,12 +13,15 @@ export function TitleBar({
   busy,
   sidebarOpen,
   onToggleSidebar,
+  update,
 }: {
   children?: ReactNode
   unread: number
   busy: boolean
   sidebarOpen: boolean
   onToggleSidebar: () => void
+  /** A newer release, shown as a pill that opens its page. */
+  update?: { latest: string; url: string } | null
 }) {
   const [isMaximized, setIsMaximized] = useState(false)
 
@@ -87,6 +91,17 @@ export function TitleBar({
             </span>
           )}
           {busy && <span className="ml-0.5 text-[11px] font-medium text-subtle">Refreshing</span>}
+          {update && (
+            <button
+              type="button"
+              onClick={() => void openUrl(update.url)}
+              title={`Turbo Reader ${update.latest} is out. Open the release page.`}
+              className="ml-1 flex h-6 items-center gap-1.5 rounded-full border border-system/40 px-2.5 text-[11px] font-medium text-system transition-colors duration-150 hover:bg-system/10"
+            >
+              <ArrowUpCircle size={12} />
+              Update to <span className="tabular">{update.latest}</span>
+            </button>
+          )}
         </div>
       </div>
 
