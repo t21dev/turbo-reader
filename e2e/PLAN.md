@@ -132,7 +132,7 @@ answers 304 to a matching `If-None-Match`
 
 ## Results
 
-86 tests across 9 files, all passing against the real app (about four and a
+87 tests across 9 files, all passing against the real app (about four and a
 half minutes). Every flow above has at least one test.
 
 Bugs the suite found, all fixed:

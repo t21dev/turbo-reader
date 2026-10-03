@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- A custom accent colour. The last swatch opens the colour picker, and a hex
+  box takes a typed or pasted code. If the colour would be hard to see on the
+  current background, it is lightened or darkened a little.
+
 ## [0.4.0] - 2026-10-03
 
 ### Added

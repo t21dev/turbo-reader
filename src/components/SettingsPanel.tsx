@@ -12,6 +12,7 @@ import {
   ArrowUpCircle,
   Github,
   MessageSquare,
+  Pipette,
 } from "lucide-react"
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog"
 import { openUrl } from "@tauri-apps/plugin-opener"
@@ -23,6 +24,8 @@ import type { PromptSpec } from "@/components/Prompt"
 import {
   ACCENTS,
   LINE_WIDTHS,
+  accentHsl,
+  normalizeHex,
   READER_FONTS,
   READER_SIZES,
   useTheme,
@@ -50,6 +53,73 @@ function Section({
       <h3 className="mb-3 text-[11px] font-medium uppercase tracking-wider text-subtle">{title}</h3>
       {children}
     </section>
+  )
+}
+
+/** The eighth swatch: the system colour picker, showing the custom colour. */
+function CustomSwatch() {
+  const theme = useTheme()
+  const on = theme.accent === "custom"
+  return (
+    <label
+      title="Custom colour"
+      className={cn(
+        "relative grid h-7 cursor-pointer place-items-center overflow-hidden rounded-md border-2 transition-[border-color,transform] duration-200 ease-out active:scale-[0.94]",
+        on ? "border-foreground" : "border-transparent",
+      )}
+      style={{
+        background: on
+          ? `hsl(${accentHsl("custom", theme.customAccent, theme.resolved)})`
+          : "conic-gradient(from 0deg, #f43f5e, #f59e0b, #22c55e, #06b6d4, #6366f1, #d946ef, #f43f5e)",
+      }}
+      onClick={() => theme.set("accent", "custom")}
+    >
+      <Pipette size={12} className={on ? "text-background" : "text-white drop-shadow"} />
+      <input
+        type="color"
+        aria-label="Custom accent colour"
+        value={theme.customAccent}
+        onChange={(e) => {
+          theme.set("customAccent", e.target.value)
+          theme.set("accent", "custom")
+        }}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+      />
+    </label>
+  )
+}
+
+/** Type or paste a hex code. Applied as soon as it is a whole colour. */
+function HexInput() {
+  const theme = useTheme()
+  const [text, setText] = useState(theme.customAccent)
+  // Follow the picker when it changes the colour.
+  useEffect(() => setText(theme.customAccent), [theme.customAccent])
+  const valid = normalizeHex(text) !== null
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <input
+        aria-label="Accent hex code"
+        value={text}
+        spellCheck={false}
+        maxLength={7}
+        onChange={(e) => {
+          setText(e.target.value)
+          const hex = normalizeHex(e.target.value)
+          if (hex) theme.set("customAccent", hex)
+        }}
+        onBlur={() => setText(theme.customAccent)}
+        className={cn(
+          "h-8 w-28 rounded-md border bg-secondary px-2.5 font-mono text-[12px] uppercase outline-none transition-colors duration-150 ease-out",
+          valid ? "border-input focus:border-system" : "border-destructive",
+        )}
+      />
+      <p className="text-[11px] leading-snug text-subtle">
+        {valid
+          ? "Lightened or darkened a little if it would be hard to read."
+          : "Use six hex digits, like #4f8ff7."}
+      </p>
+    </div>
   )
 }
 
@@ -343,7 +413,7 @@ export function SettingsPanel({
           </Field>
 
           <Field label="Accent">
-            <div className="grid grid-cols-7 gap-1.5">
+            <div className="grid grid-cols-8 gap-1.5">
               {(Object.keys(ACCENTS) as AccentKey[]).map((key) => (
                 <button
                   key={key}
@@ -357,7 +427,9 @@ export function SettingsPanel({
                   style={{ background: `hsl(${ACCENTS[key][theme.resolved]})` }}
                 />
               ))}
+              <CustomSwatch />
             </div>
+            {theme.accent === "custom" && <HexInput />}
           </Field>
 
           <Field label={`Interface size · ${activeScale.label} ${Math.round(scale * 100)}%`}>

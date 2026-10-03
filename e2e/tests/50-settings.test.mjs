@@ -149,3 +149,48 @@ test("E9 Escape and the backdrop both close settings", shot("E9", async () => {
   await ctx.s.exec(`document.querySelector('[role=dialog]').parentElement.click()`)
   await ctx.s.waitFor(() => ctx.s.exec(`return !document.getElementById('settings-title')`), "the backdrop to close")
 }))
+
+test("E10 a custom accent from the picker or a typed hex code", shot("E10", async () => {
+  await ctx.settings()
+  await segment("Dark")
+  const accent = async () => (await root()).system
+  const picker = await ctx.s.waitFor(() => ctx.s.byLabel("Custom accent colour"), "the colour picker")
+  // Opening the native picker would block the session, so set it as the
+  // picker would and fire the same event.
+  await ctx.s.exec(
+    `const el = arguments[0];
+     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, '#ff8800');
+     el.dispatchEvent(new Event('input', { bubbles: true }))`,
+    picker,
+  )
+  await ctx.s.waitFor(async () => (await accent()).startsWith("32 100% "), "orange from the picker")
+
+  const hex = await ctx.s.waitFor(() => ctx.s.byLabel("Accent hex code"), "the hex box")
+  assert.equal((await hex.prop("value")).toLowerCase(), "#ff8800", "the box follows the picker")
+  await hex.click()
+  await ctx.s.press("a", { ctrl: true })
+  await ctx.s.type("#3a7")
+  await ctx.s.waitFor(async () => (await accent()).startsWith("154 54% "), "the short hex code applied")
+
+  await ctx.s.press("a", { ctrl: true })
+  await ctx.s.type("zz")
+  await ctx.waitText("Use six hex digits")
+  assert.ok((await accent()).startsWith("154 54% "), "a half-typed code changes nothing")
+
+  // near black on a dark background is lifted so it can still be seen
+  await ctx.s.press("a", { ctrl: true })
+  await ctx.s.type("#111111")
+  await ctx.s.waitFor(async () => (await accent()) === "0 0% 55%", "near black lifted to readable")
+
+  await ctx.closeSettings()
+  await ctx.reloadAndCheck()
+  assert.equal(await accent(), "0 0% 55%", "kept after reopening")
+
+  // a preset still wins when picked, and the custom colour is remembered
+  await ctx.settings()
+  await ctx.s.exec(`document.querySelector('[role=dialog] button[title="Teal"]').click()`)
+  await ctx.s.waitFor(async () => (await accent()).startsWith("172 "), "teal")
+  const saved = await ctx.s.exec(`return JSON.parse(localStorage.getItem('turbo-theme')).customAccent`)
+  assert.equal(saved, "#111111")
+  await ctx.closeSettings()
+}))
