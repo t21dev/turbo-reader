@@ -15,13 +15,7 @@ import {
 } from "lucide-react"
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog"
 import { openUrl } from "@tauri-apps/plugin-opener"
-import {
-  api,
-  type Group,
-  type Source,
-  type Stats,
-  type UpdateCheck,
-} from "@/lib/api"
+import { api, type Group, type Source, type Stats, type UpdateCheck } from "@/lib/api"
 import { type HomePrefs } from "@/lib/home"
 import { REFRESH_CHOICES, sinceLabel, type AppPrefs } from "@/lib/prefs"
 import { HomeSettings } from "@/components/HomeSettings"
@@ -39,9 +33,20 @@ import { UI_SCALES, setScale, useScale } from "@/lib/scale"
 import { useDismissible } from "@/lib/presence"
 import { cn } from "@/lib/utils"
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  id,
+  hidden,
+  children,
+}: {
+  title: string
+  id?: string
+  hidden?: boolean
+  children: React.ReactNode
+}) {
+  if (hidden) return null
   return (
-    <section className="border-t border-border px-5 py-5 first:border-t-0">
+    <section id={id} className="border-t border-border px-5 py-5 first:border-t-0">
       <h3 className="mb-3 text-[11px] font-medium uppercase tracking-wider text-subtle">{title}</h3>
       {children}
     </section>
@@ -111,6 +116,7 @@ export function SettingsPanel({
   lastChecked,
   onSortChanged,
   confirm,
+  focus,
 }: {
   onClose: () => void
   onImported: () => void
@@ -125,7 +131,10 @@ export function SettingsPanel({
   onSortChanged: () => void
   /** Ask before doing something that cannot be undone. */
   confirm: (spec: PromptSpec) => void
+  /** Open on one section alone, as the home page's Customize button does. */
+  focus?: "home"
 }) {
+  const [onlyHome, setOnlyHome] = useState(focus === "home")
   const theme = useTheme()
   const scale = useScale()
   const [stats, setStats] = useState<Stats | null>(null)
@@ -137,7 +146,10 @@ export function SettingsPanel({
   const { closing, dismiss } = useDismissible(onClose, 180)
 
   useEffect(() => {
-    api.stats().then(setStats).catch(() => undefined)
+    api
+      .stats()
+      .then(setStats)
+      .catch(() => undefined)
   }, [])
 
   useEffect(() => {
@@ -182,9 +194,30 @@ export function SettingsPanel({
   }
 
   const modes: { value: Mode; label: React.ReactNode }[] = [
-    { value: "light", label: <><Sun size={13} /> Light</> },
-    { value: "dark", label: <><Moon size={13} /> Dark</> },
-    { value: "system", label: <><Monitor size={13} /> System</> },
+    {
+      value: "light",
+      label: (
+        <>
+          <Sun size={13} /> Light
+        </>
+      ),
+    },
+    {
+      value: "dark",
+      label: (
+        <>
+          <Moon size={13} /> Dark
+        </>
+      ),
+    },
+    {
+      value: "system",
+      label: (
+        <>
+          <Monitor size={13} /> System
+        </>
+      ),
+    },
   ]
 
   const activeScale = UI_SCALES.find((s) => s.value === scale) ?? UI_SCALES[1]
@@ -253,9 +286,24 @@ export function SettingsPanel({
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-popover/90 px-5 py-4 backdrop-blur">
           <h2 id="settings-title" className="text-[14px] font-semibold tracking-tight">
-            Settings
+            {onlyHome ? "Customize home" : "Settings"}
           </h2>
           <div className="flex items-center gap-0.5">
+            {onlyHome && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOnlyHome(false)
+                  // Keep the home section in view once the rest appears.
+                  requestAnimationFrame(() =>
+                    document.getElementById("settings-home")?.scrollIntoView({ block: "start" }),
+                  )
+                }}
+                className="row flex h-7 items-center px-2 text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                All settings
+              </button>
+            )}
             <button
               type="button"
               onClick={() =>
@@ -270,7 +318,11 @@ export function SettingsPanel({
                 })
               }
               title="Reset appearance to defaults"
-              className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
+              className={cn(
+                "row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground",
+                // Appearance is not on show when customizing home alone.
+                onlyHome && "hidden",
+              )}
             >
               <RotateCcw size={13} />
             </button>
@@ -285,13 +337,9 @@ export function SettingsPanel({
           </div>
         </div>
 
-        <Section title="Appearance">
+        <Section title="Appearance" hidden={onlyHome}>
           <Field label="Theme">
-            <Segmented
-              value={theme.mode}
-              options={modes}
-              onChange={(v) => theme.set("mode", v)}
-            />
+            <Segmented value={theme.mode} options={modes} onChange={(v) => theme.set("mode", v)} />
           </Field>
 
           <Field label="Accent">
@@ -352,7 +400,7 @@ export function SettingsPanel({
           </Field>
         </Section>
 
-        <Section title="Reading">
+        <Section title="Reading" hidden={onlyHome}>
           <Field label="Article font">
             <Segmented
               value={theme.font}
@@ -402,7 +450,7 @@ export function SettingsPanel({
           </Field>
         </Section>
 
-        <Section title="Home">
+        <Section title="Home" id="settings-home">
           <HomeSettings
             home={home}
             setHome={setHome}
@@ -415,7 +463,7 @@ export function SettingsPanel({
           />
         </Section>
 
-        <Section title="Feeds">
+        <Section title="Feeds" hidden={onlyHome}>
           <Field label="Check for new articles">
             <Segmented
               value={prefs.refreshMinutes}
@@ -463,32 +511,32 @@ export function SettingsPanel({
           </Field>
 
           <Field label="OPML">
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={importOpml}
-              disabled={busy !== null}
-              className="row flex h-9 items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50"
-            >
-              <Upload size={13} />
-              Import OPML
-            </button>
-            <button
-              type="button"
-              onClick={exportOpml}
-              disabled={busy !== null}
-              className="row flex h-9 items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50"
-            >
-              <Download size={13} />
-              Export OPML
-            </button>
-          </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={importOpml}
+                disabled={busy !== null}
+                className="row flex h-9 items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50"
+              >
+                <Upload size={13} />
+                Import OPML
+              </button>
+              <button
+                type="button"
+                onClick={exportOpml}
+                disabled={busy !== null}
+                className="row flex h-9 items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50"
+              >
+                <Download size={13} />
+                Export OPML
+              </button>
+            </div>
           </Field>
           {note && <p className="animate-rise mt-2 text-[11px] text-subtle">{note}</p>}
         </Section>
 
         {stats && (
-          <Section title="Library">
+          <Section title="Library" hidden={onlyHome}>
             <dl className="grid grid-cols-2 gap-y-2 text-[12px]">
               {[
                 ["Feeds", stats.sources.toLocaleString()],
@@ -506,7 +554,7 @@ export function SettingsPanel({
           </Section>
         )}
 
-        <Section title="Updates">
+        <Section title="Updates" hidden={onlyHome}>
           <button
             type="button"
             onClick={checkUpdates}
@@ -554,7 +602,7 @@ export function SettingsPanel({
           )}
         </Section>
 
-        <Section title="About">
+        <Section title="About" hidden={onlyHome}>
           <p className="text-[13px] font-medium leading-snug text-foreground">
             A modern RSS reader that is actually fast and actually small.
           </p>
@@ -592,8 +640,7 @@ export function SettingsPanel({
           </dl>
 
           <p className="mt-3.5 text-[12px] leading-relaxed text-muted-foreground">
-            Free for personal and other non-commercial use. For commercial use, get in touch
-            first.
+            Free for personal and other non-commercial use. For commercial use, get in touch first.
           </p>
 
           <div className="mt-3.5 grid grid-cols-2 gap-1.5">
@@ -607,9 +654,7 @@ export function SettingsPanel({
             </button>
             <button
               type="button"
-              onClick={() =>
-                void openUrl("https://github.com/t21dev/turbo-reader/issues/new")
-              }
+              onClick={() => void openUrl("https://github.com/t21dev/turbo-reader/issues/new")}
               className="row flex h-9 items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground"
             >
               <MessageSquare size={13} />

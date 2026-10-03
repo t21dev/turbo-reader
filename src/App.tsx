@@ -46,6 +46,8 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // Set when Settings is opened from home's Customize button.
+  const [settingsFocus, setSettingsFocus] = useState<"home" | undefined>(undefined)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [view, setView] = useState<"cards" | "list">(
     () => (localStorage.getItem("turbo-view") as "cards" | "list") ?? "cards",
@@ -599,6 +601,10 @@ export default function App() {
           <Home
             prefs={homePrefs}
             onPrefs={updateHomePrefs}
+            onCustomize={() => {
+              setSettingsFocus("home")
+              setSettingsOpen(true)
+            }}
             onOpen={(it) => void openFromHome(it)}
             onStar={(it) => void toggleStar(it.id, !it.starred)}
             onScope={select}
@@ -680,8 +686,12 @@ export default function App() {
               // A category's layout lives on the group, so reload those too.
               void loadTree()
             }}
-          onClose={() => setSettingsOpen(false)}
+          onClose={() => {
+            setSettingsOpen(false)
+            setSettingsFocus(undefined)
+          }}
           confirm={setPrompt}
+          focus={settingsFocus}
           onImported={async () => {
             // Imported feeds are saved without articles. Fetch them now, or
             // they would sit empty until someone thought to press r.

@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { ArrowRight, Pin, Search, Star } from "lucide-react"
+import { ArrowRight, Pin, Search, SlidersHorizontal, Star } from "lucide-react"
 import { api, type BandLayout, type Home as HomeData, type HomeItem, type Scope } from "@/lib/api"
 import {
   CARD_WIDTH,
@@ -18,6 +18,8 @@ import { CoverFallback } from "@/components/CoverFallback"
 type Props = {
   prefs: HomePrefs
   onPrefs: (next: HomePrefs) => void
+  /** Open the home section of Settings. */
+  onCustomize: () => void
   onOpen: (item: HomeItem) => void
   onStar: (item: HomeItem) => void
   onScope: (scope: Scope, id: number | null) => void
@@ -25,7 +27,7 @@ type Props = {
   revision: number
 }
 
-export function Home({ prefs, onPrefs, onOpen, onStar, onScope, revision }: Props) {
+export function Home({ prefs, onPrefs, onCustomize, onOpen, onStar, onScope, revision }: Props) {
   const [data, setData] = useState<HomeData | null>(null)
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState("")
@@ -278,11 +280,22 @@ export function Home({ prefs, onPrefs, onOpen, onStar, onScope, revision }: Prop
               </button>
             )}
           </div>
-          {prefs.clock && (
-            <time className="tabular shrink-0 text-[1.45rem] font-medium leading-tight tracking-tight text-muted-foreground">
-              {timeLine}
-            </time>
-          )}
+          <div className="flex shrink-0 items-start gap-3">
+            <button
+              type="button"
+              onClick={onCustomize}
+              title="Customize home"
+              className="row mt-1 flex h-8 items-center gap-1.5 border border-border px-2.5 text-[12px] text-muted-foreground transition-colors duration-150 ease-out hover:bg-secondary hover:text-foreground"
+            >
+              <SlidersHorizontal size={13} />
+              Customize
+            </button>
+            {prefs.clock && (
+              <time className="tabular text-[1.45rem] font-medium leading-tight tracking-tight text-muted-foreground">
+                {timeLine}
+              </time>
+            )}
+          </div>
         </header>
 
         {prefs.order.map((key) => (

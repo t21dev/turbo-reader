@@ -276,3 +276,24 @@ test("D12 card size widens the cards, and the layout picker shows what was chose
   await ctx.closeSettings()
   await ctx.s.waitFor(async () => /minmax\(190px/.test((await columns()) ?? ""), "small cards")
 }))
+
+test("D13 Customize on home opens just the home settings, with a way to the rest", shot("D13", async () => {
+  await goHome()
+  await (await ctx.s.waitFor(() => ctx.s.byText("section button", "Customize"), "the Customize button")).click()
+  const title = () => ctx.s.exec(`return document.getElementById('settings-title')?.textContent ?? null`)
+  const headings = () =>
+    ctx.s.exec(`return [...document.querySelectorAll('[role=dialog] h3')].map(h => h.textContent.trim())`)
+  await ctx.s.waitFor(async () => (await title()) === "Customize home", "the home-only panel")
+  assert.deepEqual(await headings(), ["Home"], "only the home section")
+  assert.ok(await ctx.s.byLabel("Move Search up"), "the same controls as Settings")
+
+  await (await ctx.s.byText("[role=dialog] button", "All settings")).click()
+  await ctx.s.waitFor(async () => (await title()) === "Settings", "the full panel")
+  assert.ok((await headings()).includes("Appearance"), "everything else is back")
+  await ctx.closeSettings()
+
+  // and the gear in the title bar still opens the full panel
+  await ctx.settings()
+  assert.equal(await title(), "Settings")
+  await ctx.closeSettings()
+}))

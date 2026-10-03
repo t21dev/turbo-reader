@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Pinned, Categories) up or down, and put categories in a home order of their
   own without touching the sidebar.
 - A card size setting for home: small, medium or large.
+- A Customize button on home opens the home settings on their own, with a
+  link through to all settings.
 - Adding a feed opens a dialog with a Check button. It shows the feed's title,
   how many articles it has and the latest three before you subscribe, and
   tells you if you already follow it.
