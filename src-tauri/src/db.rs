@@ -10,7 +10,7 @@ use anyhow::Result;
 use rusqlite::{Connection, OptionalExtension};
 use std::path::Path;
 
-pub const SCHEMA_VERSION: i32 = 2;
+pub const SCHEMA_VERSION: i32 = 3;
 
 pub fn open(path: &Path) -> Result<Connection> {
     if let Some(dir) = path.parent() {
@@ -21,6 +21,10 @@ pub fn open(path: &Path) -> Result<Connection> {
     conn.pragma_update(None, "synchronous", "NORMAL")?;
     conn.pragma_update(None, "foreign_keys", "ON")?;
     conn.pragma_update(None, "busy_timeout", 5000)?;
+    // After a checkpoint the write-ahead log is cut back to this size. Without
+    // a limit it stays as large as the biggest write it ever held: 95 MB after
+    // importing 20,000 articles, sitting on disk next to a 92 MB database.
+    conn.pragma_update(None, "journal_size_limit", 8 * 1024 * 1024)?;
     migrate(&conn)?;
     Ok(conn)
 }
@@ -38,6 +42,9 @@ fn migrate(conn: &Connection) -> Result<()> {
         add_column(conn, "sources", "pinned_at", "INTEGER");
         add_column(conn, "groups", "home_layout", "TEXT");
         conn.execute_batch(SCHEMA_V2)?;
+    }
+    if current < 3 {
+        conn.execute_batch(SCHEMA_V3)?;
     }
     conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     Ok(())
@@ -145,6 +152,13 @@ CREATE INDEX IF NOT EXISTS idx_items_pub_read ON items(published DESC, read);
 CREATE INDEX IF NOT EXISTS idx_items_hidden   ON items(hidden, published DESC);
 "#;
 
+/// Per-feed unread counts. Without this index SQLite answered each feed's
+/// count by walking idx_items_hidden over every article: 32 seconds for the
+/// sidebar with 500 feeds and 20,000 articles, against a millisecond with it.
+const SCHEMA_V3: &str = r#"
+CREATE INDEX IF NOT EXISTS idx_items_source_state ON items(source_id, read, hidden);
+"#;
+
 fn add_column(conn: &Connection, table: &str, column: &str, decl: &str) {
     let _ = conn.execute(
         &format!("ALTER TABLE {table} ADD COLUMN {column} {decl}"),
@@ -243,5 +257,34 @@ mod setting_tests {
         let c = conn();
         set_setting(&c, "raw", "plain").unwrap();
         assert_eq!(get_setting_str(&c, "raw").as_deref(), Some("plain"));
+    }
+}
+
+#[cfg(test)]
+mod index_tests {
+    use super::*;
+
+    /// The sidebar asks for every feed's unread count at once. That has to be
+    /// an index lookup per feed, not a walk over every article per feed.
+    #[test]
+    fn per_feed_unread_counts_use_the_covering_index() {
+        let c = Connection::open_in_memory().unwrap();
+        migrate(&c).unwrap();
+        let plan: Vec<String> = c
+            .prepare(
+                "EXPLAIN QUERY PLAN
+                 SELECT s.id, (SELECT COUNT(*) FROM items i
+                                WHERE i.source_id = s.id AND i.read = 0 AND i.hidden = 0)
+                   FROM sources s WHERE s.hidden = 0",
+            )
+            .unwrap()
+            .query_map([], |r| r.get::<_, String>(3))
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect();
+        assert!(
+            plan.iter().any(|l| l.contains("idx_items_source_state")),
+            "plan was {plan:?}"
+        );
     }
 }

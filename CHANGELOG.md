@@ -12,6 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   box takes a typed or pasted code. If the colour would be hard to see on the
   current background, it is lightened or darkened a little.
 
+### Fixed
+- Large libraries are fast again. With 500 feeds and 20,000 articles the
+  sidebar took over 30 seconds to load, because every feed's unread count
+  walked the whole article table. It now takes a few milliseconds.
+- Refreshing no longer waits for favicons. Articles appear as soon as they are
+  stored and icons follow in the background; a site without an icon is not
+  asked again on every refresh. A first refresh of 500 local feeds went from
+  over four minutes to about two seconds.
+- Favicons for sites on a non-standard port were looked up on port 80.
+- A web page served in place of a favicon is no longer saved as the icon.
+- Storing a refresh is one database transaction instead of one per article,
+  and the write-ahead log is trimmed afterwards rather than left at the size of
+  the largest refresh (95 MB after a 20,000 article import).
+
 ## [0.4.0] - 2026-10-03
 
 ### Added

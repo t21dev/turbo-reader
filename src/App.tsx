@@ -132,6 +132,8 @@ export default function App() {
 
   useEffect(() => {
     const started = listen("refresh-started", () => setBusy(true))
+    // Icons are looked up after the articles land, so only the tree reloads.
+    const icons = listen("icons-updated", () => void loadTree())
     const updated = listen("feeds-updated", () => {
       setBusy(false)
       void Promise.all([loadTree(), loadItems()])
@@ -140,6 +142,7 @@ export default function App() {
     return () => {
       void started.then((off) => off())
       void updated.then((off) => off())
+      void icons.then((off) => off())
     }
   }, [loadTree, loadItems])
 

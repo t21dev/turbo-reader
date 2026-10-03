@@ -177,6 +177,7 @@ fn spawn_refresh_schedule(app: tauri::AppHandle) {
             let _ = tauri::Emitter::emit(&app, "refresh-started", ());
             if let Ok(report) = commands::refresh_all(&state).await {
                 let _ = tauri::Emitter::emit(&app, "feeds-updated", &report);
+                commands::spawn_icon_fill(app.clone());
             }
         }
     });

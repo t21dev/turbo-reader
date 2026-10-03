@@ -440,11 +440,12 @@ fn hash(parts: &[&str]) -> String {
 /// Fluent Reader issue #169 asked for this.
 pub async fn fetch_favicon(client: &reqwest::Client, site_url: &str) -> Result<String> {
     let base = url::Url::parse(site_url)?;
-    let origin = format!(
-        "{}://{}",
-        base.scheme(),
-        base.host_str().ok_or_else(|| anyhow!("no host"))?
-    );
+    if base.host_str().is_none() {
+        return Err(anyhow!("no host"));
+    }
+    // The origin keeps the port. Building it from the host alone sent every
+    // site on a non-standard port to port 80 instead.
+    let origin = base.origin().ascii_serialization();
 
     // Prefer what the page declares, largest first, then fall back to /favicon.ico
     let mut candidates: Vec<String> = Vec::new();
@@ -485,23 +486,37 @@ pub async fn fetch_favicon(client: &reqwest::Client, site_url: &str) -> Result<S
         if !res.status().is_success() {
             continue;
         }
-        let mime = res
+        let declared = res
             .headers()
             .get("content-type")
             .and_then(|v| v.to_str().ok())
-            .map(|s| s.split(';').next().unwrap_or(s).trim().to_owned())
-            .filter(|m| m.starts_with("image/"))
-            .unwrap_or_else(|| guess_mime(&href));
+            .map(|s| s.split(';').next().unwrap_or(s).trim().to_ascii_lowercase());
+        // A site that answers every path with its home page sends HTML here.
+        // Only an image type, or no useful type at all, is worth keeping.
+        let mime = match declared {
+            Some(m) if m.starts_with("image/") => m,
+            Some(m) if m.is_empty() || m == "application/octet-stream" => guess_mime(&href),
+            None => guess_mime(&href),
+            Some(_) => continue,
+        };
         let Ok(bytes) = res.bytes().await else {
             continue;
         };
         // anything bigger than this is a logo, not a favicon
-        if bytes.is_empty() || bytes.len() > 128 * 1024 {
+        if bytes.is_empty() || bytes.len() > 128 * 1024 || looks_like_html(&bytes) {
             continue;
         }
         return Ok(format!("data:{};base64,{}", mime, b64(&bytes)));
     }
     Err(anyhow!("no favicon found"))
+}
+
+/// An HTML page served where an icon was expected. SVG starts with "<" too,
+/// so only a document that says it is HTML counts.
+fn looks_like_html(bytes: &[u8]) -> bool {
+    let head = String::from_utf8_lossy(&bytes[..bytes.len().min(256)]).to_ascii_lowercase();
+    let head = head.trim_start();
+    head.starts_with("<!doctype html") || head.starts_with("<html")
 }
 
 fn guess_mime(href: &str) -> String {
@@ -556,6 +571,24 @@ static SIZES: Lazy<Regex> =
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_html_page_is_not_an_icon() {
+        assert!(looks_like_html(
+            b"<!DOCTYPE html><html><body>home</body></html>"
+        ));
+        assert!(looks_like_html(b"  <html lang=en>"));
+        assert!(!looks_like_html(
+            b"<svg xmlns='http://www.w3.org/2000/svg'></svg>"
+        ));
+        assert!(!looks_like_html(&[0, 0, 1, 0, 1, 0]));
+    }
+
+    #[test]
+    fn the_icon_origin_keeps_its_port() {
+        let u = url::Url::parse("http://127.0.0.1:8787/site/3").unwrap();
+        assert_eq!(u.origin().ascii_serialization(), "http://127.0.0.1:8787");
+    }
 
     /// The exact construct that bricked Fluent Reader three times.
     #[test]

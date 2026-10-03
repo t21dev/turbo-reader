@@ -491,6 +491,7 @@ pub async fn fetch_all(
     let report = refresh_all(&state).await;
     if let Ok(r) = &report {
         let _ = tauri::Emitter::emit(&app, "feeds-updated", r);
+        spawn_icon_fill(app.clone());
     }
     report
 }
@@ -530,6 +531,9 @@ pub async fn refresh_all(state: &AppState) -> Result<FetchReport, String> {
     // alive across the favicon .await below would make the whole future !Send.
     {
         let conn = state.db.lock().map_err(e)?;
+        // One transaction for the lot: a commit per article is most of the
+        // cost of storing thousands of them.
+        let tx = conn.unchecked_transaction().map_err(e)?;
         for (id, url, res) in results {
             report.sources += 1;
             match res {
@@ -559,41 +563,67 @@ pub async fn refresh_all(state: &AppState) -> Result<FetchReport, String> {
                 }
             }
         }
-    }
-
-    // Second pass: fill in missing favicons. Separate from the feed fetch
-    // because a site's icon lives at the site, not in the feed document, and a
-    // slow or missing icon must never hold up articles.
-    let needing: Vec<(i64, String)> = {
-        let conn = state.db.lock().map_err(e)?;
-        let mut stmt = conn
-            .prepare(
-                "SELECT id, COALESCE(site_url, url) FROM sources
-                  WHERE hidden = 0 AND (icon_url IS NULL OR icon_url = '')",
-            )
-            .map_err(e)?;
-        let rows = stmt
-            .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
-            .map_err(e)?
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(e)?;
-        rows
-    };
-    if !needing.is_empty() {
-        let icons = fetch_icons(needing, state.http.clone()).await;
-        {
-            let conn = state.db.lock().map_err(e)?;
-            for (id, icon) in icons {
-                let _ = conn.execute(
-                    "UPDATE sources SET icon_url = ?2 WHERE id = ?1",
-                    params![id, icon],
-                );
-            }
+        tx.commit().map_err(e)?;
+        // A big refresh leaves a big write-ahead log. Fold it into the
+        // database now, while nothing else is writing, so it shrinks back.
+        if report.new_items > 1000 {
+            let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
         }
     }
 
     report.elapsed_ms = started.elapsed().as_millis();
     Ok(report)
+}
+
+/// Look up favicons for feeds that have never had one looked up. Runs after
+/// the articles are stored and shown, because a site's icon lives at the site,
+/// not in the feed, and a slow or missing icon must never hold up articles.
+/// A lookup that finds nothing records an empty string, so it is not retried
+/// on every refresh. Returns how many icons were found.
+pub async fn fill_missing_icons(state: &AppState) -> usize {
+    let needing: Vec<(i64, String)> = {
+        let Ok(conn) = state.db.lock() else { return 0 };
+        let Ok(mut stmt) = conn.prepare(
+            "SELECT id, COALESCE(site_url, url) FROM sources
+              WHERE hidden = 0 AND icon_url IS NULL",
+        ) else {
+            return 0;
+        };
+        let rows = stmt
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+            .map(|it| it.filter_map(|r| r.ok()).collect())
+            .unwrap_or_default();
+        rows
+    };
+    if needing.is_empty() {
+        return 0;
+    }
+    let ids: Vec<i64> = needing.iter().map(|(id, _)| *id).collect();
+    let icons = fetch_icons(needing, state.http.clone()).await;
+    let Ok(conn) = state.db.lock() else { return 0 };
+    let found = icons.len();
+    for id in ids {
+        let icon = icons
+            .iter()
+            .find(|(i, _)| *i == id)
+            .map(|(_, icon)| icon.as_str())
+            .unwrap_or("");
+        let _ = conn.execute(
+            "UPDATE sources SET icon_url = ?2 WHERE id = ?1 AND icon_url IS NULL",
+            params![id, icon],
+        );
+    }
+    found
+}
+
+/// Fill in icons in the background and tell the window when any arrive.
+pub fn spawn_icon_fill(app: tauri::AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        let state = app.state::<AppState>();
+        if fill_missing_icons(&state).await > 0 {
+            let _ = tauri::Emitter::emit(&app, "icons-updated", ());
+        }
+    });
 }
 
 async fn fetch_icons(targets: Vec<(i64, String)>, http: reqwest::Client) -> Vec<(i64, String)> {
