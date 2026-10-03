@@ -679,7 +679,7 @@ export function SettingsPanel({
             A modern RSS reader that is actually fast and actually small.
           </p>
           <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
-            Turbo Reader <span className="tabular text-subtle">v0.5.0</span>, by{" "}
+            Turbo Reader <span className="tabular text-subtle">v0.6.0</span>, by{" "}
             <button
               type="button"
               onClick={() => void openUrl("https://github.com/t21dev")}
