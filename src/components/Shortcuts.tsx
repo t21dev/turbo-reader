@@ -70,6 +70,9 @@ export function Shortcuts({ onClose }: { onClose: () => void }) {
       onClick={dismiss}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shortcuts-title"
         className={cn(
           "w-full max-w-[620px] overflow-hidden rounded-xl border border-border bg-popover shadow-float",
           closing ? "animate-pop-out" : "animate-pop",
@@ -77,7 +80,9 @@ export function Shortcuts({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
-          <h2 className="text-[14px] font-semibold tracking-tight">Keyboard shortcuts</h2>
+          <h2 id="shortcuts-title" className="text-[14px] font-semibold tracking-tight">
+            Keyboard shortcuts
+          </h2>
           <button
             type="button"
             onClick={dismiss}

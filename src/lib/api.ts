@@ -50,6 +50,18 @@ export type UpdateCheck = {
   published: string | null
 }
 
+export type SourcePreview = {
+  /** The feed address found, which may differ from what was typed. */
+  url: string
+  title: string
+  siteUrl: string | null
+  itemCount: number
+  latest: { title: string; published: number }[]
+  /** True when the address typed was a page and the feed came from it. */
+  discovered: boolean
+  existing: { id: number; name: string } | null
+}
+
 export type HomeWindow = "today" | "week" | "month"
 export type BandLayout = "cards" | "mosaic" | "magazine" | "compact" | "headlines"
 
@@ -141,16 +153,23 @@ export const api = {
   addSource: (url: string, groupId?: number | null) =>
     call<number>("add_source", { url, groupId: groupId ?? null }),
   deleteSource: (id: number) => call<void>("delete_source", { id }),
-  updateSource: (
-    id: number,
-    patch: { name?: string; groupId?: number | null; keepLimit?: number },
-  ) =>
+  /** Rename a feed or change its retention. Moving is moveSource. */
+  updateSource: (id: number, patch: { name?: string; keepLimit?: number }) =>
     call<void>("update_source", {
       id,
       name: patch.name ?? null,
-      groupId: patch.groupId === undefined ? null : [patch.groupId],
       keepLimit: patch.keepLimit ?? null,
     }),
+  /** Put a feed in a folder, or take it out of one with null. */
+  moveSource: (id: number, groupId: number | null) =>
+    call<void>("move_source", { id, groupId }),
+  /** Check what is behind an address before subscribing to it. */
+  previewSource: (url: string) => call<SourcePreview>("preview_source", { url }),
+  /** How many articles a new retention limit would remove. */
+  retentionPreview: (id: number, limit: number) =>
+    call<number>("retention_preview", { id, limit }),
+  /** How many articles a mark-all-read would change. */
+  markAllReadPreview: (filter: Filter) => call<number>("mark_all_read_preview", { filter }),
 
   fetchAll: () => call<FetchReport>("fetch_all"),
 

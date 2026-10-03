@@ -160,6 +160,21 @@ pub fn get_setting(conn: &Connection, key: &str) -> Result<Option<String>> {
         .optional()?)
 }
 
+/// A setting saved through the set_setting command, as the plain string it
+/// was before being stored.
+///
+/// set_setting stores JSON, so the word alpha is saved as "alpha" with its
+/// quotes. Reading it raw and comparing against alpha never matched, which is
+/// why alphabetical order and the home page's interest and mute lists did
+/// nothing. A value that is not a JSON string is returned as it is.
+pub fn get_setting_str(conn: &Connection, key: &str) -> Option<String> {
+    let raw = get_setting(conn, key).ok().flatten()?;
+    match serde_json::from_str::<serde_json::Value>(&raw) {
+        Ok(serde_json::Value::String(s)) => Some(s),
+        _ => Some(raw),
+    }
+}
+
 pub fn set_setting(conn: &Connection, key: &str, value: &str) -> Result<()> {
     conn.execute(
         "INSERT INTO settings(key, value) VALUES(?1, ?2)
@@ -193,4 +208,40 @@ pub fn enforce_keep_limit(conn: &Connection, source_id: i64) -> Result<usize> {
         (source_id, limit),
     )?;
     Ok(removed)
+}
+
+#[cfg(test)]
+mod setting_tests {
+    use super::*;
+
+    fn conn() -> Connection {
+        let c = Connection::open_in_memory().unwrap();
+        c.execute_batch("CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);")
+            .unwrap();
+        c
+    }
+
+    #[test]
+    fn json_strings_come_back_plain() {
+        let c = conn();
+        set_setting(&c, "feed_sort", "\"alpha\"").unwrap();
+        assert_eq!(get_setting_str(&c, "feed_sort").as_deref(), Some("alpha"));
+    }
+
+    #[test]
+    fn newlines_inside_a_json_string_survive() {
+        let c = conn();
+        set_setting(&c, "home_interests", "\"rust\\nkubernetes\"").unwrap();
+        assert_eq!(
+            get_setting_str(&c, "home_interests").as_deref(),
+            Some("rust\nkubernetes")
+        );
+    }
+
+    #[test]
+    fn values_that_are_not_json_strings_pass_through() {
+        let c = conn();
+        set_setting(&c, "raw", "plain").unwrap();
+        assert_eq!(get_setting_str(&c, "raw").as_deref(), Some("plain"));
+    }
 }

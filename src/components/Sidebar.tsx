@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { ChevronRight, FolderPlus, Home as HomeIcon, Inbox, Pin, Plus, Star, CircleDot } from "lucide-react"
 import type { MenuPoint } from "@/components/ContextMenu"
 import type { Target } from "@/components/SidebarMenus"
@@ -17,7 +17,8 @@ type Props = {
   unreadOnly: boolean
   onSelect: (scope: Scope, id: number | null) => void
   onToggleGroup: (id: number, expanded: boolean) => void
-  onAddSource: (url: string) => Promise<void>
+  /** Open the Add Feed dialog. */
+  onAddFeed: () => void
   /** Right-click anywhere in the rail. Null closes whatever is open. */
   onContextMenu: (target: Target | null) => void
   onNewGroup: () => void
@@ -97,13 +98,10 @@ export function Sidebar(props: Props) {
     unreadOnly,
     onSelect,
     onToggleGroup,
-    onAddSource,
+    onAddFeed,
     onContextMenu,
     onNewGroup,
   } = props
-  const [adding, setAdding] = useState(false)
-  const [url, setUrl] = useState("")
-  const [error, setError] = useState<string | null>(null)
 
   const grouped = useMemo(() => {
     const byGroup = new Map<number | null, Source[]>()
@@ -117,19 +115,6 @@ export function Sidebar(props: Props) {
 
   const totalUnread = sources.reduce((n, s) => n + s.unread, 0)
 
-  async function submit(ev: React.FormEvent) {
-    ev.preventDefault()
-    const value = url.trim()
-    if (!value) return
-    setError(null)
-    try {
-      await onAddSource(value)
-      setUrl("")
-      setAdding(false)
-    } catch (err) {
-      setError(String(err))
-    }
-  }
 
   return (
     <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-border bg-background">
@@ -178,33 +163,12 @@ export function Sidebar(props: Props) {
           </button>
           <button
             type="button"
-            onClick={() => setAdding((v) => !v)}
+            onClick={onAddFeed}
             title="Add feed (n)"
-            className={cn(
-              "row grid h-6 w-6 place-items-center hover:bg-secondary hover:text-foreground",
-              adding ? "bg-secondary text-foreground" : "text-subtle",
-            )}
+            className="row grid h-6 w-6 place-items-center text-subtle hover:bg-secondary hover:text-foreground"
           >
-            <Plus
-              size={13}
-              className={cn("transition-transform duration-200 ease-out", adding && "rotate-45")}
-            />
+            <Plus size={13} />
           </button>
-        </div>
-      </div>
-
-      <div className="collapse-grid px-2" data-open={adding}>
-        <div className="overflow-hidden">
-          <form onSubmit={submit} className="pb-2">
-            <input
-              value={url}
-              onChange={(ev) => setUrl(ev.target.value)}
-              onKeyDown={(ev) => ev.key === "Escape" && setAdding(false)}
-              placeholder="https://example.com/feed"
-              className="h-8 w-full rounded-md border border-input bg-secondary px-2 font-mono text-[11px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
-            />
-            {error && <p className="mt-1 px-1 text-[11px] text-destructive">{error}</p>}
-          </form>
         </div>
       </div>
 

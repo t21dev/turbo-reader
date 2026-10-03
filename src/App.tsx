@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Home as HomeIcon, Keyboard, LayoutGrid, List as ListIcon, RefreshCw, Settings2 } from "lucide-react"
+import { listen } from "@tauri-apps/api/event"
+import { openUrl } from "@tauri-apps/plugin-opener"
 import { TitleBar } from "@/components/TitleBar"
 import { Sidebar } from "@/components/Sidebar"
 import { ArticleList } from "@/components/ArticleList"
@@ -9,6 +11,9 @@ import { SettingsPanel } from "@/components/SettingsPanel"
 import { Shortcuts } from "@/components/Shortcuts"
 import { Home } from "@/components/Home"
 import { Prompt, type PromptSpec } from "@/components/Prompt"
+import { AddFeedDialog } from "@/components/AddFeedDialog"
+import { Toaster } from "@/components/Toaster"
+import { attempt, notify } from "@/lib/notify"
 import { SidebarContextMenu, type Target } from "@/components/SidebarMenus"
 import { readHomePrefs, writeHomePrefs, type HomePrefs } from "@/lib/home"
 import { installScale } from "@/lib/scale"
@@ -55,8 +60,14 @@ export default function App() {
   const [homeRevision, setHomeRevision] = useState(0)
   const [menuTarget, setMenuTarget] = useState<Target | null>(null)
   const [prompt, setPrompt] = useState<PromptSpec | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
   const [prefs, setPrefs] = useState<AppPrefs>(readPrefs)
-  const [lastChecked, setLastChecked] = useState<number | null>(null)
+  // When any feed was last checked, from the database, so it is right after a
+  // restart and reflects scheduled refreshes as well as manual ones.
+  const lastChecked = useMemo(() => {
+    const newest = Math.max(0, ...sources.map((s) => s.lastFetched ?? 0))
+    return newest > 0 ? newest * 1000 : null
+  }, [sources])
   const searchTimer = useRef<number | null>(null)
 
   // The identity of the list on screen. Changing it means a different set of
@@ -110,21 +121,25 @@ export default function App() {
     void loadItems()
   }, [loadItems])
 
-  // Poll on a timer. Before this the app fetched once at launch and then not
-  // again until someone pressed r, which is not what a feed reader is for.
-  // The interval is checked every minute rather than slept through, so a
-  // laptop that was closed for an hour catches up when it wakes.
+  // Refreshing on a schedule happens in Rust (see spawn_refresh_schedule), so
+  // it runs while the window is minimised and keeps time across restarts. The
+  // page only listens, and tells the backend which interval was chosen.
   useEffect(() => {
-    if (prefs.refreshMinutes <= 0) return
-    const tick = () => {
-      if (busy) return
-      const due = (lastChecked ?? 0) + prefs.refreshMinutes * 60_000
-      if (Date.now() >= due) void refresh()
+    void api.setSetting("refresh_minutes", prefs.refreshMinutes)
+  }, [prefs.refreshMinutes])
+
+  useEffect(() => {
+    const started = listen("refresh-started", () => setBusy(true))
+    const updated = listen("feeds-updated", () => {
+      setBusy(false)
+      void Promise.all([loadTree(), loadItems()])
+      setHomeRevision((n) => n + 1)
+    })
+    return () => {
+      void started.then((off) => off())
+      void updated.then((off) => off())
     }
-    const id = window.setInterval(tick, 60_000)
-    return () => window.clearInterval(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefs.refreshMinutes, lastChecked, busy])
+  }, [loadTree, loadItems])
 
   // The input stays instant; the query it drives is debounced, so typing
   // doesn't fire a round trip per keystroke.
@@ -166,12 +181,37 @@ export default function App() {
       }),
 
     moveSource: (s: Source, groupId: number | null) =>
-      void api.updateSource(s.id, { groupId }).then(afterTreeChange),
+      void attempt("Moving the feed", async () => {
+        await api.moveSource(s.id, groupId)
+        await afterTreeChange()
+      }),
 
+    // A lower limit deletes articles, so it asks first and says how many.
+    // A limit that removes nothing needs no confirmation.
     setKeepLimit: (s: Source, keepLimit: number) =>
-      void api.updateSource(s.id, { keepLimit }).then(afterTreeChange),
+      void attempt("Changing retention", async () => {
+        const removes = await api.retentionPreview(s.id, keepLimit)
+        const apply = async () => {
+          await api.updateSource(s.id, { keepLimit })
+          await afterTreeChange()
+        }
+        if (removes === 0) return apply()
+        setPrompt({
+          title: `Keep only the last ${keepLimit} from ${s.name}?`,
+          detail:
+            `This removes ${removes} older article${removes === 1 ? "" : "s"} now, and keeps ` +
+            "trimming as new ones arrive. Starred articles are always kept. This cannot be undone.",
+          confirmLabel: `Remove ${removes}`,
+          destructive: true,
+          onConfirm: apply,
+        })
+      }),
 
-    togglePin: (s: Source) => void api.setPinned(s.id, !s.pinned).then(afterTreeChange),
+    togglePin: (s: Source) =>
+      void attempt(s.pinned ? "Unpinning" : "Pinning", async () => {
+        await api.setPinned(s.id, !s.pinned)
+        await afterTreeChange()
+      }),
 
     deleteSource: (s: Source) =>
       setPrompt({
@@ -230,7 +270,8 @@ export default function App() {
       await api.fetchAll()
       await Promise.all([loadTree(), loadItems()])
       setHomeRevision((n) => n + 1)
-      setLastChecked(Date.now())
+    } catch (err) {
+      notify(`Refreshing failed: ${String(err)}`, "error")
     } finally {
       setBusy(false)
     }
@@ -248,10 +289,11 @@ export default function App() {
   }
 
   async function selectItem(it: ItemSummary) {
-    const full = await api.getItem(it.id)
+    const full = await attempt("Opening the article", () => api.getItem(it.id))
+    if (!full) return
     setCurrent(full)
     if (!it.read) {
-      await api.setRead([it.id], true)
+      if ((await attempt("Marking it read", () => api.setRead([it.id], true))) === undefined) return
       setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, read: true } : x)))
       setSources((prev) =>
         prev.map((s) => (s.id === it.sourceId ? { ...s, unread: Math.max(0, s.unread - 1) } : s)),
@@ -260,13 +302,13 @@ export default function App() {
   }
 
   async function toggleStar(id: number, starred: boolean) {
-    await api.setStarred(id, starred)
+    if ((await attempt(starred ? "Starring" : "Unstarring", () => api.setStarred(id, starred))) === undefined) return
     setItems((prev) => prev.map((x) => (x.id === id ? { ...x, starred } : x)))
     setCurrent((prev) => (prev && prev.id === id ? { ...prev, starred } : prev))
   }
 
   async function toggleRead(id: number, sourceId: number | undefined, read: boolean) {
-    await api.setRead([id], read)
+    if ((await attempt("Changing read state", () => api.setRead([id], read))) === undefined) return
     setItems((prev) => prev.map((x) => (x.id === id ? { ...x, read } : x)))
     setCurrent((prev) => (prev && prev.id === id ? { ...prev, read } : prev))
     if (sourceId !== undefined) {
@@ -278,20 +320,57 @@ export default function App() {
     }
   }
 
-  async function hide(id: number) {
-    await api.setHidden([id], true)
-    setItems((prev) => prev.filter((x) => x.id !== id))
-    setCurrent((prev) => (prev && prev.id === id ? null : prev))
-    await loadTree()
+  /** Hiding has no undo in the interface, so it confirms. Enter accepts. */
+  function hide(id: number) {
+    const title = items.find((x) => x.id === id)?.title ?? current?.title ?? "this article"
+    setPrompt({
+      title: "Hide this article?",
+      detail: `"${title}" will not appear in any list again, including search.`,
+      confirmLabel: "Hide",
+      destructive: true,
+      onConfirm: async () => {
+        await api.setHidden([id], true)
+        setItems((prev) => prev.filter((x) => x.id !== id))
+        setCurrent((prev) => (prev && prev.id === id ? null : prev))
+        await loadTree()
+        setHomeRevision((n) => n + 1)
+      },
+    })
   }
 
+  /** Marking everything read cannot be undone, so it says how many first. */
   async function markAllRead(olderThanDays?: number) {
     const before =
       olderThanDays === undefined
         ? undefined
         : Math.floor(Date.now() / 1000) - olderThanDays * 86400
-    await api.markAllRead({ scope, id: scopeId ?? undefined, before })
-    await Promise.all([loadTree(), loadItems()])
+    const filter = { scope, id: scopeId ?? undefined, before }
+    const count = await attempt("Counting unread articles", () => api.markAllReadPreview(filter))
+    if (count === undefined) return
+    if (count === 0) {
+      notify("Nothing here is unread.")
+      return
+    }
+    const where =
+      scope === "source"
+        ? `in ${sources.find((x) => x.id === scopeId)?.name ?? "this feed"}`
+        : scope === "group"
+          ? `in ${groups.find((x) => x.id === scopeId)?.name ?? "this folder"}`
+          : scope === "starred"
+            ? "among your starred articles"
+            : "across every feed"
+    const age = olderThanDays === undefined ? "" : ` older than ${olderThanDays} day${olderThanDays === 1 ? "" : "s"}`
+    setPrompt({
+      title: `Mark ${count} article${count === 1 ? "" : "s"} as read?`,
+      detail: `Every unread article${age} ${where}. This cannot be undone.`,
+      confirmLabel: "Mark as read",
+      destructive: true,
+      onConfirm: async () => {
+        await api.markAllRead(filter)
+        await Promise.all([loadTree(), loadItems()])
+        setHomeRevision((n) => n + 1)
+      },
+    })
   }
 
   function select(nextScope: Scope, id: number | null) {
@@ -327,6 +406,9 @@ export default function App() {
   // while a text field has focus.
   useEffect(() => {
     function onKey(ev: KeyboardEvent) {
+      // While a dialog is open its keys are its own. Without this, pressing h
+      // with a confirmation focused would act on the article behind it.
+      if (prompt || addOpen || settingsOpen || shortcutsOpen) return
       const el = ev.target as HTMLElement | null
       const typing =
         el?.tagName === "INPUT" || el?.tagName === "TEXTAREA" || el?.isContentEditable === true
@@ -377,7 +459,7 @@ export default function App() {
           if (current) void hide(current.id)
           break
         case "o":
-          if (current?.link) void import("@tauri-apps/plugin-opener").then((m) => m.openUrl(current.link!))
+          if (current?.link) void attempt("Opening the article", () => openUrl(current.link!))
           break
         case "r":
           void refresh()
@@ -401,7 +483,8 @@ export default function App() {
           if (homePrefs.enabled) setAtHome((v) => !v)
           break
         case "n":
-          if (!sidebarOpen) toggleSidebar()
+          ev.preventDefault()
+          setAddOpen(true)
           break
         case "/":
           ev.preventDefault()
@@ -506,10 +589,7 @@ export default function App() {
               setGroups((prev) => prev.map((g) => (g.id === id ? { ...g, expanded } : g)))
               await api.setGroupExpanded(id, expanded)
             }}
-            onAddSource={async (url) => {
-              await api.addSource(url)
-              await afterTreeChange()
-            }}
+            onAddFeed={() => setAddOpen(true)}
             onContextMenu={setMenuTarget}
             onNewGroup={sidebarActions.newGroup}
           />
@@ -597,8 +677,12 @@ export default function App() {
           onSortChanged={afterTreeChange}
           onHomeChanged={() => setHomeRevision((n) => n + 1)}
           onClose={() => setSettingsOpen(false)}
+          confirm={setPrompt}
           onImported={async () => {
+            // Imported feeds are saved without articles. Fetch them now, or
+            // they would sit empty until someone thought to press r.
             await Promise.all([loadTree(), loadItems()])
+            await refresh()
           }}
         />
       )}
@@ -611,7 +695,21 @@ export default function App() {
         onClose={() => setMenuTarget(null)}
         actions={sidebarActions}
       />
+      <AddFeedDialog
+        open={addOpen}
+        groups={groups}
+        defaultGroupId={scope === "group" ? scopeId : null}
+        onClose={() => setAddOpen(false)}
+        onAdded={async (id) => {
+          await afterTreeChange()
+          const name = (await api.listSources()).find((x) => x.id === id)?.name
+          notify(name ? `Subscribed to ${name}.` : "Subscribed.")
+          select("source", id)
+        }}
+        onShowExisting={(id) => select("source", id)}
+      />
       <Prompt spec={prompt} onClose={() => setPrompt(null)} />
+      <Toaster />
     </div>
   )
 }

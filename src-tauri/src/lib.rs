@@ -7,6 +7,7 @@
 
 mod commands;
 mod db;
+mod discover;
 mod feed;
 mod home;
 mod markdown;
@@ -45,7 +46,9 @@ pub fn run() {
             app.manage(AppState {
                 db: Mutex::new(conn),
                 http,
+                fetching: tokio::sync::Mutex::new(()),
             });
+            spawn_refresh_schedule(app.handle().clone());
             Ok(())
         })
         // Saving only on a clean exit is not enough: a crash, a kill or a power
@@ -133,12 +136,50 @@ pub fn run() {
             commands::set_pinned,
             commands::set_group_layout,
             commands::quotes_path,
+            commands::preview_source,
+            commands::move_source,
+            commands::retention_preview,
+            commands::mark_all_read_preview,
             commands::settle_window,
             commands::read_text_file,
             commands::write_text_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Turbo Reader");
+}
+
+/// How often the schedule looks at the clock. Cheap: one query, no network.
+const SCHEDULE_TICK: Duration = Duration::from_secs(30);
+
+/// Refresh on a schedule, from Rust rather than a timer in the page.
+///
+/// A webview timer is throttled when the window is minimised or covered, is
+/// torn down and recreated whenever the page's state changes, and starts from
+/// nothing on every launch. This keeps time against the database, so it
+/// survives restarts, runs while the window is out of sight, and tells the
+/// window when there is something new to show.
+fn spawn_refresh_schedule(app: tauri::AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        loop {
+            tokio::time::sleep(SCHEDULE_TICK).await;
+            let state = app.state::<AppState>();
+            let due = {
+                let Ok(conn) = state.db.lock() else { continue };
+                commands::refresh_due(&conn, chrono::Utc::now().timestamp())
+            };
+            if !due {
+                continue;
+            }
+            // Skip this tick if a manual refresh is already running.
+            let Ok(_guard) = state.fetching.try_lock() else {
+                continue;
+            };
+            let _ = tauri::Emitter::emit(&app, "refresh-started", ());
+            if let Ok(report) = commands::refresh_all(&state).await {
+                let _ = tauri::Emitter::emit(&app, "feeds-updated", &report);
+            }
+        }
+    });
 }
 
 /// Write the window's geometry, if there is a sensible one to write and the

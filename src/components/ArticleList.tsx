@@ -47,6 +47,15 @@ export function ArticleList(p: Props) {
             id="turbo-search"
             value={p.search}
             onChange={(e) => p.onSearch(e.target.value)}
+            onKeyDown={(e) => {
+              // Escape clears first, and only leaves the field once it is empty,
+              // matching the search box on the home page.
+              if (e.key === "Escape" && p.search) {
+                e.preventDefault()
+                e.stopPropagation()
+                p.onSearch("")
+              }
+            }}
             placeholder="Search articles"
             className="h-7 w-full rounded-md border border-transparent bg-secondary pl-7 pr-2 text-[12px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
           />

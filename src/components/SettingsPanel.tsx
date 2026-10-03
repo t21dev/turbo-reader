@@ -25,6 +25,7 @@ import {
 import { type HomePrefs } from "@/lib/home"
 import { REFRESH_CHOICES, sinceLabel, type AppPrefs } from "@/lib/prefs"
 import { HomeSettings } from "@/components/HomeSettings"
+import type { PromptSpec } from "@/components/Prompt"
 import {
   ACCENTS,
   LINE_WIDTHS,
@@ -109,6 +110,7 @@ export function SettingsPanel({
   onPrefs,
   lastChecked,
   onSortChanged,
+  confirm,
 }: {
   onClose: () => void
   onImported: () => void
@@ -121,6 +123,8 @@ export function SettingsPanel({
   onPrefs: (next: AppPrefs) => void
   lastChecked: number | null
   onSortChanged: () => void
+  /** Ask before doing something that cannot be undone. */
+  confirm: (spec: PromptSpec) => void
 }) {
   const theme = useTheme()
   const scale = useScale()
@@ -189,18 +193,31 @@ export function SettingsPanel({
   const setHome = (patch: Partial<HomePrefs>) => onHomePrefs({ ...home, ...patch })
 
   // Interests and mutes live in the database, because the ranking that reads
-  // them runs in Rust. Debounced, so typing is not a write per keystroke.
-  const listTimer = useRef<number | null>(null)
+  // them runs in Rust. Debounced per list: they used to share one timer, so
+  // typing in Muted within 400ms of typing in Interests silently threw the
+  // Interests edit away.
+  const listTimers = useRef<Record<string, number>>({})
+  const pending = useRef<Record<string, string>>({})
   function saveList(key: "home_interests" | "home_mutes", value: string) {
-    if (listTimer.current) window.clearTimeout(listTimer.current)
-    listTimer.current = window.setTimeout(() => {
+    const timers = listTimers.current
+    pending.current[key] = value
+    if (timers[key]) window.clearTimeout(timers[key])
+    timers[key] = window.setTimeout(() => {
+      delete timers[key]
+      delete pending.current[key]
       void api.setSetting(key, value).then(onHomeChanged)
     }, 400)
   }
+  // Closing Settings inside the debounce saves the edit instead of losing it.
   useEffect(
     () => () => {
-      if (listTimer.current) window.clearTimeout(listTimer.current)
+      for (const id of Object.values(listTimers.current)) window.clearTimeout(id)
+      const left = Object.entries(pending.current)
+      if (left.length) {
+        void Promise.all(left.map(([k, v]) => api.setSetting(k, v))).then(onHomeChanged)
+      }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
 
@@ -225,6 +242,9 @@ export function SettingsPanel({
       onClick={dismiss}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-title"
         className={cn(
           "h-full w-[380px] overflow-y-auto border-l border-border bg-popover shadow-float",
           closing ? "animate-slide-out" : "animate-slide-in",
@@ -232,11 +252,23 @@ export function SettingsPanel({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-popover/90 px-5 py-4 backdrop-blur">
-          <h2 className="text-[14px] font-semibold tracking-tight">Settings</h2>
+          <h2 id="settings-title" className="text-[14px] font-semibold tracking-tight">
+            Settings
+          </h2>
           <div className="flex items-center gap-0.5">
             <button
               type="button"
-              onClick={theme.reset}
+              onClick={() =>
+                confirm({
+                  title: "Reset appearance?",
+                  detail:
+                    "Theme, accent, density, animations and reading settings go back to their " +
+                    "defaults. Your feeds and articles are not touched.",
+                  confirmLabel: "Reset",
+                  destructive: true,
+                  onConfirm: () => theme.reset(),
+                })
+              }
               title="Reset appearance to defaults"
               className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
             >

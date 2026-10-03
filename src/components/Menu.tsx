@@ -47,9 +47,17 @@ export function Menu({
   }, [])
 
   const toggle = useCallback(() => {
+    // A click on the trigger while the menu is still animating out means
+    // "open it again". Treating it as another close swallowed the click.
+    if (closing) {
+      if (timer.current !== null) window.clearTimeout(timer.current)
+      timer.current = null
+      setClosing(false)
+      return
+    }
     if (open) close()
     else setOpen(true)
-  }, [open, close])
+  }, [open, closing, close])
 
   useEffect(
     () => () => {

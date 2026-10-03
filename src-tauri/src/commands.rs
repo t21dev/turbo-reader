@@ -1,8 +1,8 @@
 //! The Tauri command surface. Everything the UI can ask for.
 
-use crate::{db, feed, home, markdown, opml, readable, winstate};
+use crate::{db, discover, feed, home, markdown, opml, readable, winstate};
 use anyhow::Result;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::{Manager, State};
@@ -10,6 +10,9 @@ use tauri::{Manager, State};
 pub struct AppState {
     pub db: Mutex<Connection>,
     pub http: reqwest::Client,
+    /// Held for the length of a refresh, so the background schedule and a
+    /// manual refresh never fetch every feed twice at the same time.
+    pub fetching: tokio::sync::Mutex<()>,
 }
 
 /// Tauri needs a `String` error; keep the real message.
@@ -177,7 +180,7 @@ pub fn set_group_expanded(state: State<AppState>, id: i64, expanded: bool) -> Re
 /// Feeds and folders are hand-ordered by default and alphabetical on request.
 /// Fluent Reader issue #539 asked for the second one.
 fn order_by(conn: &Connection) -> &'static str {
-    match db::get_setting(conn, "feed_sort").ok().flatten().as_deref() {
+    match db::get_setting_str(conn, "feed_sort").as_deref() {
         Some("alpha") => "name COLLATE NOCASE",
         _ => "position, name COLLATE NOCASE",
     }
@@ -220,31 +223,74 @@ pub fn list_sources(state: State<AppState>) -> Result<Vec<Source>, String> {
     Ok(rows)
 }
 
+/// What the Add Feed dialog shows after Check: the feed found behind what was
+/// typed, a few of its latest titles, and whether it is already subscribed.
+#[tauri::command]
+pub async fn preview_source(
+    state: State<'_, AppState>,
+    url: String,
+) -> Result<discover::Preview, String> {
+    let resolved = discover::resolve(&state.http, &url).await?;
+    let existing = {
+        let conn = state.db.lock().map_err(e)?;
+        existing_source(&conn, &resolved.url)?
+    };
+    Ok(discover::preview(&resolved, existing))
+}
+
+/// Subscribe. Accepts a site address or a bare domain as readily as a feed
+/// address, and refuses a feed that is already there rather than quietly
+/// overwriting the name someone gave it.
 #[tauri::command]
 pub async fn add_source(
     state: State<'_, AppState>,
     url: String,
     group_id: Option<i64>,
 ) -> Result<i64, String> {
-    let http = state.http.clone();
-    let outcome = feed::fetch(&http, &url, None, None).await.map_err(e)?;
-    let name = outcome.feed_title.clone().unwrap_or_else(|| url.clone());
-
+    let resolved = discover::resolve(&state.http, &url).await?;
     let conn = state.db.lock().map_err(e)?;
+    if let Some(found) = existing_source(&conn, &resolved.url)? {
+        return Err(format!("Already subscribed as \"{}\".", found.name));
+    }
+    let outcome = &resolved.outcome;
+    let name = outcome
+        .feed_title
+        .clone()
+        .filter(|t| !t.trim().is_empty())
+        .unwrap_or_else(|| resolved.url.clone());
     conn.execute(
         "INSERT INTO sources(url, name, site_url, icon_url, group_id, position)
-         VALUES(?1, ?2, ?3, ?4, ?5, (SELECT COALESCE(MAX(position),0)+1 FROM sources))
-         ON CONFLICT(url) DO UPDATE SET name = excluded.name",
-        params![url, name, outcome.site_url, outcome.icon_url, group_id],
+         VALUES(?1, ?2, ?3, ?4, ?5, (SELECT COALESCE(MAX(position),0)+1 FROM sources))",
+        params![
+            resolved.url,
+            name,
+            outcome.site_url,
+            outcome.icon_url,
+            group_id
+        ],
     )
     .map_err(e)?;
-    let id: i64 = conn
-        .query_row("SELECT id FROM sources WHERE url = ?1", params![url], |r| {
-            r.get(0)
-        })
-        .map_err(e)?;
-    insert_entries(&conn, id, &outcome).map_err(e)?;
+    let id = conn.last_insert_rowid();
+    insert_entries(&conn, id, outcome).map_err(e)?;
     Ok(id)
+}
+
+/// The subscription for a feed address, if there is one. Compared without a
+/// trailing slash, since the same feed is often written both ways.
+fn existing_source(conn: &Connection, url: &str) -> Result<Option<discover::Existing>, String> {
+    let bare = url.trim_end_matches('/');
+    conn.query_row(
+        "SELECT id, name FROM sources WHERE rtrim(url, '/') = ?1",
+        params![bare],
+        |r| {
+            Ok(discover::Existing {
+                id: r.get(0)?,
+                name: r.get(1)?,
+            })
+        },
+    )
+    .optional()
+    .map_err(e)
 }
 
 #[tauri::command]
@@ -260,20 +306,12 @@ pub fn update_source(
     state: State<AppState>,
     id: i64,
     name: Option<String>,
-    group_id: Option<Option<i64>>,
     keep_limit: Option<i64>,
 ) -> Result<(), String> {
     let conn = state.db.lock().map_err(e)?;
     if let Some(n) = name {
         conn.execute("UPDATE sources SET name = ?2 WHERE id = ?1", params![id, n])
             .map_err(e)?;
-    }
-    if let Some(g) = group_id {
-        conn.execute(
-            "UPDATE sources SET group_id = ?2 WHERE id = ?1",
-            params![id, g],
-        )
-        .map_err(e)?;
     }
     if let Some(k) = keep_limit {
         conn.execute(
@@ -284,6 +322,111 @@ pub fn update_source(
         db::enforce_keep_limit(&conn, id).map_err(e)?;
     }
     Ok(())
+}
+
+/// Put a feed in a folder, or take it out of one with `None`.
+///
+/// This used to be a field on update_source typed `Option<Option<i64>>`, which
+/// cannot express "no folder" at all (a JSON null reads as "leave it alone")
+/// and which the client was sending as an array the command could not read.
+/// Moving a feed silently did nothing.
+#[tauri::command]
+pub fn move_source(state: State<AppState>, id: i64, group_id: Option<i64>) -> Result<(), String> {
+    let conn = state.db.lock().map_err(e)?;
+    let n = conn
+        .execute(
+            "UPDATE sources SET group_id = ?2 WHERE id = ?1",
+            params![id, group_id],
+        )
+        .map_err(e)?;
+    if n == 0 {
+        return Err("That feed no longer exists.".into());
+    }
+    Ok(())
+}
+
+/// How many articles a new retention limit would remove, so the confirmation
+/// can say a number instead of "some". Starred articles are never counted,
+/// because they are never removed.
+#[tauri::command]
+pub fn retention_preview(state: State<AppState>, id: i64, limit: i64) -> Result<i64, String> {
+    if limit <= 0 {
+        return Ok(0);
+    }
+    let conn = state.db.lock().map_err(e)?;
+    conn.query_row(
+        "SELECT COUNT(*) FROM items
+          WHERE source_id = ?1 AND starred = 0
+            AND id NOT IN (SELECT id FROM items WHERE source_id = ?1
+                            ORDER BY published DESC LIMIT ?2)",
+        params![id, limit],
+        |r| r.get(0),
+    )
+    .map_err(e)
+}
+
+/// How many articles a mark-all-read would change, for its confirmation.
+#[tauri::command]
+pub fn mark_all_read_preview(state: State<AppState>, filter: Filter) -> Result<i64, String> {
+    let conn = state.db.lock().map_err(e)?;
+    let scope = filter.scope.as_deref().unwrap_or("all");
+    let id = filter.id.unwrap_or(0);
+    let before = filter.before.unwrap_or(i64::MAX);
+    let n = match scope {
+        "source" => conn.query_row(
+            "SELECT COUNT(*) FROM items WHERE read = 0 AND hidden = 0 AND source_id = ?1 AND published <= ?2",
+            params![id, before],
+            |r| r.get(0),
+        ),
+        "group" => conn.query_row(
+            "SELECT COUNT(*) FROM items WHERE read = 0 AND hidden = 0 AND published <= ?2 AND source_id IN
+               (SELECT id FROM sources WHERE group_id = ?1)",
+            params![id, before],
+            |r| r.get(0),
+        ),
+        "starred" => conn.query_row(
+            "SELECT COUNT(*) FROM items WHERE read = 0 AND hidden = 0 AND starred = 1 AND published <= ?1",
+            params![before],
+            |r| r.get(0),
+        ),
+        _ => conn.query_row(
+            "SELECT COUNT(*) FROM items WHERE read = 0 AND hidden = 0 AND published <= ?1",
+            params![before],
+            |r| r.get(0),
+        ),
+    }
+    .map_err(e)?;
+    Ok(n)
+}
+
+/// Minutes between scheduled refreshes. 0 switches the schedule off.
+pub fn refresh_minutes(conn: &Connection) -> i64 {
+    db::get_setting_str(conn, "refresh_minutes")
+        .and_then(|v| v.trim().parse::<i64>().ok())
+        .unwrap_or(30)
+}
+
+/// Whether the oldest feed is older than the interval. Measured from what is
+/// in the database rather than from when the window opened, so reopening the
+/// app does not trigger a refresh of feeds checked a minute ago, and a feed
+/// that has never been fetched (just imported) is due at once.
+pub fn refresh_due(conn: &Connection, now: i64) -> bool {
+    let minutes = refresh_minutes(conn);
+    if minutes <= 0 {
+        return false;
+    }
+    let oldest: Option<i64> = conn
+        .query_row(
+            "SELECT MIN(COALESCE(last_fetched, 0)) FROM sources WHERE hidden = 0",
+            [],
+            |r| r.get(0),
+        )
+        .ok()
+        .flatten();
+    match oldest {
+        Some(t) => now - t >= minutes * 60,
+        None => false,
+    }
 }
 
 /* -------------------------------- fetch -------------------------------- */
@@ -335,7 +478,22 @@ fn insert_entries(
 }
 
 #[tauri::command]
-pub async fn fetch_all(state: State<'_, AppState>) -> Result<FetchReport, String> {
+pub async fn fetch_all(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<FetchReport, String> {
+    // A manual refresh waits for a scheduled one already in flight, then runs.
+    let _guard = state.fetching.lock().await;
+    let _ = tauri::Emitter::emit(&app, "refresh-started", ());
+    let report = refresh_all(&state).await;
+    if let Ok(r) = &report {
+        let _ = tauri::Emitter::emit(&app, "feeds-updated", r);
+    }
+    report
+}
+
+/// Fetch every feed. Shared by the refresh button and the background schedule.
+pub async fn refresh_all(state: &AppState) -> Result<FetchReport, String> {
     let started = std::time::Instant::now();
     // Collect into an owned Vec and bind it, so the guard and the statement
     // are both released before the block ends. Nothing may be held across
@@ -375,6 +533,12 @@ pub async fn fetch_all(state: State<'_, AppState>) -> Result<FetchReport, String
                 Ok(outcome) => {
                     if outcome.not_modified {
                         report.not_modified += 1;
+                        // Unchanged is still checked. Skipping this left a feed
+                        // that answers 304 looking permanently stale.
+                        let _ = conn.execute(
+                            "UPDATE sources SET last_fetched = ?2, last_error = NULL WHERE id = ?1",
+                            params![id, chrono::Utc::now().timestamp()],
+                        );
                         continue;
                     }
                     match insert_entries(&conn, id, &outcome) {
@@ -786,10 +950,12 @@ pub fn stats(state: State<AppState>) -> Result<Stats, String> {
     let page_count = one("PRAGMA page_count")?;
     let page_size = one("PRAGMA page_size")?;
     Ok(Stats {
-        sources: one("SELECT COUNT(*) FROM sources")?,
-        items: one("SELECT COUNT(*) FROM items")?,
-        unread: one("SELECT COUNT(*) FROM items WHERE read = 0")?,
-        starred: one("SELECT COUNT(*) FROM items WHERE starred = 1")?,
+        // Hidden articles and feeds are left out, so these numbers agree with
+        // what the sidebar shows rather than with what is on disk.
+        sources: one("SELECT COUNT(*) FROM sources WHERE hidden = 0")?,
+        items: one("SELECT COUNT(*) FROM items WHERE hidden = 0")?,
+        unread: one("SELECT COUNT(*) FROM items WHERE read = 0 AND hidden = 0")?,
+        starred: one("SELECT COUNT(*) FROM items WHERE starred = 1 AND hidden = 0")?,
         db_bytes: page_count * page_size,
     })
 }
@@ -1186,4 +1352,82 @@ pub fn set_group_layout(
 pub fn quotes_path(app: tauri::AppHandle) -> Result<String, String> {
     let dir = app.path().app_data_dir().map_err(e)?;
     Ok(dir.join("quotes.json").to_string_lossy().into_owned())
+}
+
+#[cfg(test)]
+mod schedule_tests {
+    use super::*;
+
+    fn conn() -> Connection {
+        let c = Connection::open_in_memory().unwrap();
+        c.execute_batch(
+            "CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+             CREATE TABLE sources (id INTEGER PRIMARY KEY, last_fetched INTEGER, hidden INTEGER NOT NULL DEFAULT 0);",
+        )
+        .unwrap();
+        c
+    }
+
+    const NOW: i64 = 1_800_000_000;
+
+    #[test]
+    fn nothing_is_due_with_no_feeds() {
+        assert!(!refresh_due(&conn(), NOW));
+    }
+
+    #[test]
+    fn a_feed_checked_a_minute_ago_is_not_due() {
+        let c = conn();
+        c.execute("INSERT INTO sources(last_fetched) VALUES (?1)", [NOW - 60])
+            .unwrap();
+        assert!(!refresh_due(&c, NOW), "30 minute default");
+    }
+
+    #[test]
+    fn the_oldest_feed_decides() {
+        let c = conn();
+        c.execute("INSERT INTO sources(last_fetched) VALUES (?1)", [NOW - 60])
+            .unwrap();
+        c.execute(
+            "INSERT INTO sources(last_fetched) VALUES (?1)",
+            [NOW - 31 * 60],
+        )
+        .unwrap();
+        assert!(refresh_due(&c, NOW));
+    }
+
+    #[test]
+    fn a_never_fetched_feed_is_due_at_once() {
+        let c = conn();
+        c.execute("INSERT INTO sources(last_fetched) VALUES (NULL)", [])
+            .unwrap();
+        assert!(refresh_due(&c, NOW));
+    }
+
+    #[test]
+    fn the_interval_comes_from_settings_and_zero_switches_it_off() {
+        let c = conn();
+        c.execute(
+            "INSERT INTO sources(last_fetched) VALUES (?1)",
+            [NOW - 20 * 60],
+        )
+        .unwrap();
+        db::set_setting(&c, "refresh_minutes", "15").unwrap();
+        assert!(refresh_due(&c, NOW), "20 minutes old, 15 minute interval");
+        db::set_setting(&c, "refresh_minutes", "0").unwrap();
+        assert!(!refresh_due(&c, NOW), "off means off");
+    }
+
+    #[test]
+    fn hidden_feeds_do_not_count() {
+        let c = conn();
+        c.execute(
+            "INSERT INTO sources(last_fetched, hidden) VALUES (0, 1)",
+            [],
+        )
+        .unwrap();
+        c.execute("INSERT INTO sources(last_fetched) VALUES (?1)", [NOW - 60])
+            .unwrap();
+        assert!(!refresh_due(&c, NOW));
+    }
 }

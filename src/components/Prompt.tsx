@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react"
+import { AlertCircle } from "lucide-react"
+import { reason } from "@/lib/notify"
 import { useDismissible } from "@/lib/presence"
 import { cn } from "@/lib/utils"
 
@@ -22,15 +24,23 @@ export type PromptSpec = {
 export function Prompt({ spec, onClose }: { spec: PromptSpec | null; onClose: () => void }) {
   const [value, setValue] = useState("")
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const input = useRef<HTMLInputElement>(null)
+  const confirmBtn = useRef<HTMLButtonElement>(null)
   const { closing, dismiss } = useDismissible(onClose)
 
   useEffect(() => {
     if (!spec) return
     setValue(spec.field?.value ?? "")
     setBusy(false)
+    setError(null)
     // Select rather than place a caret: renaming usually replaces the name.
-    const t = window.setTimeout(() => input.current?.select(), 40)
+    // A plain confirmation focuses its button, so Enter confirms and Escape
+    // cancels without reaching for the mouse.
+    const t = window.setTimeout(
+      () => (spec.field ? input.current?.select() : confirmBtn.current?.focus()),
+      40,
+    )
     return () => window.clearTimeout(t)
   }, [spec])
 
@@ -53,9 +63,13 @@ export function Prompt({ spec, onClose }: { spec: PromptSpec | null; onClose: ()
   async function confirm() {
     if (invalid || busy || !spec) return
     setBusy(true)
+    setError(null)
     try {
       await spec.onConfirm(value.trim())
       dismiss()
+    } catch (err) {
+      // Stay open and say why, rather than closing as though it worked.
+      setError(reason(err))
     } finally {
       setBusy(false)
     }
@@ -70,6 +84,9 @@ export function Prompt({ spec, onClose }: { spec: PromptSpec | null; onClose: ()
       onClick={dismiss}
     >
       <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="prompt-title"
         onClick={(e) => e.stopPropagation()}
         onSubmit={(e) => {
           e.preventDefault()
@@ -81,7 +98,9 @@ export function Prompt({ spec, onClose }: { spec: PromptSpec | null; onClose: ()
         )}
       >
         <div className="px-5 pb-4 pt-4">
-          <h2 className="text-[13.5px] font-semibold tracking-tight">{spec.title}</h2>
+          <h2 id="prompt-title" className="text-[13.5px] font-semibold tracking-tight">
+            {spec.title}
+          </h2>
           {spec.detail && (
             <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
               {spec.detail}
@@ -102,6 +121,12 @@ export function Prompt({ spec, onClose }: { spec: PromptSpec | null; onClose: ()
               />
             </label>
           )}
+          {error && (
+            <p role="alert" className="mt-3 flex items-start gap-2 text-[12px] leading-relaxed text-destructive">
+              <AlertCircle size={14} className="mt-[1px] shrink-0" />
+              {error}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-end gap-1.5 border-t border-border px-4 py-3">
@@ -113,6 +138,7 @@ export function Prompt({ spec, onClose }: { spec: PromptSpec | null; onClose: ()
             Cancel
           </button>
           <button
+            ref={confirmBtn}
             type="submit"
             disabled={invalid || busy}
             className={cn(

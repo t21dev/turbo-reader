@@ -176,10 +176,7 @@ fn default_layout(items: &[HomeItem]) -> &'static str {
 }
 
 fn setting(conn: &Connection, key: &str) -> String {
-    db::get_setting(conn, key)
-        .ok()
-        .flatten()
-        .unwrap_or_default()
+    db::get_setting_str(conn, key).unwrap_or_default()
 }
 
 fn counts(conn: &Connection, now: i64) -> rusqlite::Result<Counts> {
@@ -261,7 +258,7 @@ type GroupRow = (Option<i64>, String, Option<String>);
 fn groups(conn: &Connection) -> rusqlite::Result<Vec<GroupRow>> {
     let mut stmt = conn.prepare(&format!(
         "SELECT id, name, home_layout FROM groups ORDER BY {}",
-        match db::get_setting(conn, "feed_sort").ok().flatten().as_deref() {
+        match db::get_setting_str(conn, "feed_sort").as_deref() {
             Some("alpha") => "name COLLATE NOCASE",
             _ => "position, name COLLATE NOCASE",
         }

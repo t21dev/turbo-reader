@@ -17,17 +17,33 @@ export function motionOff(): boolean {
  * the panel animates in and then vanishes, which reads as a glitch rather than
  * a close. `closing` drives the exit class; `dismiss` starts it and calls
  * `onClose` once the animation has had its time.
+ *
+ * Everything is reset once the close completes. A component that stays
+ * mounted between uses, like the shared confirmation dialog, used to keep
+ * `closing` true and its timer set forever after the first close, so the next
+ * dialog opened invisible, could not be dismissed, and its transparent
+ * backdrop swallowed every click in the app.
  */
 export function useDismissible(onClose: () => void, ms: number = EXIT_MS) {
   const [closing, setClosing] = useState(false)
   const timer = useRef<number | null>(null)
+  const latest = useRef(onClose)
+  latest.current = onClose
 
   const dismiss = useCallback(() => {
     if (timer.current !== null) return
-    const wait = motionOff() ? 0 : ms
+    const finish = () => {
+      timer.current = null
+      setClosing(false)
+      latest.current()
+    }
+    if (motionOff()) {
+      finish()
+      return
+    }
     setClosing(true)
-    timer.current = window.setTimeout(onClose, wait)
-  }, [onClose, ms])
+    timer.current = window.setTimeout(finish, ms)
+  }, [ms])
 
   useEffect(
     () => () => {
