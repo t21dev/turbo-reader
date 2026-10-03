@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-03
+
 ### Added
+- Arrange home your way. In Settings > Home, move sections (Glance, Search,
+  Pinned, Categories) up or down, and put categories in a home order of their
+  own without touching the sidebar.
+- A card size setting for home: small, medium or large.
 - Adding a feed opens a dialog with a Check button. It shows the feed's title,
   how many articles it has and the latest three before you subscribe, and
   tells you if you already follow it.
@@ -33,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clicking a menu button while its menu closed left it shut.
 - Escape clears the search box.
 - Imported feeds are fetched straight away.
+- The layout picker for a category always said Auto, even after you chose one.
 
 ## [0.3.0] - 2026-10-03
 
@@ -139,7 +146,8 @@ First public release.
   to reason about, which is a failure mode browser engines do not let a page
   recover from.
 
-[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/t21dev/turbo-reader/releases/tag/v0.4.0
 [0.3.0]: https://github.com/t21dev/turbo-reader/releases/tag/v0.3.0
 [0.2.0]: https://github.com/t21dev/turbo-reader/releases/tag/v0.2.0
 [0.1.0]: https://github.com/t21dev/turbo-reader/releases/tag/v0.1.0
