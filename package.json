@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "app": "tauri dev",
-    "app:build": "tauri build"
+    "app:build": "tauri build",
+    "e2e:build": "node e2e/build.mjs",
+    "e2e": "node --test --test-concurrency=1 --test-timeout=600000 \"e2e/tests/*.test.mjs\""
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
