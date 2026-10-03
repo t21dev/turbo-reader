@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Adding a feed opens a dialog with a Check button. It shows the feed's title,
+  how many articles it has and the latest three before you subscribe, and
+  tells you if you already follow it.
+- Paste a website instead of a feed and Turbo Reader finds the feed, from the
+  page's own links or the usual places (`/feed`, `/rss.xml` and so on).
+- Destructive actions ask first: deleting a feed or folder, hiding an article,
+  marking everything read, lowering how many articles a feed keeps, and
+  resetting appearance.
+- Errors show as a note in the corner instead of failing silently.
+- An end to end test suite that drives the real app (`npm run e2e`).
+
+### Fixed
+- Only the first dialog in a session worked. Later ones opened invisible and
+  blocked every click.
+- Moving a feed to another folder always failed.
+- Sort order and home settings were read back wrong and fell back to defaults.
+- Automatic refresh stalled while the window was minimised and restarted its
+  clock on every launch. It now runs in the background and does not refetch
+  feeds that were checked a minute ago.
+- Feeds that answer "not modified" were treated as never checked.
+- Unread counts included hidden feeds.
+- Quick edits to interests and mutes could be lost.
+- Clicking a menu button while its menu closed left it shut.
+- Escape clears the search box.
+- Imported feeds are fetched straight away.
+
 ## [0.3.0] - 2026-10-03
 
 ### Added

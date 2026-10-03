@@ -177,6 +177,16 @@ npm run app:build    # production bundle
 cd src-tauri && cargo test
 ```
 
+End to end tests drive the real app through WebDriver, with its own data
+folder so your feeds are never touched. They need
+[tauri-driver](https://v2.tauri.app/develop/tests/webdriver/) on your path and
+an `msedgedriver.exe` matching your WebView2 version in `e2e/.bin/`.
+
+```bash
+npm run e2e:build    # build the test copy of the app
+npm run e2e          # run the suite
+```
+
 You need Rust (stable) and the [Tauri 2 prerequisites](https://v2.tauri.app/start/prerequisites/) for your platform.
 
 ## Attribution
