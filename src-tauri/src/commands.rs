@@ -1332,9 +1332,7 @@ pub fn home_summary(
     let mut page = home::build(&conn, window, per_band, now).map_err(e)?;
 
     if req.masthead.as_deref() == Some("quote") {
-        let custom = app
-            .path()
-            .app_data_dir()
+        let custom = crate::data_dir(&app)
             .map(|dir| home::custom_quotes(&dir))
             .unwrap_or_default();
         page.quote = home::quote_for(now / 86_400, &custom);
@@ -1383,7 +1381,7 @@ pub fn set_group_layout(
 /// create it on first use.
 #[tauri::command]
 pub fn quotes_path(app: tauri::AppHandle) -> Result<String, String> {
-    let dir = app.path().app_data_dir().map_err(e)?;
+    let dir = crate::data_dir(&app).map_err(e)?;
     Ok(dir.join("quotes.json").to_string_lossy().into_owned())
 }
 

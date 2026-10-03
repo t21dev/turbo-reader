@@ -1,0 +1,9 @@
+node_modules
+dist
+dist-linux
+src-tauri/target
+src-tauri/target-*
+e2e/.bin
+e2e/.artifacts
+.git
+docs/*.png

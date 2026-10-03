@@ -108,3 +108,22 @@ jobs:
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
+
+      # A zip that runs without installing. The `portable` file next to the
+      # exe keeps all data in a `data` folder beside it.
+      - name: Portable zip (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $dir = "Turbo Reader"
+          New-Item -ItemType Directory $dir | Out-Null
+          Copy-Item "src-tauri/target/release/turbo-reader.exe" "$dir/Turbo Reader.exe"
+          Set-Content "$dir/portable" "Turbo Reader keeps its data in the data folder next to it while this file is here. Delete this file to use the normal per-user data folder instead. Needs the Microsoft Edge WebView2 Runtime, which Windows 10 and 11 already have."
+          $zip = "Turbo.Reader_${version}_x64_portable.zip"
+          Compress-Archive -Path $dir -DestinationPath $zip
+          # Straight to the release by id: a draft has no public tag to look up.
+          gh api -X POST "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ needs.create-release.outputs.release_id }}/assets?name=$zip" `
+            -H "Content-Type: application/zip" --input $zip --jq .name

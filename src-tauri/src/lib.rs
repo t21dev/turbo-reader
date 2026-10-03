@@ -27,15 +27,50 @@ use tauri::{Manager, WindowEvent};
 /// crash a second later still loses nothing.
 const WINDOW_STATE_DEBOUNCE: Duration = Duration::from_millis(600);
 
+/// Portable mode: a file named `portable` next to the executable keeps
+/// everything (the database, quotes, window position and the webview's own
+/// storage for theme and layout) in a `data` folder beside it instead of the
+/// user profile, so the whole app can live on a USB stick.
+pub fn portable_data_dir() -> Option<std::path::PathBuf> {
+    let dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
+    dir.join("portable").is_file().then(|| dir.join("data"))
+}
+
+/// Where the library and the user's files live: the portable folder when there
+/// is one, otherwise the usual per-user app data folder.
+pub fn data_dir<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<std::path::PathBuf> {
+    match portable_data_dir() {
+        Some(dir) => Ok(dir),
+        None => app.path().app_data_dir(),
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
-            let dir = app.path().app_data_dir()?;
+            let dir = data_dir(app.handle())?;
             std::fs::create_dir_all(&dir)?;
             let conn = db::open(&dir.join("turbo-reader.db"))?;
+
+            // The window is built here rather than from the config file, so
+            // portable mode can keep the webview's storage in the data folder.
+            // It is still created hidden, as configured.
+            let config = app
+                .config()
+                .app
+                .windows
+                .iter()
+                .find(|w| w.label == "main")
+                .cloned()
+                .expect("main window in tauri.conf.json");
+            let mut window = tauri::WebviewWindowBuilder::from_config(app.handle(), &config)?;
+            if portable_data_dir().is_some() {
+                window = window.data_directory(dir.join("webview"));
+            }
+            window.build()?;
 
             // Put the window back before it is shown. It is created hidden and
             // revealed from the frontend once React has painted, so none of

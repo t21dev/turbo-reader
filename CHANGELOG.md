@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- A portable version for Windows: a zip that runs without installing. While a
+  `portable` file sits next to the exe, the library, settings and window
+  position live in a `data` folder beside it.
+- `docker/linux-build.Dockerfile` builds the Linux `.deb`, `.rpm` and
+  `.AppImage` in Docker, so they can be made on any machine.
+
 ## [0.5.0] - 2026-10-03
 
 ### Added

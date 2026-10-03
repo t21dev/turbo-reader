@@ -12,3 +12,6 @@ src-tauri/gen
 src-tauri/target-e2e/
 e2e/.bin/
 e2e/.artifacts/
+
+# Linux packages built with docker/linux-build.Dockerfile
+dist-linux/

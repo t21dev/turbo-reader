@@ -13,6 +13,8 @@
     "windows": [
       {
         "title": "Turbo Reader",
+        "label": "main",
+        "create": false,
         "width": 1280,
         "height": 820,
         "minWidth": 880,

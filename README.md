@@ -20,6 +20,27 @@ By **[t21 dev](https://github.com/t21dev)** and **[TriptoAfsin](https://github.c
 
 ---
 
+## Install
+
+Download from the [latest release](https://github.com/t21dev/turbo-reader/releases/latest).
+
+| Platform | File |
+| --- | --- |
+| Windows | `_x64-setup.exe` or `.msi`, or `_x64_portable.zip` to run without installing |
+| macOS | `_aarch64.dmg` for Apple silicon, `_x64.dmg` for Intel |
+| Linux | `.AppImage`, `.deb` or `.rpm` |
+
+**Portable on Windows.** Unzip the portable zip anywhere, a USB stick included,
+and run `Turbo Reader.exe`. The `portable` file beside it keeps your library,
+settings and window position in a `data` folder next to the exe, so the whole
+reader moves with the folder. Delete the `portable` file to use the normal
+per-user data folder instead. It needs the Microsoft Edge WebView2 Runtime,
+which Windows 10 and 11 already have.
+
+The builds are not code-signed, so Windows SmartScreen and macOS Gatekeeper
+warn on first run. On macOS, right-click the app and choose Open, or run
+`xattr -cr "/Applications/Turbo Reader.app"`.
+
 ## Screenshots
 
 ![The home page: counts, search, pinned feeds and a band per category](docs/screenshot-home.png)
@@ -191,6 +212,16 @@ npm run e2e          # run the suite
 ```
 
 You need Rust (stable) and the [Tauri 2 prerequisites](https://v2.tauri.app/start/prerequisites/) for your platform.
+
+**Linux packages without the toolchain.** Docker can build the `.deb`, `.rpm`
+and `.AppImage` on any machine, Windows and macOS included:
+
+```bash
+docker build -f docker/linux-build.Dockerfile --output dist-linux .
+```
+
+The packages land in `dist-linux/`. The image builds on Ubuntu 22.04, the same
+base as the release builds, so the AppImage runs on the same distributions.
 
 ## Attribution
 
