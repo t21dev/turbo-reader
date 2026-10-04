@@ -77,7 +77,8 @@ test("E1 appearance applies at once and survives a restart", shot("E1", async ()
 
 test("E2 reading preferences reach the article", shot("E2", async () => {
   await ctx.settings()
-  await segment("Serif")
+  await ctx.s.exec(`[...document.querySelectorAll('[aria-label="Article font"] [role=radio]')].find(b => b.textContent.includes("System serif")).click()`)
+  await sleep(200)
   await segment("Wide")
   await segment("Right to left")
   const r = await root()

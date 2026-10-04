@@ -37,6 +37,11 @@ export default function App() {
   const [sources, setSources] = useState<Source[]>([])
   const [items, setItems] = useState<ItemSummary[]>([])
   const [current, setCurrent] = useState<ItemFull | null>(null)
+  // Reading mode: just the article, with the sidebar and list out of the way.
+  const [reading, setReading] = useState(false)
+  useEffect(() => {
+    if (!current) setReading(false)
+  }, [current])
 
   const [scope, setScope] = useState<Scope>("all")
   const [scopeId, setScopeId] = useState<number | null>(null)
@@ -509,6 +514,9 @@ export default function App() {
         case "d":
           setHideDuplicates((v) => !v)
           break
+        case "z":
+          if (current) setReading((v) => !v)
+          break
         case "t":
           setSort((s) => (s === "newest" ? "oldest" : "newest"))
           break
@@ -535,6 +543,7 @@ export default function App() {
           break
         case "Escape":
           if (shortcutsOpen) setShortcutsOpen(false)
+          else if (reading) setReading(false)
           else if (current) setCurrent(null)
           break
       }
@@ -609,7 +618,7 @@ export default function App() {
           className={cn(
             "min-h-0 shrink-0 overflow-hidden",
             "transition-[width,opacity,transform] duration-[280ms] ease-out",
-            sidebarOpen ? "w-[260px] opacity-100" : "w-0 -translate-x-3 opacity-0",
+            sidebarOpen && !reading ? "w-[260px] opacity-100" : "w-0 -translate-x-3 opacity-0",
           )}
         >
           <Sidebar
@@ -658,7 +667,7 @@ export default function App() {
           />
         ) : view === "list" ? (
           <>
-            <ArticleList
+            {!reading && <ArticleList
               items={items}
               sources={sources}
               selectedId={current?.id ?? null}
@@ -676,7 +685,7 @@ export default function App() {
               onMarkAllRead={(days) => void markAllRead(days)}
               onStar={(it) => void toggleStar(it.id, !it.starred)}
               onHide={(it) => void hide(it.id)}
-            />
+            />}
             <Reader
               item={current}
               youtubeInline={prefs.youtubeInline}
@@ -688,6 +697,8 @@ export default function App() {
               onContentLoaded={(id, content) =>
                 setCurrent((prev) => (prev && prev.id === id ? { ...prev, content } : prev))
               }
+              reading={reading}
+              onToggleReading={() => setReading((v) => !v)}
             />
           </>
         ) : current ? (
@@ -703,6 +714,8 @@ export default function App() {
               setCurrent((prev) => (prev && prev.id === id ? { ...prev, content } : prev))
             }
             onBack={() => setCurrent(null)}
+            reading={reading}
+            onToggleReading={() => setReading((v) => !v)}
           />
         ) : (
           <CardGrid

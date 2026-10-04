@@ -1,22 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import {
-  ArrowLeft,
-  Check,
-  Circle,
-  CircleDot,
-  Download,
-  ExternalLink,
-  EyeOff,
-  FileDown,
-  Globe,
-  Link2,
-  Loader2,
-  MoreHorizontal,
-  Printer,
-  QrCode,
-  Star,
-  Type,
-} from "lucide-react"
+import { ArrowLeft, Check, Circle, CircleDot, Download, ExternalLink, EyeOff, FileDown, Globe, Link2, Loader2, MoreHorizontal, Printer, QrCode, Star, Type, BookOpen, Minimize2 } from "lucide-react"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { save as saveDialog } from "@tauri-apps/plugin-dialog"
 import { api, type ItemFull } from "@/lib/api"
@@ -37,6 +20,9 @@ type Props = {
   onContentLoaded: (id: number, content: string) => void
   /** Card view has no list beside the reader, so it needs a way back. */
   onBack?: () => void
+  /** Reading mode: the article alone, sidebar and list hidden. */
+  reading?: boolean
+  onToggleReading?: () => void
 }
 
 export function Reader({
@@ -47,6 +33,8 @@ export function Reader({
   onHide,
   onContentLoaded,
   onBack,
+  reading = false,
+  onToggleReading,
 }: Props) {
   const theme = useTheme()
   const body = useRef<HTMLDivElement>(null)
@@ -189,6 +177,15 @@ export function Reader({
         >
           <Star size={14} className={item.starred ? "fill-starred text-starred" : undefined} />
         </ToolButton>
+
+        {onToggleReading && (
+          <ToolButton
+            label={reading ? "Leave reading mode (z)" : "Reading mode (z)"}
+            onClick={onToggleReading}
+          >
+            {reading ? <Minimize2 size={14} className="text-system" /> : <BookOpen size={14} />}
+          </ToolButton>
+        )}
 
         <ToolButton
           label="Load full content (f)"

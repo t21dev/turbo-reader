@@ -25,6 +25,8 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
       ["m", "Mark read or unread"],
       ["h", "Hide this article"],
       ["o", "Open in the browser"],
+      ["z", "Reading mode: the article alone"],
+      ["f", "Load the full article"],
     ],
   },
   {

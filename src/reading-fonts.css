@@ -1,0 +1,160 @@
+/* Reading fonts, all under the SIL Open Font License.
+ *
+ * Generated: only the Latin and Latin Extended faces are bundled, so the app
+ * does not carry Cyrillic, Greek and Vietnamese files nobody reads in. A
+ * browser fetches a face only when text on screen uses it.
+ */
+
+/* literata-latin-ext-wght-normal */
+@font-face {
+  font-family: 'Literata Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url(../node_modules/@fontsource-variable/literata/files/literata-latin-ext-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* literata-latin-wght-normal */
+@font-face {
+  font-family: 'Literata Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url(../node_modules/@fontsource-variable/literata/files/literata-latin-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* literata-latin-wght-italic */
+@font-face {
+  font-family: 'Literata Variable';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url(../node_modules/@fontsource-variable/literata/files/literata-latin-wght-italic.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* source-serif-4-latin-ext-wght-normal */
+@font-face {
+  font-family: 'Source Serif 4 Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url(../node_modules/@fontsource-variable/source-serif-4/files/source-serif-4-latin-ext-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* source-serif-4-latin-wght-normal */
+@font-face {
+  font-family: 'Source Serif 4 Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url(../node_modules/@fontsource-variable/source-serif-4/files/source-serif-4-latin-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* source-serif-4-latin-wght-italic */
+@font-face {
+  font-family: 'Source Serif 4 Variable';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url(../node_modules/@fontsource-variable/source-serif-4/files/source-serif-4-latin-wght-italic.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* merriweather-latin-ext-wght-normal */
+@font-face {
+  font-family: 'Merriweather Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 900;
+  src: url(../node_modules/@fontsource-variable/merriweather/files/merriweather-latin-ext-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* merriweather-latin-wght-normal */
+@font-face {
+  font-family: 'Merriweather Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 900;
+  src: url(../node_modules/@fontsource-variable/merriweather/files/merriweather-latin-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* merriweather-latin-wght-italic */
+@font-face {
+  font-family: 'Merriweather Variable';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 300 900;
+  src: url(../node_modules/@fontsource-variable/merriweather/files/merriweather-latin-wght-italic.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* atkinson-hyperlegible-next-latin-ext-wght-normal */
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url(../node_modules/@fontsource-variable/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-ext-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* atkinson-hyperlegible-next-latin-wght-normal */
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url(../node_modules/@fontsource-variable/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* atkinson-hyperlegible-next-latin-wght-italic */
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next Variable';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url(../node_modules/@fontsource-variable/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-wght-italic.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* Libron, by Nico Verbruggen: https://github.com/nicoverbruggen/libron (OFL, see assets/fonts/libron) */
+
+@font-face {
+  font-family: "Libron";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(./assets/fonts/libron/Libron-Regular.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Libron";
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400;
+  src: url(./assets/fonts/libron/Libron-Italic.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Libron";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url(./assets/fonts/libron/Libron-Bold.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Libron";
+  font-style: italic;
+  font-display: swap;
+  font-weight: 700;
+  src: url(./assets/fonts/libron/Libron-BoldItalic.woff2) format("woff2");
+}

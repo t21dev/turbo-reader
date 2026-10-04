@@ -6,6 +6,7 @@ import {
   Monitor,
   Sun,
   Moon,
+  BookOpen,
   RotateCcw,
   RefreshCw,
   CheckCircle2,
@@ -23,6 +24,7 @@ import { recordUpdateCheck } from "@/lib/updates"
 import { pickAndImportOpml } from "@/lib/opml"
 import { HomeSettings } from "@/components/HomeSettings"
 import { BackgroundPrefs } from "@/components/BackgroundPrefs"
+import { AgentSettings } from "@/components/AgentSettings"
 import type { PromptSpec } from "@/components/Prompt"
 import {
   ACCENTS,
@@ -280,6 +282,14 @@ export function SettingsPanel({
       ),
     },
     {
+      value: "paper",
+      label: (
+        <>
+          <BookOpen size={13} /> Paper
+        </>
+      ),
+    },
+    {
       value: "system",
       label: (
         <>
@@ -476,15 +486,34 @@ export function SettingsPanel({
 
         <Section title="Reading" hidden={onlyHome}>
           <Field label="Article font">
-            <Segmented
-              value={theme.font}
-              onChange={(v) => theme.set("font", v)}
-              options={READER_FONTS.map((f) => ({
-                value: f.key,
-                label: f.label,
-                style: { fontFamily: f.stack },
-              }))}
-            />
+            <div role="radiogroup" aria-label="Article font" className="grid grid-cols-2 gap-1.5">
+              {READER_FONTS.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={theme.font === f.key}
+                  onClick={() => theme.set("font", f.key)}
+                  title={f.note}
+                  className={cn(
+                    "row flex items-baseline gap-2 border px-2.5 py-2 text-left transition-colors duration-150",
+                    theme.font === f.key
+                      ? "border-system bg-elevated text-foreground"
+                      : "border-border text-muted-foreground hover:bg-secondary",
+                  )}
+                >
+                  <span className="text-[17px] leading-none" style={{ fontFamily: f.stack }}>
+                    Aa
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[12px] font-medium" style={{ fontFamily: f.stack }}>
+                      {f.label}
+                    </span>
+                    <span className="block truncate text-[10.5px] text-subtle">{f.note}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
           </Field>
 
           <Field label="Article text size">
@@ -632,6 +661,10 @@ export function SettingsPanel({
           <BackgroundPrefs />
         </Section>
 
+        <Section title="AI agents" hidden={onlyHome}>
+          <AgentSettings confirm={confirm} />
+        </Section>
+
         <Section title="Updates" hidden={onlyHome}>
           <Field label="Check at launch">
             <Segmented
@@ -721,8 +754,8 @@ export function SettingsPanel({
 
           <dl className="mt-3.5 grid grid-cols-2 gap-y-1.5 text-[12px]">
             {[
-              ["Installer", "3.2 MB"],
-              ["On disk", "8 MB"],
+              ["Installer", "4.7 MB"],
+              ["On disk", "11 MB"],
               ["Engine", "Rust + Tauri 2"],
             ].map(([k, v]) => (
               <div key={k} className="contents">

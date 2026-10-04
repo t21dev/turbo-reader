@@ -4,6 +4,7 @@
  */
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
+@import "./reading-fonts.css";
 
 @tailwind base;
 @tailwind components;
@@ -53,6 +54,30 @@
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
     --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  /* Paper: a warm, low-contrast off-white for long reading. Light accents,
+     softer ink, and borders the colour of the page rather than grey. */
+  .paper {
+    --background: 40 33% 93.5%;
+    --foreground: 30 18% 17%;
+    --card: 42 38% 96.5%;
+    --card-foreground: 30 18% 17%;
+    --popover: 42 40% 97%;
+    --popover-foreground: 30 18% 17%;
+    --elevated: 38 26% 87.5%;
+    --primary: 30 18% 17%;
+    --primary-foreground: 42 40% 97%;
+    --secondary: 38 28% 89.5%;
+    --secondary-foreground: 30 18% 17%;
+    --muted: 38 28% 89.5%;
+    --muted-foreground: 30 12% 36%;
+    --subtle: 32 9% 50%;
+    --accent: 38 28% 90%;
+    --accent-foreground: 30 18% 17%;
+    --border: 37 22% 82%;
+    --input: 37 20% 78%;
+    --ring: 30 10% 42%;
   }
 
   .dark {

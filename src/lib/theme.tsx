@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
 
-export type Mode = "light" | "dark" | "system"
+/** "paper" is a warm light theme for reading; it uses the light accents. */
+export type Mode = "light" | "dark" | "system" | "paper"
 
 /** Accents are stored as HSL triples so they drop straight into the tokens. */
 export const ACCENTS = {
@@ -60,13 +61,38 @@ export function accentHsl(accent: Accent, custom: string, resolved: "light" | "d
   return `${h} ${s}% ${Math.min(hi, Math.max(lo, l))}%`
 }
 export type Density = "comfortable" | "compact"
-export type ReaderFont = "sans" | "serif" | "mono"
+export type ReaderFont =
+  | "sans"
+  | "libron"
+  | "literata"
+  | "sourceserif"
+  | "merriweather"
+  | "atkinson"
+  | "serif"
+  | "mono"
 export type Direction = "ltr" | "rtl"
 
-export const READER_FONTS: { key: ReaderFont; label: string; stack: string }[] = [
-  { key: "sans", label: "Geist", stack: '"Geist Variable", ui-sans-serif, system-ui, sans-serif' },
-  { key: "serif", label: "Serif", stack: 'Georgia, "Iowan Old Style", "Times New Roman", serif' },
-  { key: "mono", label: "Mono", stack: '"Geist Mono Variable", ui-monospace, monospace' },
+/** Article typefaces. All bundled and open source (SIL OFL), so they work
+    offline; only Latin glyphs are bundled, and anything else falls back to
+    the system serif. A face is only loaded once text on screen uses it. */
+/** Every article font ends with these: the system's own fonts for scripts the
+    reading fonts do not carry (Cyrillic, Greek, Arabic, Hebrew, CJK, Indic and
+    the rest), then each platform's colour emoji font. A character missing
+    from the chosen font is drawn from here, one character at a time. */
+const SANS_FALLBACK =
+  'ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"'
+const SERIF_FALLBACK =
+  'Georgia, "Iowan Old Style", "Times New Roman", "Noto Serif", serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"'
+
+export const READER_FONTS: { key: ReaderFont; label: string; note: string; stack: string }[] = [
+  { key: "sans", label: "Geist", note: "The app's own sans", stack: `"Geist Variable", ${SANS_FALLBACK}` },
+  { key: "libron", label: "Libron", note: "Serif tuned for e-readers", stack: `"Libron", ${SERIF_FALLBACK}` },
+  { key: "literata", label: "Literata", note: "Made for long e-book reading", stack: `"Literata Variable", ${SERIF_FALLBACK}` },
+  { key: "sourceserif", label: "Source Serif", note: "Adobe's screen text serif", stack: `"Source Serif 4 Variable", ${SERIF_FALLBACK}` },
+  { key: "merriweather", label: "Merriweather", note: "Drawn for reading on screens", stack: `"Merriweather Variable", ${SERIF_FALLBACK}` },
+  { key: "atkinson", label: "Atkinson", note: "Hyperlegible, for low vision", stack: `"Atkinson Hyperlegible Next Variable", ${SANS_FALLBACK}` },
+  { key: "serif", label: "System serif", note: "Georgia, nothing extra loaded", stack: SERIF_FALLBACK },
+  { key: "mono", label: "Mono", note: "Geist Mono", stack: `"Geist Mono Variable", ui-monospace, monospace, ${SANS_FALLBACK}` },
 ]
 
 /** Article body sizes, in rem. The UI chrome is scaled separately by zoom. */
@@ -114,7 +140,7 @@ function readStored(): Prefs {
     if (!raw) return DEFAULTS
     const o = JSON.parse(raw) as Partial<Prefs>
     return {
-      mode: o.mode ?? DEFAULTS.mode,
+      mode: (["light", "dark", "system", "paper"] as const).includes(o.mode as Mode) ? o.mode! : DEFAULTS.mode,
       accent:
         o.accent === "custom" || (o.accent && o.accent in ACCENTS) ? o.accent : DEFAULTS.accent,
       customAccent: normalizeHex(o.customAccent ?? "") ?? DEFAULTS.customAccent,
@@ -144,11 +170,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const resolved: "light" | "dark" =
-    prefs.mode === "system" ? (systemDark ? "dark" : "light") : prefs.mode
+    prefs.mode === "system" ? (systemDark ? "dark" : "light") : prefs.mode === "dark" ? "dark" : "light"
 
   useEffect(() => {
     const root = document.documentElement
     root.classList.toggle("dark", resolved === "dark")
+    root.classList.toggle("paper", prefs.mode === "paper")
     root.dataset.density = prefs.density
     root.dataset.motion = prefs.animations ? "full" : "none"
 

@@ -71,10 +71,12 @@
           var mode = raw ? JSON.parse(raw).mode : "system"
           var dark =
             mode === "dark" ||
-            (mode !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches)
+            (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches) ||
+            (!mode && window.matchMedia("(prefers-color-scheme: dark)").matches)
           var root = document.documentElement
           root.classList.toggle("dark", dark)
           root.classList.toggle("light", !dark)
+          root.classList.toggle("paper", mode === "paper")
           root.style.colorScheme = dark ? "dark" : "light"
         } catch (e) {
           /* first run, or storage blocked: the dark default stands */

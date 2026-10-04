@@ -5,8 +5,30 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Geist Variable"', "ui-sans-serif", "system-ui", "sans-serif"],
-        mono: ['"Geist Mono Variable"', "ui-monospace", "SFMono-Regular", "monospace"],
+        // The system fonts and colour emoji come last, for every character
+        // Geist does not draw: other scripts, symbols and emoji.
+        sans: [
+          '"Geist Variable"',
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          '"Segoe UI"',
+          '"Noto Sans"',
+          "sans-serif",
+          '"Apple Color Emoji"',
+          '"Segoe UI Emoji"',
+          '"Segoe UI Symbol"',
+          '"Noto Color Emoji"',
+        ],
+        mono: [
+          '"Geist Mono Variable"',
+          "ui-monospace",
+          "SFMono-Regular",
+          "monospace",
+          '"Apple Color Emoji"',
+          '"Segoe UI Emoji"',
+          '"Noto Color Emoji"',
+        ],
       },
       colors: {
         border: "hsl(var(--border))",
