@@ -21,9 +21,17 @@ const visible = () => ctx.s.invoke("plugin:window|is_visible", { label: "main" }
 test("K1 everything is off by default, and the welcome screen offers it", shot("K1", async () => {
   const prefs = await ctx.s.invoke("get_background")
   assert.deepEqual(prefs, { closeToTray: false, notify: "off" })
+  // the third welcome step
+  for (let i = 0; i < 2; i++) {
+    await (await ctx.s.waitFor(
+      () => ctx.s.exec(`return [...document.querySelectorAll('[data-welcome] footer button')].find(b => /Next|Skip for now/.test(b.textContent)) ?? null`),
+      "the next step button",
+    )).click()
+    await sleep(250)
+  }
   await ctx.s.waitFor(() => ctx.s.exec(`return !!document.querySelector('[data-background-prefs]')`), "the background choices on the welcome screen")
   const text = await ctx.pageText()
-  assert.ok(text.includes("How Turbo Reader runs"))
+  assert.ok(text.includes("How it runs"))
   assert.ok(text.includes("Keep running in the tray"))
   const switches = await ctx.s.exec(`return [...document.querySelectorAll('[data-background-prefs] [role=switch]')].map(s => s.getAttribute('aria-checked'))`)
   assert.ok(switches.every((s) => s === "false"), `switches ${switches}`)

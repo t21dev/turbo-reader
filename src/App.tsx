@@ -216,6 +216,13 @@ export default function App() {
     if (added > 0) void refresh()
   }
 
+  // The welcome steps start on an empty library and stay until finished, so
+  // adding the first feed does not cut the remaining steps short.
+  const [welcome, setWelcome] = useState(false)
+  useEffect(() => {
+    if (treeLoaded && sources.length === 0) setWelcome(true)
+  }, [treeLoaded, sources.length])
+
   const sidebarActions = {
     renameSource: (s: Source) =>
       setPrompt({
@@ -747,8 +754,10 @@ export default function App() {
           />
         </div>
 
-        {treeLoaded && sources.length === 0 ? (
+        {welcome ? (
           <Welcome
+            feedCount={sources.length}
+            onDone={() => setWelcome(false)}
             onAddFeed={() => setAddOpen(true)}
             onImportOpml={async () => {
               const added = await pickAndImportOpml()

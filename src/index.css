@@ -11,7 +11,9 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  :root,
+  /* A light preview inside another theme, such as the welcome theme cards. */
+  .light-preview {
     --background: 0 0% 98.4%;
     --foreground: 0 0% 9%;
     --card: 0 0% 100%;
