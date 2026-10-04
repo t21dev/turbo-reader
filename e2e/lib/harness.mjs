@@ -265,11 +265,13 @@ function makeContext(s, base) {
     /** Switch the article area to list or cards. */
     async view(mode) {
       const want = mode === "list" ? "Switch to list view" : "Switch to card view"
-      const btn = await s.byLabel(want)
-      if (btn) {
-        await btn.click()
-        await sleep(300)
-      }
+      // The view switch lives in the title bar's menu.
+      await (await s.waitFor(() => s.byLabel("Menu"), "the menu button")).click()
+      const item = await s.waitFor(() => s.byText('[role="menu"] button', "Switch to"), "the view item")
+      const text = await s.exec(`return arguments[0].textContent`, item)
+      if (text.includes(want)) await item.click()
+      else await s.press("Escape")
+      await sleep(300)
     },
 
     /** Titles of the articles currently listed, top to bottom. */
@@ -330,7 +332,8 @@ function makeContext(s, base) {
 
     /** Open About from the title bar. */
     async about() {
-      const btn = await s.waitFor(() => s.byLabel("About Turbo Reader"), "the About button")
+      await (await s.waitFor(() => s.byLabel("Menu"), "the menu button")).click()
+      const btn = await s.waitFor(() => s.byText('[role="menu"] button', "About Turbo Reader"), "About in the menu")
       await btn.click()
       await s.waitFor(() => s.exec(`return !!document.getElementById('about-title')`), "About to open")
       await sleep(200)

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { openUrl } from "@tauri-apps/plugin-opener"
-import { ArrowUpCircle, PanelLeftClose, PanelLeftOpen } from "lucide-react"
+import { ArrowUpCircle, PanelLeftClose, PanelLeftOpen, RefreshCw } from "lucide-react"
 import { isMac } from "@/lib/platform"
 import { cn } from "@/lib/utils"
 
@@ -17,6 +17,7 @@ export function TitleBar({
   sidebarOpen,
   onToggleSidebar,
   update,
+  onRefresh,
 }: {
   children?: ReactNode
   unread: number
@@ -25,6 +26,8 @@ export function TitleBar({
   onToggleSidebar: () => void
   /** A newer release, shown as a pill that opens its page. */
   update?: { latest: string; url: string } | null
+  /** Fetch every feed now; sits beside the unread count. */
+  onRefresh?: () => void
 }) {
   const [isMaximized, setIsMaximized] = useState(false)
 
@@ -116,13 +119,27 @@ export function TitleBar({
               {unread > 999 ? "999+" : unread}
             </span>
           )}
-          {busy && <span className="ml-0.5 text-[11px] font-medium text-subtle">Refreshing</span>}
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={busy}
+              title="Refresh all feeds (r)"
+              aria-label="Refresh all feeds"
+              className="row pointer-events-auto grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-60"
+            >
+              <RefreshCw size={13} className={busy ? "animate-spin" : undefined} />
+            </button>
+          )}
+          {busy && <span className="text-[11px] font-medium text-subtle">Refreshing</span>}
           {update && (
             <button
               type="button"
+              // The wordmark row ignores the pointer so it can drag the window;
+              // the controls in it take clicks again.
               onClick={() => void openUrl(update.url)}
               title={`Turbo Reader ${update.latest} is out. Open the release page.`}
-              className="ml-1 flex h-6 items-center gap-1.5 rounded-full border border-system/40 px-2.5 text-[11px] font-medium text-system transition-colors duration-150 hover:bg-system/10"
+              className="pointer-events-auto ml-1 flex h-6 items-center gap-1.5 rounded-full border border-system/40 px-2.5 text-[11px] font-medium text-system transition-colors duration-150 hover:bg-system/10"
             >
               <ArrowUpCircle size={12} />
               Update to <span className="tabular">{update.latest}</span>

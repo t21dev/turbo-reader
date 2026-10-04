@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Info, Keyboard, LayoutGrid, List as ListIcon, RefreshCw, Search, Settings2 } from "lucide-react"
+import { Info, Keyboard, LayoutGrid, List as ListIcon, Search, Settings2, Menu as MenuIcon } from "lucide-react"
 import { listen } from "@tauri-apps/api/event"
 import { useUpdateCheck } from "@/lib/updates"
 import { pickAndImportOpml } from "@/lib/opml"
@@ -10,6 +10,7 @@ import { CommandPalette } from "@/components/CommandPalette"
 import { AboutDialog } from "@/components/AboutDialog"
 import { isMac } from "@/lib/platform"
 import { NotificationBell } from "@/components/Notifications"
+import { Menu, MenuItem, MenuSeparator } from "@/components/Menu"
 import { Sidebar } from "@/components/Sidebar"
 import { ArticleList } from "@/components/ArticleList"
 import { CardGrid } from "@/components/CardGrid"
@@ -669,6 +670,7 @@ export default function App() {
         busy={busy}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={toggleSidebar}
+        onRefresh={refresh}
       >
         <button
           type="button"
@@ -680,48 +682,71 @@ export default function App() {
           <Search size={14} />
         </button>
         <NotificationBell update={update} onOpenFeed={(id) => select("source", id)} onRefresh={refresh} />
-        <button
-          type="button"
-          onClick={toggleView}
-          title={view === "cards" ? "Switch to list view (v)" : "Switch to card view (v)"}
-          className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
+        {/* Settings, shortcuts, the view and About share one menu, so the title
+            bar keeps three controls: search, notifications and this. */}
+        <Menu
+          width={232}
+          label="Menu"
+          trigger={({ open, toggle }) => (
+            <button
+              type="button"
+              onClick={toggle}
+              title="Menu"
+              aria-label="Menu"
+              className={cn(
+                "row grid h-7 w-7 place-items-center hover:bg-secondary hover:text-foreground",
+                open ? "bg-secondary text-foreground" : "text-muted-foreground",
+              )}
+            >
+              <MenuIcon size={15} />
+            </button>
+          )}
         >
-          {view === "cards" ? <ListIcon size={14} /> : <LayoutGrid size={14} />}
-        </button>
-        <button
-          type="button"
-          onClick={refresh}
-          disabled={busy}
-          title="Refresh all feeds (r)"
-          className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-40"
-        >
-          <RefreshCw size={14} className={busy ? "animate-spin" : undefined} />
-        </button>
-        <button
-          type="button"
-          onClick={() => setShortcutsOpen(true)}
-          title="Keyboard shortcuts (?)"
-          className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
-        >
-          <Keyboard size={14} />
-        </button>
-        <button
-          type="button"
-          onClick={() => setAboutOpen(true)}
-          title="About Turbo Reader"
-          aria-label="About Turbo Reader"
-          className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
-        >
-          <Info size={14} />
-        </button>
-        <button
-          type="button"
-          onClick={() => setSettingsOpen(true)}
-          title="Settings (,)"
-          className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
-        >
-          <Settings2 size={14} />
-        </button>
+          {(close) => (
+            <>
+              <MenuItem
+                icon={<Settings2 size={13} />}
+                hint=","
+                onClick={() => {
+                  close()
+                  setSettingsOpen(true)
+                }}
+              >
+                Settings
+              </MenuItem>
+              <MenuItem
+                icon={view === "cards" ? <ListIcon size={13} /> : <LayoutGrid size={13} />}
+                hint="V"
+                onClick={() => {
+                  close()
+                  toggleView()
+                }}
+              >
+                {view === "cards" ? "Switch to list view" : "Switch to card view"}
+              </MenuItem>
+              <MenuItem
+                icon={<Keyboard size={13} />}
+                hint="?"
+                onClick={() => {
+                  close()
+                  setShortcutsOpen(true)
+                }}
+              >
+                Keyboard shortcuts
+              </MenuItem>
+              <MenuSeparator />
+              <MenuItem
+                icon={<Info size={13} />}
+                onClick={() => {
+                  close()
+                  setAboutOpen(true)
+                }}
+              >
+                About Turbo Reader
+              </MenuItem>
+            </>
+          )}
+        </Menu>
       </TitleBar>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">

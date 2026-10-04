@@ -62,7 +62,7 @@ test("B2 the chosen view survives a restart", shot("B2", async () => {
   await ctx.view("list")
   await ctx.reloadAndCheck()
   await ctx.leaveHome()
-  assert.ok(await ctx.s.byLabel("Switch to card view"), "still in list view after reopening")
+  assert.ok(await ctx.s.exec(`return !!document.getElementById('turbo-search')`), "still in list view after reopening")
 }))
 
 test("B3 opening an article marks it read everywhere", shot("B3", async () => {
