@@ -7,12 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- A notification bell in the title bar. A number on it means something needs
+  you: a feed that keeps failing, or a new version. A dot means something new
+  landed: refreshes that found articles while you were away, and changes AI
+  agents made, under the agent's name. The panel shows what needs attention
+  and the latest entries; View all opens the full history a page at a time,
+  where entries can be removed or cleared. The last 200 are kept, on your
+  computer only.
+- The search box (`Ctrl+K`) finds every setting too, and opens the right tab.
+  Feed, folder and setting names match loosely: "drk mod" finds Dark mode.
+- Search inside Settings: type in the box above the tabs, and choosing a match
+  opens its tab and points at the setting.
+- Back and forward, as in a browser: `Alt+Left` and `Alt+Right` (`Cmd+[` and
+  `Cmd+]` on macOS) or the mouse's side buttons step through the places you
+  visited, with the article that was open in each.
+- The card view's header can switch unread only, hide duplicates and newest or
+  oldest first, as the list does.
+- Article text can be selected and copied, in the reader and in reading mode.
+- An About button (the i in the title bar) shows the version you are running,
+  checks for a newer one, and holds the check-at-launch switch.
+
+- Mark all as unread, in the same menu as mark all as read. It asks first and
+  says how many, and hidden articles stay hidden.
+- The card view has a header with the list's name and the mark-all menu, so
+  marking everything read or unread works there too, not only in the list.
+
 ### Changed
+- Customize on the home page sits under the clock, as a quiet action, instead
+  of a bordered button beside it.
+- The title bar no longer has a Home button; Home is in the sidebar, and `g`
+  still goes there.
+- Destructive actions use a deeper rose.
+- Settings is a tabbed window instead of one long panel: Appearance, Reading,
+  Home, Feeds, Storage, Background and AI agents. Up and Down move between
+  tabs, and it reopens on the tab you used last. Customize on the home page
+  opens it on Home.
 - Turbo Reader is now free and open source under the MIT licence, replacing
   the non-commercial licence. Anyone can use it for anything, commercial use
   included, as long as the copyright notice stays.
 - Every release carries `SHA256SUMS.txt`, the SHA-256 checksum of each
   download.
+
+### Fixed
+- A window left maximized opens maximized again, and goes back to its last
+  normal size and position when restored. Only the normal size was saved
+  before.
+- Clicking the title bar could maximize the window. A press handed the window
+  straight to the system to move it, so the app never saw that click finish,
+  and the next click soon after counted as a double-click. The window now
+  starts moving only once the mouse moves with the button held, as a native
+  title bar does.
 
 ## [0.10.0] - 2026-10-04
 

@@ -33,7 +33,7 @@ Three palettes exist. `:root` is light, `.paper` overrides light on top of it, `
 | `muted-foreground` | `0 0% 40%` | `30 12% 36%` | `0 0% 58%` | Secondary text, idle icons, read headlines |
 | `subtle` | `0 0% 58%` | `32 9% 50%` | `0 0% 40%` | Tertiary text: meta lines, section labels, helper text, placeholders |
 | `accent` | `0 0% 95.5%` | `38 28% 90%` | `0 0% 10.5%` | Neutral hover for title bar window buttons. Not the accent colour |
-| `destructive` | `347 77% 50%` | (light) | `350 89% 66%` | Rose red. Errors, delete, destructive confirm and destructive buttons |
+| `destructive` | `345 82% 42%` | (light) | `347 77% 58%` | Rose red. Errors, delete, destructive confirm and destructive buttons |
 | `destructive-foreground` | `0 0% 98%` | (light) | `0 0% 98%` | Text on destructive |
 | `border` | `0 0% 90%` | `37 22% 82%` | `0 0% 12.5%` | Every hairline. Applied globally via `* { @apply border-border }` |
 | `input` | `0 0% 88%` | `37 20% 78%` | `0 0% 15%` | Input borders, unchecked checkbox, scrollbar hover |
@@ -168,7 +168,7 @@ Reuse these class strings. Line numbers point at the reference implementation.
 
 **Text input** (`Prompt.tsx:120`, `AddFeedDialog.tsx:149`). `h-9 w-full rounded-lg border border-input bg-secondary px-2.5 text-[12.5px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system`. Compact search: `h-7 rounded-md border-transparent bg-secondary pl-7 text-[12px]` with a 13px `Search` icon at `left-2` (`ArticleList.tsx:60`). URLs, hex codes and ports use `font-mono`. Invalid state: `border-destructive` (`SettingsPanel.tsx:119`).
 
-**Section and field** (`SettingsPanel.tsx:44`, `SettingsPanel.tsx:131`). Section: `border-t border-border px-5 py-5 first:border-t-0` with the uppercase 11px label. Field: `mt-4 first:mt-0`, label `mb-2 text-[12px] text-muted-foreground`. Helper text below: `mt-1.5 text-[11px] leading-relaxed text-subtle`.
+**Section and field** (`SettingsPanel.tsx`). Section: `border-t border-border py-5 first:border-t-0 first:pt-0`; the uppercase 11px label only when a tab holds more than one section, since the tab name is already the heading. Field: `mt-4 first:mt-0`, label `mb-2 text-[12px] text-muted-foreground`. Helper text below: `mt-1.5 text-[11px] leading-relaxed text-subtle`.
 
 **Setting row with control** (`BackgroundPrefs.tsx:156`). `flex items-start justify-between gap-4`; title `text-[12.5px] font-medium text-foreground` with an `id`; detail `mt-0.5 text-[11.5px] leading-relaxed text-subtle`; control on the right, labelled by the title id.
 
@@ -190,7 +190,9 @@ Reuse these class strings. Line numbers point at the reference implementation.
 
 **Dialog** (`Prompt.tsx:78`). Scrim `absolute inset-0 grid place-items-center bg-black/50 p-6` with fade; panel `role="dialog" aria-modal="true" aria-labelledby`, `w-full max-w-[380px] overflow-hidden rounded-xl border border-border bg-popover shadow-float` with pop. Escape and scrim click dismiss. The confirm button gets focus.
 
-**Side panel** (`SettingsPanel.tsx:352`). Right-anchored `w-[380px] border-l bg-popover shadow-float`, slides in and out; sticky header `bg-popover/90 backdrop-blur border-b px-5 py-4`.
+**Tabbed modal** (`SettingsPanel.tsx`). For settings and anything else with several sections. Centred on the dialog scrim, `h-[min(680px,100%)] w-[min(880px,100%)] rounded-xl border border-border bg-popover shadow-float`, `animate-pop`. A 200px left rail (`border-r bg-background/40 p-2`) holds the title and a vertical `role="tablist"`: each tab `row flex h-8 items-center gap-2.5 px-2.5 text-[12.5px]`, a 14px icon in `text-subtle` (`text-system` when selected), selected `bg-elevated font-medium text-foreground`. Up and Down move between tabs. The right side has a 52px header (`border-b px-6`, the tab name as a 14px semibold heading, actions and close on the right) over a scrolling `px-6 py-5` body. Only the selected tab renders. The tab last used is reopened.
+
+**About dialog** (`AboutDialog.tsx`). `max-w-[440px]` dialog from the title bar's Info button: the mark in a 48px bordered tile, name and the running version (read from the app, never typed in), then hairline-separated blocks for the update check and links.
 
 **Toast** (`Toaster.tsx:10`). Bottom-right stack, `rounded-xl border bg-popover px-3 py-2.5 text-[12px] shadow-float animate-rise`; `role="status"` with a `text-system` check, or `role="alert"` with `border-destructive/40` and `AlertCircle`.
 
