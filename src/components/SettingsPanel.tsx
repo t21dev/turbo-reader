@@ -8,19 +8,20 @@ import {
   Moon,
   BookOpen,
   RotateCcw,
-  RefreshCw,
-  CheckCircle2,
-  ArrowUpCircle,
-  Github,
-  MessageSquare,
   Pipette,
+  Palette,
+  Type,
+  Home as HomeIcon,
+  Rss,
+  HardDrive,
+  BellRing,
+  Bot,
+  Search,
 } from "lucide-react"
 import { save as saveDialog } from "@tauri-apps/plugin-dialog"
-import { openUrl } from "@tauri-apps/plugin-opener"
-import { api, type Group, type Source, type Stats, type UpdateCheck } from "@/lib/api"
+import { api, type Group, type Source, type Stats } from "@/lib/api"
 import { type HomePrefs } from "@/lib/home"
 import { REFRESH_CHOICES, sinceLabel, type AppPrefs } from "@/lib/prefs"
-import { recordUpdateCheck } from "@/lib/updates"
 import { pickAndImportOpml } from "@/lib/opml"
 import { HomeSettings } from "@/components/HomeSettings"
 import { BackgroundPrefs } from "@/components/BackgroundPrefs"
@@ -41,22 +42,41 @@ import {
 import { UI_SCALES, setScale, useScale } from "@/lib/scale"
 import { useDismissible } from "@/lib/presence"
 import { cn } from "@/lib/utils"
+import { fuzzyFilter } from "@/lib/fuzzy"
+import { SETTINGS_INDEX, type SettingEntry } from "@/lib/settingsIndex"
 
+export type SettingsTab = "appearance" | "reading" | "home" | "feeds" | "storage" | "background" | "agents"
+
+const TABS: { key: SettingsTab; label: string; icon: React.ReactNode }[] = [
+  { key: "appearance", label: "Appearance", icon: <Palette size={14} /> },
+  { key: "reading", label: "Reading", icon: <Type size={14} /> },
+  { key: "home", label: "Home", icon: <HomeIcon size={14} /> },
+  { key: "feeds", label: "Feeds", icon: <Rss size={14} /> },
+  { key: "storage", label: "Storage", icon: <HardDrive size={14} /> },
+  { key: "background", label: "Background", icon: <BellRing size={14} /> },
+  { key: "agents", label: "AI agents", icon: <Bot size={14} /> },
+]
+
+/** The tab Settings last showed, so reopening it goes back there. */
+let lastTab: SettingsTab = "appearance"
+
+/** One block of a tab. The tab's own name is the page heading, so a block only
+    carries a title when a tab holds more than one. */
 function Section({
   title,
   id,
   hidden,
   children,
 }: {
-  title: string
+  title?: string
   id?: string
   hidden?: boolean
   children: React.ReactNode
 }) {
   if (hidden) return null
   return (
-    <section id={id} className="border-t border-border px-5 py-5 first:border-t-0">
-      <h3 className="mb-3 text-[11px] font-medium uppercase tracking-wider text-subtle">{title}</h3>
+    <section id={id} className="border-t border-border py-5 first:border-t-0 first:pt-0">
+      {title && <h3 className="mb-3 text-[11px] font-medium uppercase tracking-wider text-subtle">{title}</h3>}
       {children}
     </section>
   )
@@ -207,18 +227,19 @@ export function SettingsPanel({
   onSortChanged: () => void
   /** Ask before doing something that cannot be undone. */
   confirm: (spec: PromptSpec) => void
-  /** Open on one section alone, as the home page's Customize button does. */
-  focus?: "home"
+  /** Open on this tab, as the home page's Customize button does. */
+  focus?: SettingsTab
 }) {
-  const [onlyHome, setOnlyHome] = useState(focus === "home")
+  const [tab, setTabState] = useState<SettingsTab>(focus ?? lastTab)
+  const setTab = (next: SettingsTab) => {
+    lastTab = next
+    setTabState(next)
+  }
   const theme = useTheme()
   const scale = useScale()
   const [stats, setStats] = useState<Stats | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
-  const [update, setUpdate] = useState<UpdateCheck | null>(null)
-  const [updateError, setUpdateError] = useState<string | null>(null)
-  const [checking, setChecking] = useState(false)
   const { closing, dismiss } = useDismissible(onClose, 180)
 
   useEffect(() => {
@@ -334,25 +355,53 @@ export function SettingsPanel({
     [],
   )
 
-  async function checkUpdates() {
-    setChecking(true)
-    setUpdateError(null)
-    try {
-      const result = await api.checkForUpdates()
-      setUpdate(result)
-      // So the title bar's update pill agrees with what this says.
-      recordUpdateCheck(result)
-    } catch (err) {
-      setUpdateError(String(err))
-    } finally {
-      setChecking(false)
-    }
+  // Search within Settings: the tabs give way to the settings that match, and
+  // choosing one opens its tab and points at it.
+  const [query, setQuery] = useState("")
+  const found = query.trim()
+    ? fuzzyFilter(
+        query,
+        SETTINGS_INDEX.filter((e) => TABS.some((t) => t.key === e.target)),
+        (e) => [e.label, `${e.place} ${e.label}`, e.keywords],
+      ).slice(0, 9)
+    : []
+
+  function goTo(entry: SettingEntry) {
+    setQuery("")
+    setTab(entry.target as SettingsTab)
+    // Two frames: one for the tab to render, one for its layout.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const want = (entry.anchor ?? entry.label).toLowerCase()
+        const label = [...document.querySelectorAll("#settings-body p, #settings-body span, #settings-body h3")].find(
+          (n) => n.textContent?.trim().toLowerCase() === want,
+        )
+        const block = label?.parentElement
+        if (!block) return
+        block.scrollIntoView({ block: "center" })
+        block.classList.add("settings-flash")
+        window.setTimeout(() => block.classList.remove("settings-flash"), 1600)
+      }),
+    )
+  }
+
+  const current = TABS.find((t) => t.key === tab) ?? TABS[0]
+  const resettable = tab === "appearance" || tab === "reading"
+
+  /** Up and down move between tabs, as in a native settings window. */
+  function onTabKey(ev: React.KeyboardEvent) {
+    if (ev.key !== "ArrowDown" && ev.key !== "ArrowUp") return
+    ev.preventDefault()
+    const i = TABS.findIndex((t) => t.key === tab)
+    const next = TABS[(i + (ev.key === "ArrowDown" ? 1 : TABS.length - 1)) % TABS.length]
+    setTab(next.key)
+    requestAnimationFrame(() => document.getElementById(`settings-tab-${next.key}`)?.focus())
   }
 
   return (
     <div
       className={cn(
-        "absolute inset-0 z-50 flex justify-end bg-black/40",
+        "absolute inset-0 z-50 grid place-items-center bg-black/50 p-6",
         closing ? "animate-fade-out" : "animate-fade",
       )}
       onClick={dismiss}
@@ -362,65 +411,140 @@ export function SettingsPanel({
         aria-modal="true"
         aria-labelledby="settings-title"
         className={cn(
-          "h-full w-[380px] overflow-y-auto border-l border-border bg-popover shadow-float",
-          closing ? "animate-slide-out" : "animate-slide-in",
+          "flex h-[min(680px,100%)] w-[min(880px,100%)] overflow-hidden rounded-xl border border-border bg-popover shadow-float",
+          closing ? "animate-pop-out" : "animate-pop",
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-popover/90 px-5 py-4 backdrop-blur">
-          <h2 id="settings-title" className="text-[14px] font-semibold tracking-tight">
-            {onlyHome ? "Customize home" : "Settings"}
+        <nav className="flex w-[200px] shrink-0 flex-col border-r border-border bg-background/40 p-2">
+          <h2 id="settings-title" className="px-2.5 pb-3 pt-2.5 text-[14px] font-semibold tracking-tight">
+            Settings
           </h2>
-          <div className="flex items-center gap-0.5">
-            {onlyHome && (
+          <div className="relative mb-2 px-0.5">
+            <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-subtle" />
+            <input
+              id="settings-search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && found[0]) goTo(found[0])
+                // Escape clears first, and only closes Settings once empty.
+                if (e.key === "Escape" && query) {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  e.nativeEvent.stopImmediatePropagation()
+                  setQuery("")
+                }
+              }}
+              placeholder="Search settings"
+              spellCheck={false}
+              autoComplete="off"
+              className="h-8 w-full rounded-lg border border-border bg-background/60 pl-7 pr-2 text-[12px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
+            />
+          </div>
+          {query.trim() ? (
+            <div role="listbox" aria-label="Matching settings" className="space-y-0.5" data-settings-results>
+              {found.length === 0 ? (
+                <p className="px-2.5 py-2 text-[12px] text-subtle">No setting matches.</p>
+              ) : (
+                found.map((e, i) => (
+                  <button
+                    key={`${e.target}-${e.label}`}
+                    type="button"
+                    role="option"
+                    aria-selected={i === 0}
+                    onClick={() => goTo(e)}
+                    className={cn(
+                      "row flex w-full flex-col items-start px-2.5 py-1.5 text-left",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                      i === 0 ? "bg-secondary" : "hover:bg-secondary",
+                    )}
+                  >
+                    <span className="text-[12.5px] text-foreground">{e.label}</span>
+                    <span className="text-[11px] text-subtle">{e.place}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          ) : (
+          <div
+            role="tablist"
+            aria-orientation="vertical"
+            aria-label="Settings sections"
+            onKeyDown={onTabKey}
+            className="space-y-0.5"
+          >
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                id={`settings-tab-${t.key}`}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.key}
+                aria-controls="settings-body"
+                tabIndex={tab === t.key ? 0 : -1}
+                onClick={() => setTab(t.key)}
+                className={cn(
+                  "row flex h-8 w-full items-center gap-2.5 px-2.5 text-left text-[12.5px]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                  tab === t.key
+                    ? "bg-elevated font-medium text-foreground"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                )}
+              >
+                <span className={tab === t.key ? "text-system" : "text-subtle"}>{t.icon}</span>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          )}
+        </nav>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex h-[52px] shrink-0 items-center justify-between border-b border-border px-6">
+            <h3 className="text-[14px] font-semibold tracking-tight text-foreground" data-settings-heading>
+              {current.label}
+            </h3>
+            <div className="flex items-center gap-0.5">
+              {resettable && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    confirm({
+                      title: "Reset appearance?",
+                      detail:
+                        "Theme, accent, density, animations and reading settings go back to their " +
+                        "defaults. Your feeds and articles are not touched.",
+                      confirmLabel: "Reset",
+                      destructive: true,
+                      onConfirm: () => theme.reset(),
+                    })
+                  }
+                  title="Reset appearance to defaults"
+                  className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
+                >
+                  <RotateCcw size={13} />
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => {
-                  setOnlyHome(false)
-                  // Keep the home section in view once the rest appears.
-                  requestAnimationFrame(() =>
-                    document.getElementById("settings-home")?.scrollIntoView({ block: "start" }),
-                  )
-                }}
-                className="row flex h-7 items-center px-2 text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground"
+                onClick={dismiss}
+                title="Close (Esc)"
+                aria-label="Close settings"
+                className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
               >
-                All settings
+                <X size={14} />
               </button>
-            )}
-            <button
-              type="button"
-              onClick={() =>
-                confirm({
-                  title: "Reset appearance?",
-                  detail:
-                    "Theme, accent, density, animations and reading settings go back to their " +
-                    "defaults. Your feeds and articles are not touched.",
-                  confirmLabel: "Reset",
-                  destructive: true,
-                  onConfirm: () => theme.reset(),
-                })
-              }
-              title="Reset appearance to defaults"
-              className={cn(
-                "row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground",
-                // Appearance is not on show when customizing home alone.
-                onlyHome && "hidden",
-              )}
-            >
-              <RotateCcw size={13} />
-            </button>
-            <button
-              type="button"
-              onClick={dismiss}
-              title="Close (Esc)"
-              className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
-            >
-              <X size={14} />
-            </button>
+            </div>
           </div>
-        </div>
 
-        <Section title="Appearance" hidden={onlyHome}>
+          <div
+            id="settings-body"
+            role="tabpanel"
+            aria-labelledby={`settings-tab-${tab}`}
+            className="min-h-0 flex-1 overflow-y-auto px-6 py-5"
+          >
+        <Section hidden={tab !== "appearance"}>
           <Field label="Theme">
             <Segmented value={theme.mode} options={modes} onChange={(v) => theme.set("mode", v)} />
           </Field>
@@ -485,7 +609,7 @@ export function SettingsPanel({
           </Field>
         </Section>
 
-        <Section title="Reading" hidden={onlyHome}>
+        <Section hidden={tab !== "reading"}>
           <Field label="Article font">
             <div role="radiogroup" aria-label="Article font" className="grid grid-cols-2 gap-1.5">
               {READER_FONTS.map((f) => (
@@ -554,7 +678,7 @@ export function SettingsPanel({
           </Field>
         </Section>
 
-        <Section title="Home" id="settings-home">
+        <Section id="settings-home" hidden={tab !== "home"}>
           <HomeSettings
             home={home}
             setHome={setHome}
@@ -567,7 +691,7 @@ export function SettingsPanel({
           />
         </Section>
 
-        <Section title="Feeds" hidden={onlyHome}>
+        <Section hidden={tab !== "feeds"}>
           <Field label="Check for new articles">
             <Segmented
               value={prefs.refreshMinutes}
@@ -640,7 +764,7 @@ export function SettingsPanel({
         </Section>
 
         {stats && (
-          <Section title="Library" hidden={onlyHome}>
+          <Section title="Library" hidden={tab !== "feeds"}>
             <dl className="grid grid-cols-2 gap-y-2 text-[12px]">
               {[
                 ["Feeds", stats.sources.toLocaleString()],
@@ -657,7 +781,7 @@ export function SettingsPanel({
           </Section>
         )}
 
-        <Section title="Storage" hidden={onlyHome}>
+        <Section hidden={tab !== "storage"}>
           <StorageSettings
             confirm={confirm}
             onChanged={() => {
@@ -667,137 +791,16 @@ export function SettingsPanel({
           />
         </Section>
 
-        <Section title="Background" hidden={onlyHome}>
+        <Section hidden={tab !== "background"}>
           <BackgroundPrefs />
         </Section>
 
-        <Section title="AI agents" hidden={onlyHome}>
+        <Section hidden={tab !== "agents"}>
           <AgentSettings confirm={confirm} />
         </Section>
 
-        <Section title="Updates" hidden={onlyHome}>
-          <Field label="Check at launch">
-            <Segmented
-              value={prefs.updateCheck ? "on" : "off"}
-              onChange={(v) => onPrefs({ ...prefs, updateCheck: v === "on" })}
-              options={[
-                { value: "on", label: "On" },
-                { value: "off", label: "Off" },
-              ]}
-            />
-            <p className="mt-1.5 text-[11px] leading-relaxed text-subtle">
-              Asks GitHub for the newest release each time Turbo Reader opens, and shows
-              a note in the title bar when there is one. Nothing about your feeds is sent.
-            </p>
-          </Field>
-
-          <button
-            type="button"
-            onClick={checkUpdates}
-            disabled={checking}
-            className="row flex h-9 w-full items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50"
-          >
-            <RefreshCw size={13} className={checking ? "animate-spin" : undefined} />
-            {checking ? "Checking" : "Check for updates"}
-          </button>
-
-          {update && !updateError && (
-            <div className="animate-rise mt-3">
-              {update.newer ? (
-                <>
-                  <p className="flex items-start gap-2 text-[12px] leading-relaxed text-foreground">
-                    <ArrowUpCircle size={14} className="mt-[1px] shrink-0 text-system" />
-                    <span>
-                      Version <span className="tabular">{update.latest}</span> is out.
-                      {update.published ? ` Published ${update.published}.` : ""} You are on{" "}
-                      <span className="tabular">{update.current}</span>.
-                    </span>
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => void openUrl(update.url)}
-                    className="row mt-2 flex h-9 w-full items-center justify-center gap-2 border border-system bg-elevated text-[12px] text-foreground hover:bg-secondary"
-                  >
-                    <Download size={13} />
-                    Get it from GitHub
-                  </button>
-                </>
-              ) : (
-                <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                  <CheckCircle2 size={14} className="shrink-0 text-system" />
-                  Up to date on <span className="tabular">{update.current}</span>.
-                </p>
-              )}
-            </div>
-          )}
-
-          {updateError && (
-            <p className="animate-rise mt-3 text-[11px] leading-relaxed text-destructive">
-              {updateError}
-            </p>
-          )}
-        </Section>
-
-        <Section title="About" hidden={onlyHome}>
-          <p className="text-[13px] font-medium leading-snug text-foreground">
-            A modern RSS reader that is actually fast and actually small.
-          </p>
-          <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
-            Turbo Reader <span className="tabular text-subtle">v0.10.0</span>, by{" "}
-            <button
-              type="button"
-              onClick={() => void openUrl("https://github.com/t21dev")}
-              className="text-foreground underline underline-offset-2 hover:text-system"
-            >
-              t21 dev
-            </button>{" "}
-            and{" "}
-            <button
-              type="button"
-              onClick={() => void openUrl("https://github.com/TriptoAfsin")}
-              className="text-foreground underline underline-offset-2 hover:text-system"
-            >
-              TriptoAfsin
-            </button>
-            .
-          </p>
-
-          <dl className="mt-3.5 grid grid-cols-2 gap-y-1.5 text-[12px]">
-            {[
-              ["Installer", "4.7 MB"],
-              ["On disk", "11 MB"],
-              ["Engine", "Rust + Tauri 2"],
-            ].map(([k, v]) => (
-              <div key={k} className="contents">
-                <dt className="text-muted-foreground">{k}</dt>
-                <dd className="tabular text-right text-foreground">{v}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <p className="mt-3.5 text-[12px] leading-relaxed text-muted-foreground">
-            Free and open source under the MIT licence.
-          </p>
-
-          <div className="mt-3.5 grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={() => void openUrl("https://github.com/t21dev/turbo-reader")}
-              className="row flex h-9 items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground"
-            >
-              <Github size={13} />
-              Source
-            </button>
-            <button
-              type="button"
-              onClick={() => void openUrl("https://github.com/t21dev/turbo-reader/issues/new")}
-              className="row flex h-9 items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground"
-            >
-              <MessageSquare size={13} />
-              Feedback
-            </button>
           </div>
-        </Section>
+        </div>
       </div>
     </div>
   )

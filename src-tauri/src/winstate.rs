@@ -87,11 +87,36 @@ pub fn store(conn: &Connection, state: &WindowState) {
 }
 
 /// Read the window's current geometry, or `None` when there is nothing worth
-/// saving: a minimized window reports an off-screen position, and a maximized
-/// one reports the screen rather than the size to restore to.
-pub fn capture<R: tauri::Runtime>(window: &tauri::Window<R>) -> Option<WindowState> {
-    if window.is_minimized().unwrap_or(false) || window.is_maximized().unwrap_or(false) {
+/// saving. A minimized window reports an off-screen position, so it saves
+/// nothing. A maximized one reports the screen rather than the size to restore
+/// to, so it keeps the last normal geometry (`previous`) and only sets the
+/// flag: un-maximizing next time goes back to where the window was.
+pub fn capture<R: tauri::Runtime>(
+    window: &tauri::Window<R>,
+    previous: Option<WindowState>,
+) -> Option<WindowState> {
+    if window.is_minimized().unwrap_or(false) {
         return None;
+    }
+    if window.is_maximized().unwrap_or(false) {
+        return Some(match previous {
+            Some(p) => WindowState {
+                maximized: true,
+                ..p
+            },
+            // Never saved in its normal state: keep the screen it is on.
+            None => {
+                let pos = window.outer_position().ok()?;
+                let (width, height) = client_size(window)?;
+                WindowState {
+                    x: pos.x,
+                    y: pos.y,
+                    width,
+                    height,
+                    maximized: true,
+                }
+            }
+        });
     }
     let pos = window.outer_position().ok()?;
     let (width, height) = client_size(window)?;
@@ -104,13 +129,12 @@ pub fn capture<R: tauri::Runtime>(window: &tauri::Window<R>) -> Option<WindowSta
     })
 }
 
-/// Put the window back where it was, before it is shown.
+/// Put the window back where it was, before it is shown. Maximizing waits for
+/// the reveal (`reveal_window`): on Windows it also shows the window, which
+/// here would show it before there is anything painted in it.
 pub fn apply<R: tauri::Runtime>(window: &tauri::Window<R>, state: &WindowState) {
     let _ = window.set_position(PhysicalPosition::new(state.x, state.y));
     let _ = window.set_size(PhysicalSize::new(state.width, state.height));
-    if state.maximized {
-        let _ = window.maximize();
-    }
 }
 
 /// Correct the size once the window is visible.

@@ -233,6 +233,34 @@ impl TurboTools {
             .map_err(|e| McpError::internal_error(e.to_string(), None))
     }
 
+    /// Put a change in the notification history, under the agent's name.
+    fn note(&self, ctx: &RequestContext<RoleServer>, title: String, source_id: Option<i64>) {
+        let who = self.caller(ctx).key_name;
+        if let Ok(conn) = self.state.db.lock() {
+            crate::notifications::record(
+                self.app.as_ref(),
+                &conn,
+                "agent",
+                &format!("{who} {title}"),
+                None,
+                source_id,
+            );
+        }
+    }
+
+    /// The name of a feed, for the history.
+    fn feed_name(&self, id: i64) -> String {
+        self.db()
+            .ok()
+            .and_then(|c| {
+                c.query_row("SELECT name FROM sources WHERE id = ?1", [id], |r| {
+                    r.get::<_, String>(0)
+                })
+                .ok()
+            })
+            .unwrap_or_else(|| format!("feed {id}"))
+    }
+
     /// Tell the open window its data changed.
     fn changed(&self) {
         if let Some(app) = &self.app {
@@ -420,6 +448,8 @@ impl TurboTools {
         let id = commands::subscribe_url(self.state, &a.url, group)
             .await
             .map_err(err)?;
+        let name = self.feed_name(id);
+        self.note(&ctx, format!("subscribed to {name}"), Some(id));
         self.changed();
         Ok(Json(Done {
             ok: true,
@@ -441,6 +471,7 @@ impl TurboTools {
         if !a.confirm {
             return Err(err("Unsubscribing deletes the feed and its articles. Confirm with the user, then call again with confirm: true."));
         }
+        let name = self.feed_name(a.feed_id);
         let n = self
             .db()?
             .execute("DELETE FROM sources WHERE id = ?1", [a.feed_id])
@@ -451,6 +482,7 @@ impl TurboTools {
                 a.feed_id
             )));
         }
+        self.note(&ctx, format!("unsubscribed from {name}"), None);
         self.changed();
         Ok(Json(Done {
             ok: true,
@@ -499,6 +531,17 @@ impl TurboTools {
                 }
             }
         };
+        if changed > 0 {
+            self.note(
+                &ctx,
+                format!(
+                    "marked {changed} article{} {}",
+                    if changed == 1 { "" } else { "s" },
+                    if read == 1 { "read" } else { "unread" }
+                ),
+                None,
+            );
+        }
         self.changed();
         Ok(Json(Done {
             ok: true,
@@ -528,6 +571,20 @@ impl TurboTools {
         if n == 0 {
             return Err(err(format!("There is no article {}.", a.article_id)));
         }
+        let title: String = self
+            .db()?
+            .query_row(
+                "SELECT title FROM items WHERE id = ?1",
+                [a.article_id],
+                |r| r.get(0),
+            )
+            .unwrap_or_default();
+        let verb = if a.starred.unwrap_or(true) {
+            "starred"
+        } else {
+            "unstarred"
+        };
+        self.note(&ctx, format!("{verb} \u{201c}{title}\u{201d}"), None);
         self.changed();
         Ok(Json(Done {
             ok: true,

@@ -59,6 +59,23 @@ export type McpKey = {
   created: number
   lastUsed: number | null
 }
+/** The notification bell's history. */
+export type AppNotification = {
+  id: number
+  kind: "refresh" | "agent"
+  title: string
+  body: string | null
+  sourceId: number | null
+  created: number
+  seen: boolean
+}
+
+export type NotificationSummary = {
+  unseen: number
+  failing: { id: number; name: string; error: string }[]
+  recent: AppNotification[]
+}
+
 /** Settings > Storage. Sizes are bytes. */
 export type StorageInfo = {
   dbBytes: number
@@ -218,6 +235,9 @@ export const api = {
   setRead: (ids: number[], read: boolean) => call<void>("set_read", { ids, read }),
   setStarred: (id: number, starred: boolean) => call<void>("set_starred", { id, starred }),
   markAllRead: (filter: Filter) => call<number>("mark_all_read", { filter }),
+  markAllUnread: (filter: Filter) => call<number>("mark_all_unread", { filter }),
+  /** How many read articles a mark-all-unread would change. */
+  markAllUnreadPreview: (filter: Filter) => call<number>("mark_all_unread_preview", { filter }),
 
   importOpml: (xml: string) => call<number>("import_opml", { xml }),
   exportOpml: () => call<string>("export_opml"),
@@ -244,6 +264,12 @@ export const api = {
   mcpActivity: () => call<McpActivity[]>("mcp_activity"),
   mcpLanAddresses: () => call<string[]>("mcp_lan_addresses"),
   mcpExePath: () => call<string>("mcp_exe_path"),
+  notificationsSummary: () => call<NotificationSummary>("notifications_summary"),
+  notificationsPage: (before?: number, limit?: number) =>
+    call<{ items: AppNotification[]; hasMore: boolean }>("notifications_page", { before, limit }),
+  notificationsMarkSeen: () => call<void>("notifications_mark_seen"),
+  notificationsClear: () => call<void>("notifications_clear"),
+  notificationsRemove: (id: number) => call<void>("notifications_remove", { id }),
   storageInfo: () => call<StorageInfo>("storage_info"),
   storageCompact: () => call<StorageInfo>("storage_compact"),
   storageClearFull: () => call<number>("storage_clear_full"),
@@ -252,6 +278,8 @@ export const api = {
   storageClearWebview: (clear: boolean) => call<void>("storage_clear_webview", { clear }),
   restartApp: () => call<void>("restart_app"),
   settleWindow: () => call<void>("settle_window"),
+  /** Show the window, maximized if it was left maximized. */
+  revealWindow: () => call<boolean>("reveal_window"),
 
   home: (req: { window?: HomeWindow; perBand?: number; masthead?: string }) =>
     call<Home>("home_summary", { req }),

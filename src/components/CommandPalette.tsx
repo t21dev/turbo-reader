@@ -1,27 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Folder, Search } from "lucide-react"
+import { Folder, Search, Settings2 } from "lucide-react"
 import { api, type Group, type ItemSummary, type Source } from "@/lib/api"
 import { FeedIcon } from "@/components/FeedIcon"
 import { useDismissible } from "@/lib/presence"
 import { cn, hostOf, relativeTime } from "@/lib/utils"
+import { fuzzyFilter } from "@/lib/fuzzy"
+import { SETTINGS_INDEX, type SettingEntry, type SettingTarget } from "@/lib/settingsIndex"
 
 type Hit =
   | { kind: "folder"; group: Group }
   | { kind: "source"; source: Source }
   | { kind: "article"; item: ItemSummary }
+  | { kind: "setting"; setting: SettingEntry }
   | { kind: "all"; query: string }
 
 const MAX_FOLDERS = 3
 const MAX_SOURCES = 6
 const MAX_ARTICLES = 8
-
-function matches(q: string, ...fields: (string | null | undefined)[]) {
-  return fields.some((f) => f?.toLowerCase().includes(q))
-}
+const MAX_SETTINGS = 4
 
 /**
- * Search everything from one box: folders and feeds by name or address, and
- * articles through the full-text index. Ctrl+K or the title bar opens it.
+ * Search everything from one box: folders, feeds and settings by name, with
+ * fuzzy matching so "drk" finds Dark mode, and articles through the full-text
+ * index. Ctrl+K or the search bar in the title bar opens it.
  */
 export function CommandPalette({
   groups,
@@ -31,6 +32,7 @@ export function CommandPalette({
   onSource,
   onArticle,
   onSearchAll,
+  onSetting,
 }: {
   groups: Group[]
   sources: Source[]
@@ -39,6 +41,7 @@ export function CommandPalette({
   onSource: (id: number) => void
   onArticle: (item: ItemSummary) => void
   onSearchAll: (query: string) => void
+  onSetting: (target: SettingTarget) => void
 }) {
   const { closing, dismiss } = useDismissible(onClose)
   const [query, setQuery] = useState("")
@@ -77,13 +80,17 @@ export function CommandPalette({
   }, [q, query])
 
   const hits = useMemo<Hit[]>(() => {
-    const folders = (q ? groups.filter((g) => matches(q, g.name)) : groups).slice(0, MAX_FOLDERS)
+    const folders = (q ? fuzzyFilter(q, groups, (g) => [g.name]) : groups).slice(0, MAX_FOLDERS)
     const feeds = (
       q
-        ? sources.filter((s) => matches(q, s.name, hostOf(s.siteUrl), hostOf(s.url)))
+        ? fuzzyFilter(q, sources, (s) => [s.name, hostOf(s.siteUrl), hostOf(s.url)])
         : [...sources].sort((a, b) => b.unread - a.unread)
     ).slice(0, MAX_SOURCES)
+    const settings = q
+      ? fuzzyFilter(q, SETTINGS_INDEX, (e) => [e.label, `${e.place} ${e.label}`, e.keywords]).slice(0, MAX_SETTINGS)
+      : []
     return [
+      ...settings.map((setting) => ({ kind: "setting" as const, setting })),
       ...folders.map((group) => ({ kind: "folder" as const, group })),
       ...feeds.map((source) => ({ kind: "source" as const, source })),
       ...articles.map((item) => ({ kind: "article" as const, item })),
@@ -101,6 +108,7 @@ export function CommandPalette({
     if (hit.kind === "folder") onFolder(hit.group.id)
     else if (hit.kind === "source") onSource(hit.source.id)
     else if (hit.kind === "article") onArticle(hit.item)
+    else if (hit.kind === "setting") onSetting(hit.setting.target)
     else onSearchAll(hit.query)
     dismiss()
   }
@@ -123,6 +131,7 @@ export function CommandPalette({
   }
 
   const sections: { title: string; kind: Hit["kind"] }[] = [
+    { title: "Settings", kind: "setting" },
     { title: "Folders", kind: "folder" },
     { title: q ? "Feeds" : "Feeds with the most unread", kind: "source" },
     { title: "Articles", kind: "article" },
@@ -161,7 +170,7 @@ export function CommandPalette({
             onKeyDown={onKey}
             spellCheck={false}
             autoComplete="off"
-            placeholder="Search feeds, folders and articles"
+            placeholder="Search feeds, articles and settings"
             className="h-12 min-w-0 flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-subtle"
           />
           <kbd className="shrink-0 rounded-md border border-border bg-background px-1.5 py-0.5 font-mono text-[10.5px] text-subtle">
@@ -192,7 +201,7 @@ export function CommandPalette({
           {q && searching && articles.length === 0 && (
             <p className="px-2.5 py-2 text-[12px] text-subtle">Searching articles</p>
           )}
-          {empty && <p className="px-2.5 py-2 text-[12px] text-subtle">No feeds, folders or articles match.</p>}
+          {empty && <p className="px-2.5 py-2 text-[12px] text-subtle">No feeds, articles or settings match.</p>}
 
           {q &&
             hits.map((hit, index) =>
@@ -258,6 +267,15 @@ function Row({
 }
 
 function HitBody({ hit }: { hit: Hit }) {
+  if (hit.kind === "setting") {
+    return (
+      <>
+        <Settings2 size={14} className="shrink-0 text-subtle" />
+        <span className="min-w-0 flex-1 truncate text-[12.5px] text-foreground">{hit.setting.label}</span>
+        <span className="shrink-0 text-[11px] text-subtle">{hit.setting.place}</span>
+      </>
+    )
+  }
   if (hit.kind === "folder") {
     return (
       <>

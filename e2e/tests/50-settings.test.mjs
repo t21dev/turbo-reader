@@ -50,7 +50,7 @@ const root = () =>
 /* -------------------------------------------------------------------------- */
 
 test("E1 appearance applies at once and survives a restart", shot("E1", async () => {
-  await ctx.settings()
+  await ctx.settings("Appearance")
   await segment("Light")
   assert.equal((await root()).dark, false, "light applied")
   await segment("Compact")
@@ -76,7 +76,7 @@ test("E1 appearance applies at once and survives a restart", shot("E1", async ()
 }))
 
 test("E2 reading preferences reach the article", shot("E2", async () => {
-  await ctx.settings()
+  await ctx.settings("Reading")
   await ctx.s.exec(`[...document.querySelectorAll('[aria-label="Article font"] [role=radio]')].find(b => b.textContent.includes("System serif")).click()`)
   await sleep(200)
   await segment("Wide")
@@ -88,7 +88,7 @@ test("E2 reading preferences reach the article", shot("E2", async () => {
 }))
 
 test("E3 the refresh interval is saved and the last check is shown", shot("E3", async () => {
-  await ctx.settings()
+  await ctx.settings("Feeds")
   await segmentIn("Check for new articles", "15m")
   const saved = await ctx.s.exec(`return JSON.parse(localStorage.getItem('turbo-prefs')).refreshMinutes`)
   assert.equal(saved, 15)
@@ -101,7 +101,7 @@ test("E3 the refresh interval is saved and the last check is shown", shot("E3", 
 }))
 
 test("E5 the YouTube preference is saved", shot("E5", async () => {
-  await ctx.settings()
+  await ctx.settings("Feeds")
   await segment("Play here")
   assert.equal(await ctx.s.exec(`return JSON.parse(localStorage.getItem('turbo-prefs')).youtubeInline`), true)
   await segment("Open in browser")
@@ -119,7 +119,7 @@ test("E6 library stats agree with the sidebar", shot("E6", async () => {
 }))
 
 test("E7 check for updates reports something", shot("E7", async () => {
-  await ctx.settings()
+  await ctx.about()
   const btn = await ctx.s.waitFor(() => ctx.s.byText("[role=dialog] button", "Check for updates"), "the button")
   await btn.click()
   await ctx.s.waitFor(
@@ -127,11 +127,12 @@ test("E7 check for updates reports something", shot("E7", async () => {
     "a result",
     { timeout: 20000 },
   )
-  await ctx.closeSettings()
+  assert.match(await ctx.s.exec(`return document.querySelector('[data-version]').textContent`), /Version \d+\.\d+\.\d+/, "the running version")
+  await ctx.closeAbout()
 }))
 
 test("E8 reset appearance", shot("E8", async () => {
-  await ctx.settings()
+  await ctx.settings("Appearance")
   await (await ctx.s.byLabel("Reset appearance")).click()
   await ctx.confirmDialog()
   await sleep(300)
@@ -152,7 +153,7 @@ test("E9 Escape and the backdrop both close settings", shot("E9", async () => {
 }))
 
 test("E10 a custom accent from the picker or a typed hex code", shot("E10", async () => {
-  await ctx.settings()
+  await ctx.settings("Appearance")
   await segment("Dark")
   const accent = async () => (await root()).system
   const picker = await ctx.s.waitFor(() => ctx.s.byLabel("Custom accent colour"), "the colour picker")
@@ -188,7 +189,7 @@ test("E10 a custom accent from the picker or a typed hex code", shot("E10", asyn
   assert.equal(await accent(), "0 0% 55%", "kept after reopening")
 
   // a preset still wins when picked, and the custom colour is remembered
-  await ctx.settings()
+  await ctx.settings("Appearance")
   await ctx.s.exec(`document.querySelector('[role=dialog] button[title="Teal"]').click()`)
   await ctx.s.waitFor(async () => (await accent()).startsWith("172 "), "teal")
   const saved = await ctx.s.exec(`return JSON.parse(localStorage.getItem('turbo-theme')).customAccent`)
@@ -204,12 +205,14 @@ test("E11 update check: a note in the title bar, a setting to stop it, and the m
   await ctx.s.waitFor(async () => /Update to 99\.0\.0/.test((await pill()) ?? ""), "the update note in the title bar")
 
   // Switched off, the note goes away.
-  await ctx.settings()
-  await segmentIn("Check at launch", "Off")
+  await ctx.about()
+  const launch = `document.querySelector('[role=switch][aria-labelledby=about-launch]')`
+  assert.equal(await ctx.s.exec(`return ${launch}.getAttribute('aria-checked')`), "true", "on by default")
+  await ctx.s.exec(`${launch}.click()`)
   await ctx.s.waitFor(async () => (await pill()) === null, "the note to go when checking is off")
   const saved = await ctx.s.exec(`return JSON.parse(localStorage.getItem('turbo-prefs')).updateCheck`)
   assert.equal(saved, false, "the setting is saved")
-  await segmentIn("Check at launch", "On")
+  await ctx.s.exec(`${launch}.click()`)
   await ctx.s.waitFor(async () => (await pill()) !== null, "back on")
 
   // A manual check that finds nothing newer clears the note, in both places.
@@ -217,5 +220,5 @@ test("E11 update check: a note in the title bar, a setting to stop it, and the m
   await (await ctx.s.byText("[role=dialog] button", "Check for updates")).click()
   await ctx.waitText("Up to date on")
   await ctx.s.waitFor(async () => (await pill()) === null, "the note to clear after an up-to-date check")
-  await ctx.closeSettings()
+  await ctx.closeAbout()
 }))

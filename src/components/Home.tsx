@@ -280,21 +280,23 @@ export function Home({ prefs, onPrefs, onCustomize, onOpen, onStar, onScope, rev
               </button>
             )}
           </div>
-          <div className="flex shrink-0 items-start gap-3">
-            <button
-              type="button"
-              onClick={onCustomize}
-              title="Customize home"
-              className="row mt-1 flex h-8 items-center gap-1.5 border border-border px-2.5 text-[12px] text-muted-foreground transition-colors duration-150 ease-out hover:bg-secondary hover:text-foreground"
-            >
-              <SlidersHorizontal size={13} />
-              Customize
-            </button>
+          {/* The clock, with Customize as a quiet action under it, both set
+              to the same right edge. */}
+          <div className={cn("flex shrink-0 flex-col items-end", prefs.clock ? "gap-1" : "pt-1")}>
             {prefs.clock && (
               <time className="tabular text-[1.45rem] font-medium leading-tight tracking-tight text-muted-foreground">
                 {timeLine}
               </time>
             )}
+            <button
+              type="button"
+              onClick={onCustomize}
+              title="Customize home"
+              className="row -mr-2 flex h-7 items-center gap-1.5 px-2 text-[12px] text-subtle transition-colors duration-150 ease-out hover:bg-secondary hover:text-foreground"
+            >
+              <SlidersHorizontal size={13} />
+              Customize
+            </button>
           </div>
         </header>
 

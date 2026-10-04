@@ -278,7 +278,7 @@ test("A18 alphabetical order applies to feeds and folders", shot("A18", async ()
   const manual = (await ctx.sources()).map((s) => s.name)
   assert.notDeepEqual(manual, sorted(manual), "precondition: the manual order is not alphabetical")
 
-  await ctx.settings()
+  await ctx.settings("Feeds")
   await (await ctx.s.waitFor(() => ctx.s.byText("[role=dialog] button", "Alphabetical"), "the order setting")).click()
   await ctx.closeSettings()
   await sleep(500)

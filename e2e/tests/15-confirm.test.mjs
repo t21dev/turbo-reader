@@ -61,7 +61,7 @@ test("every destructive action asks, and cancelling changes nothing", shot("asks
   assert.equal(await unread(), before, "nothing marked read")
 
   // reset appearance
-  await ctx.settings()
+  await ctx.settings("Appearance")
   await ctx.s.exec(`document.querySelector('[role=dialog] button[title="Violet"]').click()`)
   await (await ctx.s.byLabel("Reset appearance")).click()
   assert.match(await dialogTitle(), /Reset appearance/)

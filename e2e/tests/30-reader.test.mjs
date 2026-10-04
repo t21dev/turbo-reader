@@ -122,7 +122,7 @@ test("C7 font, size, width and direction apply to the article", shot("C7", async
   await ctx.s.waitFor(async () => (await style()).dir === "rtl", "right to left")
   await ctx.s.press("Escape")
   // back to defaults for the rest of the suite
-  await ctx.settings()
+  await ctx.settings("Appearance")
   await (await ctx.s.byLabel("Reset appearance")).click()
   await ctx.confirmDialog()
   await ctx.closeSettings()

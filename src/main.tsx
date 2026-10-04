@@ -35,13 +35,13 @@ async function reveal() {
         window.setTimeout(() => splash.remove(), 260)
       }
       const win = getCurrentWindow()
-      void win
-        .show()
-        .then(() => win.setFocus())
+      void api
+        .revealWindow()
         // The restored size is corrected here rather than at startup: a window
         // that has not been shown yet reports sizes that were never laid out.
-        .then(() => api.settleWindow())
-        .catch(() => undefined)
+        // A maximized window has no size of its own to correct.
+        .then((maximized) => (maximized ? undefined : api.settleWindow()))
+        .catch(() => win.show())
     }),
   )
 }

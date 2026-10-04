@@ -265,7 +265,7 @@ pub fn notify_new(app: &AppHandle, since: i64) {
 }
 
 /// New articles per feed since a moment, most first.
-fn new_by_feed(conn: &Connection, since: i64, pinned_only: bool) -> Vec<(String, i64)> {
+pub(crate) fn new_by_feed(conn: &Connection, since: i64, pinned_only: bool) -> Vec<(String, i64)> {
     let sql = format!(
         "SELECT s.name, COUNT(*) FROM items i JOIN sources s ON s.id = i.source_id
           WHERE i.fetched >= ?1 AND i.hidden = 0 AND s.hidden = 0 {}

@@ -13,6 +13,7 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
       ["j  ↓", "Next article"],
       ["k  ↑", "Previous article"],
       ["Esc", "Back to the list"],
+      [isMac ? "⌘ [  ⌘ ]" : "Alt ←  Alt →", "Back and forward"],
       [`${MOD} B`, "Show or hide the sidebar"],
       ["v", "Switch between cards and list"],
       ["g", "Home"],

@@ -34,7 +34,7 @@ const clickSetting = async (label) => {
 test("G1 export lists every feed in its folder", shot("G1", async () => {
   const out = tmp("export.opml")
   rmSync(out, { force: true })
-  await ctx.settings()
+  await ctx.settings("Feeds")
   await ctx.trap("plugin:dialog|save", out)
   await clickSetting("Export OPML")
   await ctx.s.waitFor(() => existsSync(out), "the file")
@@ -56,7 +56,7 @@ test("G2 import adds new feeds and folders and skips existing ones", shot("G2", 
       <outline text="Teasers" type="rss" xmlUrl="${ctx.url("/teaser.xml")}"/>
     </outline>
   </body></opml>`)
-  await ctx.settings()
+  await ctx.settings("Feeds")
   await ctx.trap("plugin:dialog|open", file)
   await clickSetting("Import OPML")
   await ctx.s.waitFor(async () => /Imported 2 feeds/.test(await ctx.pageText()), "the import summary")

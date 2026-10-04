@@ -10,7 +10,7 @@ use anyhow::Result;
 use rusqlite::{Connection, OptionalExtension};
 use std::path::Path;
 
-pub const SCHEMA_VERSION: i32 = 5;
+pub const SCHEMA_VERSION: i32 = 6;
 
 pub fn open(path: &Path) -> Result<Connection> {
     if let Some(dir) = path.parent() {
@@ -56,6 +56,9 @@ fn migrate(conn: &Connection) -> Result<()> {
         // Articles published before this were deleted on purpose, and a
         // refresh must not bring them back as new.
         add_column(conn, "sources", "pruned_before", "INTEGER");
+    }
+    if current < 6 {
+        conn.execute_batch(SCHEMA_V6)?;
     }
     conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     Ok(())
@@ -188,6 +191,21 @@ CREATE TABLE IF NOT EXISTS api_keys (
     created    INTEGER NOT NULL,
     last_used  INTEGER
 );
+"#;
+
+/// The notification bell's history. Read failures are not stored here: the
+/// bell reads them live from `sources.last_error`.
+const SCHEMA_V6: &str = r#"
+CREATE TABLE IF NOT EXISTS notifications (
+    id         INTEGER PRIMARY KEY,
+    kind       TEXT    NOT NULL,
+    title      TEXT    NOT NULL,
+    body       TEXT,
+    source_id  INTEGER,
+    created    INTEGER NOT NULL,
+    seen       INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_seen ON notifications(seen);
 "#;
 
 fn add_column(conn: &Connection, table: &str, column: &str, decl: &str) {

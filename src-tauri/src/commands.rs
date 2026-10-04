@@ -534,6 +534,7 @@ pub async fn run_refresh(app: &tauri::AppHandle, state: &AppState) -> Result<Fet
         spawn_icon_fill(app.clone());
         if r.new_items > 0 {
             crate::background::notify_new(app, started);
+            crate::notifications::record_refresh(app, started);
         }
     }
     report
@@ -939,6 +940,87 @@ pub fn mark_all_read(state: State<AppState>, filter: Filter) -> Result<usize, St
     }
     .map_err(e)?;
     Ok(n)
+}
+
+/// The scope's articles as one SQL condition, with its parameters: the same
+/// scopes mark-all-read uses.
+fn scope_clause(filter: &Filter) -> (String, Vec<i64>) {
+    let id = filter.id.unwrap_or(0);
+    match filter.scope.as_deref().unwrap_or("all") {
+        "source" => ("source_id = ?".into(), vec![id]),
+        "group" => (
+            "source_id IN (SELECT id FROM sources WHERE group_id = ?)".into(),
+            vec![id],
+        ),
+        "starred" => ("starred = 1".into(), vec![]),
+        _ => ("1 = 1".into(), vec![]),
+    }
+}
+
+/// How many read articles in the scope mark-all-unread would change. Hidden
+/// articles stay read: unhiding them is a separate choice.
+pub(crate) fn mark_all_unread_count(conn: &Connection, filter: &Filter) -> rusqlite::Result<i64> {
+    let (clause, args) = scope_clause(filter);
+    conn.query_row(
+        &format!("SELECT COUNT(*) FROM items WHERE read = 1 AND hidden = 0 AND {clause}"),
+        rusqlite::params_from_iter(args),
+        |r| r.get(0),
+    )
+}
+
+pub(crate) fn mark_all_unread_in(conn: &Connection, filter: &Filter) -> rusqlite::Result<usize> {
+    let (clause, args) = scope_clause(filter);
+    conn.execute(
+        &format!("UPDATE items SET read = 0 WHERE read = 1 AND hidden = 0 AND {clause}"),
+        rusqlite::params_from_iter(args),
+    )
+}
+
+#[tauri::command]
+pub fn mark_all_unread_preview(state: State<AppState>, filter: Filter) -> Result<i64, String> {
+    let conn = state.db.lock().map_err(e)?;
+    mark_all_unread_count(&conn, &filter).map_err(e)
+}
+
+#[tauri::command]
+pub fn mark_all_unread(state: State<AppState>, filter: Filter) -> Result<usize, String> {
+    let conn = state.db.lock().map_err(e)?;
+    mark_all_unread_in(&conn, &filter).map_err(e)
+}
+
+#[cfg(test)]
+mod mark_all_unread_tests {
+    use super::*;
+
+    #[test]
+    fn unread_by_scope_and_hidden_stay_read() {
+        let c = Connection::open_in_memory().unwrap();
+        db::migrate_for_tests(&c);
+        c.execute_batch(
+            "INSERT INTO groups(id, name) VALUES (1, 'Tech');
+             INSERT INTO sources(id, url, name, group_id) VALUES (1, 'a', 'A', 1), (2, 'b', 'B', NULL);
+             INSERT INTO items(source_id, guid, title, published, fetched, content, snippet, dedupe_hash, read, starred, hidden)
+             VALUES (1, '1', 't', 0, 0, '', '', 'h1', 1, 0, 0),
+                    (1, '2', 't', 0, 0, '', '', 'h2', 1, 1, 0),
+                    (1, '3', 't', 0, 0, '', '', 'h3', 1, 0, 1),
+                    (2, '4', 't', 0, 0, '', '', 'h4', 1, 0, 0),
+                    (2, '5', 't', 0, 0, '', '', 'h5', 0, 0, 0);",
+        )
+        .unwrap();
+        let f = |scope: &str, id: Option<i64>| Filter {
+            scope: Some(scope.into()),
+            id,
+            ..Default::default()
+        };
+        assert_eq!(mark_all_unread_count(&c, &f("group", Some(1))).unwrap(), 2);
+        assert_eq!(mark_all_unread_count(&c, &f("starred", None)).unwrap(), 1);
+        assert_eq!(mark_all_unread_in(&c, &f("source", Some(2))).unwrap(), 1);
+        assert_eq!(mark_all_unread_in(&c, &f("all", None)).unwrap(), 2);
+        let hidden_read: i64 = c
+            .query_row("SELECT read FROM items WHERE guid = '3'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(hidden_read, 1, "a hidden article stays read");
+    }
 }
 
 /* --------------------------------- opml -------------------------------- */
@@ -1376,6 +1458,25 @@ mod update_tests {
         assert!(!is_newer("", "0.1.0"));
         assert!(!is_newer("vvv", "0.1.0"));
     }
+}
+
+/// Show the window once the page has painted, maximized if it was left that
+/// way. Returns whether it was maximized, in which case there is no size to
+/// settle.
+#[tauri::command]
+pub fn reveal_window(window: tauri::Window, state: State<AppState>) -> Result<bool, String> {
+    let maximized = {
+        let conn = state.db.lock().map_err(e)?;
+        winstate::load(&conn).is_some_and(|w| w.maximized)
+    };
+    // Maximizing shows the window too, already at full size, so a window left
+    // maximized never appears at its normal size first.
+    if maximized {
+        window.maximize().map_err(e)?;
+    }
+    window.show().map_err(e)?;
+    let _ = window.set_focus();
+    Ok(maximized)
 }
 
 /// Called by the frontend once the window is on screen. See

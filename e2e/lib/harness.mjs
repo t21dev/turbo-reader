@@ -302,12 +302,43 @@ function makeContext(s, base) {
       await btn.click()
     },
 
-    /** Open Settings with the keyboard. */
-    async settings() {
+    /** Open Settings with the keyboard, on one tab when given. */
+    async settings(tab) {
       await s.exec(`document.activeElement?.blur()`)
       await s.press(",")
       await s.waitFor(() => s.exec(`return !!document.getElementById('settings-title')`), "Settings to open")
       await sleep(250)
+      if (tab) await ctx.settingsTab(tab)
+    },
+
+    /** Switch Settings to a tab by its label. */
+    async settingsTab(label) {
+      const el = await s.waitFor(
+        () => s.exec(
+          `return [...document.querySelectorAll('[role=tab]')].find(b => b.textContent.trim() === arguments[0]) ?? null`,
+          label,
+        ),
+        `the ${label} tab`,
+      )
+      await s.exec(`arguments[0].click()`, el)
+      await s.waitFor(
+        () => s.exec(`return document.querySelector('[data-settings-heading]')?.textContent === arguments[0]`, label),
+        `the ${label} tab to show`,
+      )
+      await sleep(120)
+    },
+
+    /** Open About from the title bar. */
+    async about() {
+      const btn = await s.waitFor(() => s.byLabel("About Turbo Reader"), "the About button")
+      await btn.click()
+      await s.waitFor(() => s.exec(`return !!document.getElementById('about-title')`), "About to open")
+      await sleep(200)
+    },
+
+    async closeAbout() {
+      await s.press("Escape")
+      await s.waitFor(() => s.exec(`return !document.getElementById('about-title')`), "About to close")
     },
 
     async closeSettings() {

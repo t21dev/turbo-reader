@@ -28,7 +28,7 @@
     --subtle: 0 0% 58%;
     --accent: 0 0% 95.5%;
     --accent-foreground: 0 0% 9%;
-    --destructive: 347 77% 50%;
+    --destructive: 345 82% 42%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 90%;
     --input: 0 0% 88%;
@@ -97,7 +97,7 @@
     --subtle: 0 0% 40%;
     --accent: 0 0% 10.5%;
     --accent-foreground: 0 0% 93%;
-    --destructive: 350 89% 66%;
+    --destructive: 347 77% 58%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 12.5%;
     --input: 0 0% 15%;
@@ -128,8 +128,28 @@
   }
   input,
   textarea,
-  [contenteditable] {
+  [contenteditable],
+  /* An article is for reading and quoting: its title, byline and text can be
+     selected and copied, in the reader and in reading mode. The rest of the
+     app stays unselectable, like a native window. */
+  .reader-column {
     user-select: text;
+  }
+  /* A setting found from search: a brief wash in the accent, then gone. */
+  .settings-flash {
+    border-radius: 0.5rem;
+    animation: settings-flash 1600ms var(--ease-out);
+  }
+  @keyframes settings-flash {
+    0%,
+    35% {
+      background-color: hsl(var(--system) / 0.12);
+      box-shadow: 0 0 0 6px hsl(var(--system) / 0.12);
+    }
+    100% {
+      background-color: transparent;
+      box-shadow: 0 0 0 6px transparent;
+    }
   }
   ::selection {
     background: hsl(var(--foreground) / 0.18);

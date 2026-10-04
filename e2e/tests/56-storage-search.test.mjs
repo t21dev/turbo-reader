@@ -64,7 +64,7 @@ test("G1 Ctrl+K finds feeds by name and articles by a word still being typed", s
 }))
 
 test("G2 a feed opens its list; Esc closes; the title bar button opens it too", shot("G2", async () => {
-  await (await ctx.s.byLabel("Search feeds and articles")).click()
+  await (await ctx.s.byLabel("Search feeds, articles and settings")).click()
   await ctx.s.waitFor(paletteOpen, "the palette from the title bar")
   await search("fixture rss")
   await ctx.s.waitFor(async () => (await options()).some((o) => o.includes("Fixture RSS")), "the feed")
@@ -120,7 +120,7 @@ async function storageButton(rowId, text) {
 const sizeOf = (id) => ctx.s.exec(`return document.getElementById('${id}')?.querySelector('[data-size]')?.textContent ?? null`)
 
 test("S1 Storage measures the library and compacts it", shot("S1", async () => {
-  await ctx.settings()
+  await ctx.settings("Storage")
   await ctx.s.exec(`document.querySelector('[data-storage]').scrollIntoView()`)
   await ctx.s.waitFor(async () => /MB|KB/.test((await sizeOf("st-db")) ?? ""), "the database size")
   assert.match(await sizeOf("st-full"), /None/)
@@ -135,7 +135,7 @@ test("S2 a downloaded full article can be dropped back to the feed's text", shot
   await ctx.tool("Load full content (f)")
   await ctx.waitText("FULL-BODY-MARKER")
 
-  await ctx.settings()
+  await ctx.settings("Storage")
   await ctx.s.waitFor(async () => /^1 article/.test((await sizeOf("st-full")) ?? ""), "one full article counted")
   await storageButton("st-full", "Remove")
   await ctx.confirmDialog()
@@ -173,7 +173,7 @@ test("S4 clearing the webview cache waits for the next start, and can be cancell
   mkdirSync(cache, { recursive: true })
   writeFileSync(path.join(cache, "planted.bin"), Buffer.alloc(300 * 1024))
 
-  await ctx.settings()
+  await ctx.settings("Storage")
   await ctx.s.waitFor(async () => /KB|MB/.test((await sizeOf("st-webview")) ?? ""), "the planted cache measured")
   await storageButton("st-webview", "Clear")
   await ctx.s.waitFor(async () => (await sizeOf("st-webview")) === "Clears at next start", "booked")

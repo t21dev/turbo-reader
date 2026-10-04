@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import { Search, SortDesc, SortAsc, CheckCheck, Star, Copy, EyeOff } from "lucide-react"
+import { Search, SortDesc, SortAsc, CheckCheck, CircleDot, Star, Copy, EyeOff } from "lucide-react"
 import type { ItemSummary } from "@/lib/api"
 import { cn, relativeTime } from "@/lib/utils"
 import { Menu, MenuItem, MenuSeparator } from "@/components/Menu"
@@ -22,6 +22,7 @@ type Props = {
   onToggleUnread: () => void
   onToggleDuplicates: () => void
   onMarkAllRead: (olderThanDays?: number) => void
+  onMarkAllUnread: () => void
   onStar: (item: ItemSummary) => void
   onHide: (item: ItemSummary) => void
 }
@@ -60,40 +61,16 @@ export function ArticleList(p: Props) {
             className="h-7 w-full rounded-md border border-transparent bg-secondary pl-7 pr-2 text-[12px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
           />
         </div>
-        <button
-          type="button"
-          onClick={p.onToggleUnread}
-          title={p.unreadOnly ? "Showing unread only (u)" : "Showing all articles (u)"}
-          className={cn(
-            "row grid h-7 w-7 place-items-center",
-            p.unreadOnly ? "bg-elevated text-system" : "text-muted-foreground hover:bg-secondary",
-          )}
-        >
-          <span className="block h-1.5 w-1.5 rounded-full bg-current" />
-        </button>
-        <button
-          type="button"
-          onClick={p.onToggleDuplicates}
-          title={p.hideDuplicates ? "Duplicates hidden (d)" : "Duplicates shown (d)"}
-          className={cn(
-            "row grid h-7 w-7 place-items-center",
-            p.hideDuplicates
-              ? "bg-elevated text-system"
-              : "text-muted-foreground hover:bg-secondary",
-          )}
-        >
-          <Copy size={13} />
-        </button>
-        <button
-          type="button"
-          onClick={p.onToggleSort}
-          title={p.sort === "newest" ? "Newest first (t)" : "Oldest first (t)"}
-          className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
-        >
-          {p.sort === "newest" ? <SortDesc size={14} /> : <SortAsc size={14} />}
-        </button>
+        <ViewControls
+          unreadOnly={p.unreadOnly}
+          hideDuplicates={p.hideDuplicates}
+          sort={p.sort}
+          onToggleUnread={p.onToggleUnread}
+          onToggleDuplicates={p.onToggleDuplicates}
+          onToggleSort={p.onToggleSort}
+        />
 
-        <MarkAllMenu onMarkAllRead={p.onMarkAllRead} />
+        <MarkAllMenu onMarkAllRead={p.onMarkAllRead} onMarkAllUnread={p.onMarkAllUnread} />
       </div>
 
       <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
@@ -192,21 +169,73 @@ export function ArticleList(p: Props) {
   )
 }
 
-/** Mark all as read, with the same time cuts Fluent Reader offers. */
+/** Unread only, hide duplicates, and the order: the same three toggles over
+    the list and the card grid. */
+export function ViewControls(p: {
+  unreadOnly: boolean
+  hideDuplicates: boolean
+  sort: "newest" | "oldest"
+  onToggleUnread: () => void
+  onToggleDuplicates: () => void
+  onToggleSort: () => void
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        onClick={p.onToggleUnread}
+        title={p.unreadOnly ? "Showing unread only (u)" : "Showing all articles (u)"}
+        className={cn(
+          "row grid h-7 w-7 place-items-center",
+          p.unreadOnly ? "bg-elevated text-system" : "text-muted-foreground hover:bg-secondary",
+        )}
+      >
+        <span className="block h-1.5 w-1.5 rounded-full bg-current" />
+      </button>
+      <button
+        type="button"
+        onClick={p.onToggleDuplicates}
+        title={p.hideDuplicates ? "Duplicates hidden (d)" : "Duplicates shown (d)"}
+        className={cn(
+          "row grid h-7 w-7 place-items-center",
+          p.hideDuplicates
+            ? "bg-elevated text-system"
+            : "text-muted-foreground hover:bg-secondary",
+        )}
+      >
+        <Copy size={13} />
+      </button>
+      <button
+        type="button"
+        onClick={p.onToggleSort}
+        title={p.sort === "newest" ? "Newest first (t)" : "Oldest first (t)"}
+        className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
+      >
+        {p.sort === "newest" ? <SortDesc size={14} /> : <SortAsc size={14} />}
+      </button>
+    </>
+  )
+}
+
+/** Mark all as read, with the same time cuts Fluent Reader offers, or all as
+    unread to start a list over. */
 export function MarkAllMenu({
   onMarkAllRead,
+  onMarkAllUnread,
 }: {
   onMarkAllRead: (olderThanDays?: number) => void
+  onMarkAllUnread: () => void
 }) {
   return (
     <Menu
-      label="Mark all as read"
-      width={184}
+      label="Mark all as read or unread"
+      width={196}
       trigger={({ open, toggle }) => (
         <button
           type="button"
           onClick={toggle}
-          title="Mark all as read (a)"
+          title="Mark all as read or unread (a)"
+          aria-label="Mark all"
           className={cn(
             "row grid h-7 w-7 place-items-center hover:bg-secondary hover:text-foreground",
             open ? "bg-secondary text-foreground" : "text-muted-foreground",
@@ -243,6 +272,16 @@ export function MarkAllMenu({
               {days} day{days === 1 ? "" : "s"} ago
             </MenuItem>
           ))}
+          <MenuSeparator />
+          <MenuItem
+            icon={<CircleDot size={13} />}
+            onClick={() => {
+              close()
+              onMarkAllUnread()
+            }}
+          >
+            Mark all as unread
+          </MenuItem>
         </>
       )}
     </Menu>

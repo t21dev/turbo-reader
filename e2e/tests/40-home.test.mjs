@@ -120,7 +120,7 @@ test("D7 interests lift an article and mutes sink one", shot("D7", async () => {
   await (await ctx.s.byText("button", "This month")).click()
   await sleep(400)
 
-  await ctx.settings()
+  await ctx.settings("Home")
   const areas = await ctx.s.findAll("[role=dialog] textarea")
   await areas[0].click()
   await ctx.s.type("kubernetes")
@@ -138,7 +138,7 @@ test("D7 interests lift an article and mutes sink one", shot("D7", async () => {
 }))
 
 test("D7b editing both lists quickly keeps both, and closing mid-edit still saves", shot("D7b", async () => {
-  await ctx.settings()
+  await ctx.settings("Home")
   const areas = await ctx.s.findAll("[role=dialog] textarea")
   await areas[0].click()
   await ctx.s.press("a", { ctrl: true })
@@ -156,12 +156,12 @@ test("D7b editing both lists quickly keeps both, and closing mid-edit still save
 
 test("D8 sections and categories switched off leave home", shot("D8", async () => {
   await goHome()
-  await ctx.settings()
+  await ctx.settings("Home")
   await (await ctx.s.waitFor(() => ctx.s.byLabel("Hide Search"), "the Search section toggle")).click()
   await ctx.closeSettings()
   await ctx.s.waitFor(() => ctx.s.exec(`return !document.getElementById('turbo-home-search')`), "the search box gone")
 
-  await ctx.settings()
+  await ctx.settings("Home")
   await (await ctx.s.byLabel("Show Search")).click()
   const eye = await ctx.s.exec(
     `const row = [...document.querySelectorAll('[role=dialog] span')].find(s => s.textContent.trim() === 'News')?.parentElement;
@@ -207,7 +207,7 @@ const GLANCE = `[...document.querySelectorAll('section button')].find(b => /This
 test("D10 sections can be put in a different order, and it sticks", shot("D10", async () => {
   await goHome()
   assert.ok(await before_(GLANCE, SEARCH), "glance comes first by default")
-  await ctx.settings()
+  await ctx.settings("Home")
   const up = await ctx.s.waitFor(() => ctx.s.byLabel("Move Search up"), "the move button")
   assert.equal(await ctx.s.exec(`return document.querySelector('[aria-label="Move Glance up"]').disabled`), true, "the first one cannot go higher")
   await up.click()
@@ -232,7 +232,7 @@ test("D11 categories have their own order on home, apart from the sidebar", shot
   let [news, techAt] = order(await bandTitles())
   assert.ok(news < techAt, "sidebar order to begin with")
 
-  await ctx.settings()
+  await ctx.settings("Home")
   await (await ctx.s.waitFor(() => ctx.s.byLabel("Move Tech up"), "Tech's move button")).click()
   await ctx.closeSettings()
   await ctx.s.waitFor(async () => {
@@ -251,7 +251,7 @@ test("D11 categories have their own order on home, apart from the sidebar", shot
 
 test("D12 card size widens the cards, and the layout picker shows what was chosen", shot("D12", async () => {
   await goHome()
-  await ctx.settings()
+  await ctx.settings("Home")
   const select = await ctx.s.waitFor(() => ctx.s.byLabel("Layout for Tech"), "Tech's layout picker")
   await ctx.s.exec(
     `const el = arguments[0];
@@ -269,7 +269,7 @@ test("D12 card size widens the cards, and the layout picker shows what was chose
     )
   await ctx.s.waitFor(async () => /minmax\(320px/.test((await columns()) ?? ""), "large cards")
 
-  await ctx.settings()
+  await ctx.settings("Home")
   const shown = await ctx.s.exec(`return document.querySelector('[aria-label="Layout for Tech"]').value`)
   assert.equal(shown, "cards", "the picker shows the saved layout, not Auto")
   await (await ctx.s.byText("[role=dialog] button", "Small")).click()
@@ -277,23 +277,21 @@ test("D12 card size widens the cards, and the layout picker shows what was chose
   await ctx.s.waitFor(async () => /minmax\(190px/.test((await columns()) ?? ""), "small cards")
 }))
 
-test("D13 Customize on home opens just the home settings, with a way to the rest", shot("D13", async () => {
+test("D13 Customize on home opens Settings on the Home tab, with the others a click away", shot("D13", async () => {
   await goHome()
   await (await ctx.s.waitFor(() => ctx.s.byText("section button", "Customize"), "the Customize button")).click()
-  const title = () => ctx.s.exec(`return document.getElementById('settings-title')?.textContent ?? null`)
-  const headings = () =>
-    ctx.s.exec(`return [...document.querySelectorAll('[role=dialog] h3')].map(h => h.textContent.trim())`)
-  await ctx.s.waitFor(async () => (await title()) === "Customize home", "the home-only panel")
-  assert.deepEqual(await headings(), ["Home"], "only the home section")
+  const selected = () =>
+    ctx.s.exec(`return document.querySelector('[role=tab][aria-selected=true]')?.textContent.trim() ?? null`)
+  await ctx.s.waitFor(async () => (await selected()) === "Home", "the Home tab")
   assert.ok(await ctx.s.byLabel("Move Search up"), "the same controls as Settings")
+  const tabs = await ctx.s.exec(`return [...document.querySelectorAll('[role=tab]')].map(t => t.textContent.trim())`)
+  assert.deepEqual(tabs, ["Appearance", "Reading", "Home", "Feeds", "Storage", "Background", "AI agents"])
 
-  await (await ctx.s.byText("[role=dialog] button", "All settings")).click()
-  await ctx.s.waitFor(async () => (await title()) === "Settings", "the full panel")
-  assert.ok((await headings()).includes("Appearance"), "everything else is back")
-  await ctx.closeSettings()
-
-  // and the gear in the title bar still opens the full panel
-  await ctx.settings()
-  assert.equal(await title(), "Settings")
+  await ctx.settingsTab("Appearance")
+  assert.ok(await ctx.s.byText("[role=dialog] button", "Paper"), "another tab's settings")
+  // arrow keys move between tabs
+  await ctx.s.exec(`document.querySelector('[role=tab][aria-selected=true]').focus()`)
+  await ctx.s.press("ArrowDown")
+  await ctx.s.waitFor(async () => (await selected()) === "Reading", "ArrowDown to the next tab")
   await ctx.closeSettings()
 }))

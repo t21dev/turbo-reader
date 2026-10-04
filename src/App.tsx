@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Home as HomeIcon, Keyboard, LayoutGrid, List as ListIcon, RefreshCw, Search, Settings2 } from "lucide-react"
+import { Info, Keyboard, LayoutGrid, List as ListIcon, RefreshCw, Search, Settings2 } from "lucide-react"
 import { listen } from "@tauri-apps/api/event"
 import { useUpdateCheck } from "@/lib/updates"
 import { pickAndImportOpml } from "@/lib/opml"
@@ -7,12 +7,14 @@ import { Welcome } from "@/components/Welcome"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { TitleBar } from "@/components/TitleBar"
 import { CommandPalette } from "@/components/CommandPalette"
+import { AboutDialog } from "@/components/AboutDialog"
 import { isMac } from "@/lib/platform"
+import { NotificationBell } from "@/components/Notifications"
 import { Sidebar } from "@/components/Sidebar"
 import { ArticleList } from "@/components/ArticleList"
 import { CardGrid } from "@/components/CardGrid"
 import { Reader } from "@/components/Reader"
-import { SettingsPanel } from "@/components/SettingsPanel"
+import { SettingsPanel, type SettingsTab } from "@/components/SettingsPanel"
 import { Shortcuts } from "@/components/Shortcuts"
 import { Home } from "@/components/Home"
 import { Prompt, type PromptSpec } from "@/components/Prompt"
@@ -33,6 +35,7 @@ import {
 } from "@/lib/api"
 import { readPrefs, writePrefs, type AppPrefs } from "@/lib/prefs"
 import { cn } from "@/lib/utils"
+import { useNavHistory } from "@/lib/navHistory"
 
 export default function App() {
   const [groups, setGroups] = useState<Group[]>([])
@@ -57,8 +60,9 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   // Set when Settings is opened from home's Customize button.
-  const [settingsFocus, setSettingsFocus] = useState<"home" | undefined>(undefined)
+  const [settingsFocus, setSettingsFocus] = useState<SettingsTab | undefined>(undefined)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [view, setView] = useState<"cards" | "list">(
     () => (localStorage.getItem("turbo-view") as "cards" | "list") ?? "cards",
@@ -417,6 +421,52 @@ export default function App() {
     })
   }
 
+  /** The reverse, for starting a feed or folder over. Also asks first: which
+      articles were read cannot be recovered afterwards. */
+  async function markAllUnread() {
+    const filter = { scope, id: scopeId ?? undefined }
+    const count = await attempt("Counting read articles", () => api.markAllUnreadPreview(filter))
+    if (count === undefined) return
+    if (count === 0) {
+      notify("Nothing here is read yet.")
+      return
+    }
+    setPrompt({
+      title: `Mark ${count} article${count === 1 ? "" : "s"} as unread?`,
+      detail: `Every read article ${scopeWhere()}. Hidden articles stay hidden. Which ones you had read cannot be recovered.`,
+      confirmLabel: "Mark as unread",
+      destructive: true,
+      onConfirm: async () => {
+        await api.markAllUnread(filter)
+        await Promise.all([loadTree(), loadItems()])
+        setHomeRevision((n) => n + 1)
+      },
+    })
+  }
+
+  /** Where the current list's articles come from, for confirmations. */
+  function scopeWhere() {
+    return scope === "source"
+      ? `in ${sources.find((x) => x.id === scopeId)?.name ?? "this feed"}`
+      : scope === "group"
+        ? `in ${groups.find((x) => x.id === scopeId)?.name ?? "this folder"}`
+        : scope === "starred"
+          ? "among your starred articles"
+          : "across every feed"
+  }
+
+  /** The current list's name, shown above the cards. */
+  const scopeTitle =
+    scope === "source"
+      ? (sources.find((x) => x.id === scopeId)?.name ?? "Feed")
+      : scope === "group"
+        ? (groups.find((x) => x.id === scopeId)?.name ?? "Folder")
+        : scope === "starred"
+          ? "Starred"
+          : unreadOnly
+            ? "Unread"
+            : "All articles"
+
   function select(nextScope: Scope, id: number | null) {
     setAtHome(false)
     // the Unread entry reuses the "all" scope with the filter switched on
@@ -445,6 +495,38 @@ export default function App() {
     localStorage.setItem("turbo-view", next)
   }
 
+  // Back and forward, as in a browser: Alt+Left and Alt+Right (Cmd+[ and
+  // Cmd+] on macOS) and the mouse's side buttons step through the places
+  // visited: home, a feed or folder, unread only, and the article open there.
+  type Place = { home: boolean; scope: Scope; id: number | null; unread: boolean; item: number | null }
+  const nav = useNavHistory<Place>(
+    { home: atHome, scope, id: scopeId, unread: unreadOnly, item: current?.id ?? null },
+    useCallback((p: Place) => `${p.home}|${p.scope}|${p.id}|${p.unread}|${p.item}`, []),
+    useCallback((p: Place) => {
+      setAtHome(p.home)
+      setScope(p.scope)
+      setScopeId(p.id)
+      setUnreadOnly(p.unread)
+      if (p.item === null) setCurrent(null)
+      else
+        void api
+          .getItem(p.item)
+          .then(setCurrent)
+          .catch(() => setCurrent(null))
+    }, []),
+  )
+  useEffect(() => {
+    // The side buttons arrive as mouseup with button 3 (back) and 4 (forward).
+    const onMouse = (ev: MouseEvent) => {
+      if (ev.button !== 3 && ev.button !== 4) return
+      ev.preventDefault()
+      if (ev.button === 3) nav.back()
+      else nav.forward()
+    }
+    window.addEventListener("mouseup", onMouse)
+    return () => window.removeEventListener("mouseup", onMouse)
+  }, [nav])
+
   // Keyboard. Fluent Reader issue #592 asked for shortcuts and never got them.
   // Everything here is a single key except the Ctrl pairs, and nothing fires
   // while a text field has focus.
@@ -452,7 +534,7 @@ export default function App() {
     function onKey(ev: KeyboardEvent) {
       // While a dialog is open its keys are its own. Without this, pressing h
       // with a confirmation focused would act on the article behind it.
-      if (prompt || addOpen || settingsOpen || shortcutsOpen || paletteOpen) return
+      if (prompt || addOpen || settingsOpen || shortcutsOpen || paletteOpen || aboutOpen) return
       // Search everything. Works from inside a text field too.
       if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "k") {
         ev.preventDefault()
@@ -462,6 +544,15 @@ export default function App() {
       const el = ev.target as HTMLElement | null
       const typing =
         el?.tagName === "INPUT" || el?.tagName === "TEXTAREA" || el?.isContentEditable === true
+
+      const backKey = isMac ? ev.metaKey && ev.key === "[" : ev.altKey && ev.key === "ArrowLeft"
+      const forwardKey = isMac ? ev.metaKey && ev.key === "]" : ev.altKey && ev.key === "ArrowRight"
+      if ((backKey || forwardKey) && !typing) {
+        ev.preventDefault()
+        if (backKey) nav.back()
+        else nav.forward()
+        return
+      }
 
       if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "b") {
         ev.preventDefault()
@@ -564,7 +655,7 @@ export default function App() {
   const totalUnread = sources.reduce((n, s) => n + s.unread, 0)
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-hidden">
+    <div className="relative flex h-full w-full flex-col overflow-clip">
       <TitleBar
         update={update}
         unread={totalUnread}
@@ -575,25 +666,13 @@ export default function App() {
         <button
           type="button"
           onClick={() => setPaletteOpen(true)}
-          title={`Search feeds and articles (${isMac ? "⌘" : "Ctrl"} K)`}
-          aria-label="Search feeds and articles"
+          title={`Search feeds, articles and settings (${isMac ? "⌘" : "Ctrl"} K)`}
+          aria-label="Search feeds, articles and settings"
           className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
         >
           <Search size={14} />
         </button>
-        {homePrefs.enabled && (
-          <button
-            type="button"
-            onClick={() => setAtHome((v) => !v)}
-            title="Home (g)"
-            className={cn(
-              "row grid h-7 w-7 place-items-center hover:bg-secondary hover:text-foreground",
-              atHome ? "bg-secondary text-foreground" : "text-muted-foreground",
-            )}
-          >
-            <HomeIcon size={14} />
-          </button>
-        )}
+        <NotificationBell update={update} onOpenFeed={(id) => select("source", id)} onRefresh={refresh} />
         <button
           type="button"
           onClick={toggleView}
@@ -618,6 +697,15 @@ export default function App() {
           className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
         >
           <Keyboard size={14} />
+        </button>
+        <button
+          type="button"
+          onClick={() => setAboutOpen(true)}
+          title="About Turbo Reader"
+          aria-label="About Turbo Reader"
+          className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
+        >
+          <Info size={14} />
         </button>
         <button
           type="button"
@@ -701,6 +789,7 @@ export default function App() {
               onToggleUnread={() => setUnreadOnly((v) => !v)}
               onToggleDuplicates={() => setHideDuplicates((v) => !v)}
               onMarkAllRead={(days) => void markAllRead(days)}
+              onMarkAllUnread={() => void markAllUnread()}
               onStar={(it) => void toggleStar(it.id, !it.starred)}
               onHide={(it) => void hide(it.id)}
             />}
@@ -744,6 +833,15 @@ export default function App() {
             onSelect={(it) => void selectItem(it)}
             onStar={(it) => void toggleStar(it.id, !it.starred)}
             onHide={(it) => void hide(it.id)}
+            title={scopeTitle}
+            onMarkAllRead={(days) => void markAllRead(days)}
+            onMarkAllUnread={() => void markAllUnread()}
+            unreadOnly={unreadOnly}
+            hideDuplicates={hideDuplicates}
+            sort={sort}
+            onToggleUnread={() => setUnreadOnly((v) => !v)}
+            onToggleDuplicates={() => setHideDuplicates((v) => !v)}
+            onToggleSort={() => setSort((s) => (s === "newest" ? "oldest" : "newest"))}
           />
         )}
       </div>
@@ -774,6 +872,7 @@ export default function App() {
       )}
 
       {shortcutsOpen && <Shortcuts onClose={() => setShortcutsOpen(false)} />}
+      {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} prefs={prefs} onPrefs={updatePrefs} />}
       {paletteOpen && (
         <CommandPalette
           groups={groups}
@@ -784,6 +883,14 @@ export default function App() {
           onArticle={(it) => {
             setAtHome(false)
             void selectItem(it)
+          }}
+          onSetting={(target) => {
+            if (target === "about") setAboutOpen(true)
+            else if (target === "shortcuts") setShortcutsOpen(true)
+            else {
+              setSettingsFocus(target)
+              setSettingsOpen(true)
+            }
           }}
           onSearchAll={(q) => {
             select("all", null)

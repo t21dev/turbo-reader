@@ -13,6 +13,7 @@ mod discover;
 mod feed;
 mod home;
 mod markdown;
+mod notifications;
 mod opml;
 mod rank;
 mod readable;
@@ -183,6 +184,11 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::list_groups,
+            notifications::notifications_summary,
+            notifications::notifications_page,
+            notifications::notifications_mark_seen,
+            notifications::notifications_clear,
+            notifications::notifications_remove,
             storage::storage_info,
             storage::storage_compact,
             storage::storage_clear_full,
@@ -204,6 +210,8 @@ pub fn run() {
             commands::set_read,
             commands::set_starred,
             commands::mark_all_read,
+            commands::mark_all_unread,
+            commands::mark_all_unread_preview,
             commands::import_opml,
             commands::export_opml,
             commands::get_settings,
@@ -223,6 +231,7 @@ pub fn run() {
             commands::retention_preview,
             commands::mark_all_read_preview,
             commands::settle_window,
+            commands::reveal_window,
             commands::read_text_file,
             commands::write_text_file,
             background::get_background,
@@ -284,13 +293,13 @@ fn spawn_refresh_schedule(app: tauri::AppHandle) {
 /// Write the window's geometry, if there is a sensible one to write and the
 /// database is free. Never blocks the window event it was called from.
 fn save_now<R: tauri::Runtime>(window: &tauri::Window<R>) {
-    let Some(state) = winstate::capture(window) else {
-        return;
-    };
     let Some(app_state) = window.app_handle().try_state::<AppState>() else {
         return;
     };
     let Ok(conn) = app_state.db.try_lock() else {
+        return;
+    };
+    let Some(state) = winstate::capture(window, winstate::load(&conn)) else {
         return;
     };
     winstate::store(&conn, &state);

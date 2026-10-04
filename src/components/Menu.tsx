@@ -16,12 +16,14 @@ export function Menu({
   align = "end",
   width = 216,
   label,
+  role = "menu",
 }: {
   trigger: (props: { open: boolean; toggle: () => void }) => ReactNode
   children: ReactNode | ((close: () => void) => ReactNode)
   align?: "start" | "end"
   width?: number
   label?: string
+  role?: "menu" | "dialog"
 }) {
   const [open, setOpen] = useState(false)
   const [closing, setClosing] = useState(false)
@@ -98,7 +100,7 @@ export function Menu({
       {open && (
         <div
           ref={panel}
-          role="menu"
+          role={role}
           aria-label={label}
           style={{ width }}
           className={cn(

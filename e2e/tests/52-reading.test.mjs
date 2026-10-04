@@ -26,7 +26,7 @@ const root = () =>
   }`)
 
 test("R1 the paper theme is warm, light, and survives reopening", shot("R1", async () => {
-  await ctx.settings()
+  await ctx.settings("Appearance")
   await (await ctx.s.waitFor(() => ctx.s.byText("[role=dialog] button", "Paper"), "the Paper option")).click()
   await ctx.s.waitFor(async () => (await root()).paper, "paper applied")
   const r = await root()
@@ -48,7 +48,7 @@ test("R2 every bundled reading font loads from inside the app", shot("R2", async
 }))
 
 test("R3 picking a font changes the article's font", shot("R3", async () => {
-  await ctx.settings()
+  await ctx.settings("Reading")
   const fonts = await ctx.s.exec(`return [...document.querySelectorAll('[role=radiogroup][aria-label="Article font"] [role=radio]')].map(b => b.textContent)`)
   assert.equal(fonts.length, 8, "six reading fonts, system serif and mono")
   await ctx.s.exec(`[...document.querySelectorAll('[aria-label="Article font"] [role=radio]')].find(b => b.textContent.includes('Libron')).click()`)

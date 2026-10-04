@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { EyeOff, Star } from "lucide-react"
 import type { ItemSummary, Source } from "@/lib/api"
+import { MarkAllMenu, ViewControls } from "@/components/ArticleList"
 import { cn, relativeTime } from "@/lib/utils"
 import { FeedIcon } from "@/components/FeedIcon"
 import { CoverFallback } from "@/components/CoverFallback"
@@ -14,6 +15,16 @@ type Props = {
   onSelect: (item: ItemSummary) => void
   onStar: (item: ItemSummary) => void
   onHide: (item: ItemSummary) => void
+  /** The list's name, with the mark-all menu beside it. */
+  title: string
+  onMarkAllRead: (olderThanDays?: number) => void
+  onMarkAllUnread: () => void
+  unreadOnly: boolean
+  hideDuplicates: boolean
+  sort: "newest" | "oldest"
+  onToggleUnread: () => void
+  onToggleDuplicates: () => void
+  onToggleSort: () => void
 }
 
 /** Grid of article cards with cover art. The counterpart to the dense list;
@@ -39,7 +50,19 @@ function Cover({ item }: { item: ItemSummary }) {
   )
 }
 
-export function CardGrid({ items, sources, loading, scopeKey, onSelect, onStar, onHide }: Props) {
+export function CardGrid({
+  items,
+  sources,
+  loading,
+  scopeKey,
+  onSelect,
+  onStar,
+  onHide,
+  title,
+  onMarkAllRead,
+  onMarkAllUnread,
+  ...view
+}: Props) {
   const scroller = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -48,8 +71,17 @@ export function CardGrid({ items, sources, loading, scopeKey, onSelect, onStar, 
 
   return (
     <section ref={scroller} className="min-h-0 flex-1 overflow-y-auto bg-background">
+      <div className="flex items-center justify-between gap-3 px-[var(--card-pad)] pt-[var(--card-pad)]">
+        <h2 className="min-w-0 truncate text-[15px] font-semibold tracking-tight text-foreground" data-card-title>
+          {title}
+        </h2>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <ViewControls {...view} />
+          <MarkAllMenu onMarkAllRead={onMarkAllRead} onMarkAllUnread={onMarkAllUnread} />
+        </div>
+      </div>
       <div
-        className="grid gap-[var(--card-gap)] p-[var(--card-pad)]"
+        className="grid gap-[var(--card-gap)] px-[var(--card-pad)] pb-[var(--card-pad)] pt-3"
         style={{ gridTemplateColumns: "repeat(auto-fill, minmax(var(--card-min), 1fr))" }}
       >
         {items.map((it, i) => {

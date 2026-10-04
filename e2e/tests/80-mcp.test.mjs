@@ -190,7 +190,7 @@ test("M4 HTTP: off by default, keys required, read-only keys cannot write", shot
 
 test("M5 Settings > AI agents: switch on, make a key, copy-ready setup, revoke", shot("M5", async () => {
   await ctx.reloadUi()
-  await ctx.settings()
+  await ctx.settings("AI agents")
   const panel = () => ctx.s.exec(`return document.querySelector('[data-agent-settings]')?.innerText ?? ''`)
   await ctx.s.waitFor(async () => (await panel()).includes("Allow AI agents to connect"), "the AI agents section")
   await ctx.s.exec(`document.querySelector('[role=switch][aria-labelledby=mcp-enabled]').click()`)

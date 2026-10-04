@@ -145,6 +145,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           ID: ${{ needs.create-release.outputs.release_id }}
+          TAG: ${{ github.ref_name }}
         run: |
           mkdir dl
           gh api "repos/$REPO/releases/$ID/assets" --paginate --jq '.[] | "\(.id)\t\(.name)"' |
@@ -158,4 +159,5 @@ jobs:
             -H "Content-Type: text/plain" --input SHA256SUMS.txt --jq .name
           gh api "repos/$REPO/releases/$ID" --jq .body > body.md
           printf '\n## SHA-256 checksums\n\n```\n%s\n```\n' "$(cat SHA256SUMS.txt)" >> body.md
-          gh api -X PATCH "repos/$REPO/releases/$ID" -F body=@body.md --jq .html_url
+          # The tag goes with the edit: without it a draft loses its tag.
+          gh api -X PATCH "repos/$REPO/releases/$ID" -f tag_name="$TAG" -F body=@body.md --jq .html_url

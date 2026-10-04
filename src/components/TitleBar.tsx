@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils"
 
 const appWindow = getCurrentWindow()
 
+/** How far the pointer must travel with the button held before the window moves. */
+const DRAG_THRESHOLD = 4
+
 export function TitleBar({
   children,
   unread,
@@ -49,9 +52,32 @@ export function TitleBar({
   // left to `data-tauri-drag-region`. The injected handler does not fire
   // reliably once the bar has its own React handlers on top of it, and this
   // way both behaviours go through the same hit test.
+  //
+  // The drag starts only once the pointer has moved a few pixels with the
+  // button held, as a native title bar does. Starting it on mousedown handed
+  // the press to the system, so the page never saw that click's mouseup: the
+  // next click within the double-click time then counted as the second half
+  // of a double-click, and a single click maximized the window.
   const onMouseDown = (ev: React.MouseEvent) => {
-    if (ev.button !== 0 || ev.detail > 1 || !isDragSurface(ev)) return
-    void appWindow.startDragging()
+    // A second press counts too: moved, it drags; released in place, the
+    // dblclick below maximizes.
+    if (ev.button !== 0 || !isDragSurface(ev)) return
+    const x0 = ev.screenX
+    const y0 = ev.screenY
+    const stop = () => {
+      window.removeEventListener("mousemove", onMove)
+      window.removeEventListener("mouseup", stop)
+      window.removeEventListener("blur", stop)
+    }
+    const onMove = (m: MouseEvent) => {
+      if ((m.buttons & 1) === 0) return stop()
+      if (Math.abs(m.screenX - x0) + Math.abs(m.screenY - y0) < DRAG_THRESHOLD) return
+      stop()
+      void appWindow.startDragging()
+    }
+    window.addEventListener("mousemove", onMove)
+    window.addEventListener("mouseup", stop)
+    window.addEventListener("blur", stop)
   }
 
   const onDoubleClick = (ev: React.MouseEvent) => {
