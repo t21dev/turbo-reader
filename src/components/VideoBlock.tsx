@@ -48,7 +48,7 @@ export function VideoBlock({
       title={inline ? "Play here" : "Open on YouTube"}
       className={cn(
         "group relative mb-6 block aspect-video w-full overflow-hidden rounded-xl bg-secondary",
-        "transition-[transform,box-shadow] duration-200 ease-out",
+        "transition-[scale,box-shadow] duration-200 ease-out",
         "hover:shadow-float active:scale-[0.995]",
       )}
     >
@@ -64,7 +64,7 @@ export function VideoBlock({
       <span
         className={cn(
           "absolute left-1/2 top-1/2 grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center",
-          "rounded-full bg-black/65 text-white ring-1 ring-inset ring-white/20 backdrop-blur-sm",
+          "rounded-full bg-black/65 text-white ring-1 ring-inset ring-white/20 backdrop-blur-xs",
           "transition-transform duration-200 ease-out group-hover:scale-110",
         )}
       >

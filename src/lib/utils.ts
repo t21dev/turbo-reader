@@ -1,9 +1,6 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
+// Joins class names like clsx and resolves Tailwind conflicts like
+// tailwind-merge, so the last of two competing utilities wins.
+export { cn } from "cn"
 
 export function relativeTime(unixSeconds: number): string {
   const diff = Math.max(0, Date.now() / 1000 - unixSeconds)

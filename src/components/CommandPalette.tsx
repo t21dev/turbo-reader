@@ -141,7 +141,7 @@ export function CommandPalette({
   return (
     <div
       className={cn(
-        "absolute inset-0 z-[60] flex justify-center bg-black/50 px-6 pt-[12vh]",
+        "absolute inset-0 z-60 flex justify-center bg-black/50 px-6 pt-[12vh]",
         closing ? "animate-fade-out" : "animate-fade",
       )}
       onClick={dismiss}
@@ -171,7 +171,7 @@ export function CommandPalette({
             spellCheck={false}
             autoComplete="off"
             placeholder="Search feeds, articles and settings"
-            className="h-12 min-w-0 flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-subtle"
+            className="h-12 min-w-0 flex-1 bg-transparent text-[14px] text-foreground outline-hidden placeholder:text-subtle"
           />
           <kbd className="shrink-0 rounded-md border border-border bg-background px-1.5 py-0.5 font-mono text-[10.5px] text-subtle">
             Esc

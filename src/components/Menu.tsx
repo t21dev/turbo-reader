@@ -223,7 +223,7 @@ export function MenuChoices<T extends string | number>({
           style={o.style}
           className={cn(
             "flex h-7 items-center justify-center rounded-md px-2 text-[12px]",
-            "transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.96]",
+            "transition-[background-color,color,scale] duration-150 ease-out active:scale-[0.96]",
             value === o.value
               ? "bg-elevated text-foreground"
               : "text-subtle hover:bg-secondary hover:text-muted-foreground",

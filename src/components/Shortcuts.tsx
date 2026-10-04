@@ -68,7 +68,7 @@ export function Shortcuts({ onClose }: { onClose: () => void }) {
   return (
     <div
       className={cn(
-        "absolute inset-0 z-[60] grid place-items-center bg-black/50 p-6",
+        "absolute inset-0 z-60 grid place-items-center bg-black/50 p-6",
         closing ? "animate-fade-out" : "animate-fade",
       )}
       onClick={dismiss}

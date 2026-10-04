@@ -58,7 +58,7 @@ export function ArticleList(p: Props) {
               }
             }}
             placeholder="Search articles"
-            className="h-7 w-full rounded-md border border-transparent bg-secondary pl-7 pr-2 text-[12px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
+            className="h-7 w-full rounded-md border border-transparent bg-secondary pl-7 pr-2 text-[12px] outline-hidden transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
           />
         </div>
         <ViewControls

@@ -153,8 +153,8 @@ export function StorageSettings({
               onClick={() => setAge(d)}
               className={cn(
                 "flex h-8 items-center justify-center rounded-md px-2 text-[12px] font-medium leading-none",
-                "transition-[background-color,color,transform] duration-200 ease-out active:scale-[0.96]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                "transition-[background-color,color,scale] duration-200 ease-out active:scale-[0.96]",
+                "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50",
                 age === d ? "bg-elevated text-foreground" : "text-subtle hover:text-muted-foreground",
               )}
             >
@@ -273,7 +273,7 @@ function Action({
       aria-busy={busy || undefined}
       className={cn(
         "row h-8 shrink-0 border px-3 text-[12px] font-medium disabled:opacity-50",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+        "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50",
         tone === "primary" && "border-system bg-elevated text-foreground hover:bg-secondary",
         tone === "destructive" &&
           "border-destructive/40 text-destructive hover:border-destructive/70 hover:bg-destructive/10 disabled:hover:bg-transparent",

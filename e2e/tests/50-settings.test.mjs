@@ -49,6 +49,25 @@ const root = () =>
 
 /* -------------------------------------------------------------------------- */
 
+const dialogMotion = () =>
+  ctx.s.exec(`const d = document.querySelector('[role=dialog][aria-labelledby=settings-title]');
+    const cs = getComputedStyle(d);
+    return { name: cs.animationName, duration: parseFloat(cs.animationDuration) * 1000 }`)
+
+test("E0 Settings animates in, and opens at once with Animations off", shot("E0", async () => {
+  await ctx.settings("Appearance")
+  const on = await dialogMotion()
+  assert.notEqual(on.name, "none", "the dialog has an entrance animation")
+  assert.ok(on.duration >= 100, `the entrance runs for a visible time (${on.duration}ms)`)
+  await segmentIn("Animations", "Off")
+  await ctx.closeSettings()
+  await ctx.settings()
+  const off = await dialogMotion()
+  assert.ok(off.duration <= 1, `with Animations off the entrance is instant (${off.duration}ms)`)
+  await segmentIn("Animations", "On")
+  await ctx.closeSettings()
+}))
+
 test("E1 appearance applies at once and survives a restart", shot("E1", async () => {
   await ctx.settings("Appearance")
   await segment("Light")

@@ -100,7 +100,7 @@ function Body({ groups, defaultGroupId, onClose, onAdded, onShowExisting }: Prop
   return (
     <div
       className={cn(
-        "absolute inset-0 z-[80] grid place-items-center bg-black/50 p-6",
+        "absolute inset-0 z-80 grid place-items-center bg-black/50 p-6",
         closing ? "animate-fade-out" : "animate-fade",
       )}
       onClick={dismiss}
@@ -146,7 +146,7 @@ function Body({ groups, defaultGroupId, onClose, onAdded, onShowExisting }: Prop
               aria-label="Feed or site address"
               spellCheck={false}
               autoComplete="off"
-              className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-secondary px-2.5 font-mono text-[12px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
+              className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-secondary px-2.5 font-mono text-[12px] outline-hidden transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
             />
             <button
               type="button"
@@ -169,7 +169,7 @@ function Body({ groups, defaultGroupId, onClose, onAdded, onShowExisting }: Prop
               data-add-error
               className="animate-rise mt-3 flex items-start gap-2 text-[12px] leading-relaxed text-destructive"
             >
-              <AlertCircle size={14} className="mt-[1px] shrink-0" />
+              <AlertCircle size={14} className="mt-px shrink-0" />
               {state.message}
             </p>
           )}
@@ -177,7 +177,7 @@ function Body({ groups, defaultGroupId, onClose, onAdded, onShowExisting }: Prop
           {preview && (
             <div data-add-preview className="animate-rise mt-3.5 rounded-lg border border-border bg-background p-3">
               <div className="flex items-start gap-2.5">
-                <span className="mt-[1px] grid h-7 w-7 shrink-0 place-items-center rounded-md bg-secondary text-system">
+                <span className="mt-px grid h-7 w-7 shrink-0 place-items-center rounded-md bg-secondary text-system">
                   <Rss size={14} />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -228,7 +228,7 @@ function Body({ groups, defaultGroupId, onClose, onAdded, onShowExisting }: Prop
                   <select
                     value={groupId ?? ""}
                     onChange={(e) => setGroupId(e.target.value ? Number(e.target.value) : null)}
-                    className="h-8 min-w-0 flex-1 rounded-md border border-border bg-secondary px-2 text-[12px] text-foreground outline-none focus:border-system"
+                    className="h-8 min-w-0 flex-1 rounded-md border border-border bg-secondary px-2 text-[12px] text-foreground outline-hidden focus:border-system"
                   >
                     <option value="">No folder</option>
                     {groups.map((g) => (
@@ -259,7 +259,7 @@ function Body({ groups, defaultGroupId, onClose, onAdded, onShowExisting }: Prop
             title={preview ? undefined : "Check the address first"}
             className={cn(
               "row flex h-8 items-center gap-1.5 bg-primary px-3 text-[12px] font-medium text-primary-foreground",
-              "transition-[background-color,transform] duration-150 ease-out hover:bg-primary/90 active:scale-[0.97]",
+              "transition-[background-color,scale] duration-150 ease-out hover:bg-primary/90 active:scale-[0.97]",
               "disabled:opacity-40 disabled:active:scale-100",
             )}
           >

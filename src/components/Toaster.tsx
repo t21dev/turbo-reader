@@ -7,7 +7,7 @@ export function Toaster() {
   const toasts = useToasts()
   if (toasts.length === 0) return null
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-[90] flex max-w-[380px] flex-col items-end gap-2">
+    <div className="pointer-events-none fixed bottom-4 right-4 z-90 flex max-w-[380px] flex-col items-end gap-2">
       {toasts.map((t) => (
         <div
           key={t.id}
@@ -20,9 +20,9 @@ export function Toaster() {
           )}
         >
           {t.kind === "error" ? (
-            <AlertCircle size={14} className="mt-[1px] shrink-0 text-destructive" />
+            <AlertCircle size={14} className="mt-px shrink-0 text-destructive" />
           ) : (
-            <Check size={14} className="mt-[1px] shrink-0 text-system" />
+            <Check size={14} className="mt-px shrink-0 text-system" />
           )}
           <span className="min-w-0 flex-1">{t.text}</span>
           <button

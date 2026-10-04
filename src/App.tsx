@@ -730,7 +730,7 @@ export default function App() {
         <div
           className={cn(
             "min-h-0 shrink-0 overflow-hidden",
-            "transition-[width,opacity,transform] duration-[280ms] ease-out",
+            "transition-[width,opacity,translate] duration-280 ease-out",
             sidebarOpen && !reading ? "w-[260px] opacity-100" : "w-0 -translate-x-3 opacity-0",
           )}
         >
