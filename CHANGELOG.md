@@ -8,6 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Six reading fonts, all open source (SIL OFL) and bundled so they work
+  offline: Libron, Literata, Source Serif 4, Merriweather and Atkinson
+  Hyperlegible Next, alongside Geist, the system serif and a mono. Only Latin
+  glyphs are bundled to keep the app small; other scripts and emoji fall back
+  to the system's fonts, with each platform's colour emoji font.
+- A Paper theme: a warm, low-contrast page for long reading.
+- Reading mode (`z`, or the book button in the reader): the article alone,
+  with the sidebar and list out of the way. `Esc` brings them back.
+- AI agents can use Turbo Reader as a news source, over the Model Context
+  Protocol (MCP). Off by default; turn it on in Settings > AI agents or on the
+  welcome screen.
+  - A local HTTP server inside the app, for Claude Code, Cursor and others,
+    with API keys that are read-only or read and write, shown once and stored
+    only as a hash. Bearer, Basic and X-API-Key all work.
+  - `turbo-reader --mcp`, which agents such as Codex and Claude Desktop start
+    themselves. Read-only unless started with `--allow-write`.
+  - 13 tools: get_stats, list_folders, list_feeds, get_latest,
+    search_articles, get_article, get_digest, preview_feed, and with write
+    access subscribe, unsubscribe, mark_read, star and refresh_feeds.
+  - This computer only by default; other computers on your network only when
+    you allow it. Requests from web pages are refused.
+  - Settings shows ready-to-copy setup for Claude Code, Codex, Claude Desktop
+    and Cursor, and the last 50 agent calls.
+  - The full guide is in docs/mcp.md.
 - Background mode, all off by default and offered on the welcome screen as
   well as in Settings > Background:
   - Keep running in the tray when the window closes, so scheduled refreshes

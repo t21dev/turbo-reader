@@ -6,7 +6,7 @@
 
 **A modern RSS reader that is actually fast and actually small.**
 
-<sub>A 3 MB installer that opens in under a second and holds 20,000 articles in a 14 MB core process. Rust core, React shell, built with Tauri 2.</sub>
+<sub>A 5 MB installer that opens in under a second and holds 20,000 articles in a 14 MB core process. Rust core, React shell, built with Tauri 2.</sub>
 
 <br />
 
@@ -115,17 +115,19 @@ fn geolocation_cannot_survive_sanitising() {
 - Newest-first or oldest-first ordering
 - Full-text search across every article, backed by SQLite FTS5
 - Load full content for feeds that only publish a teaser
+- Reading mode on `z`: the article alone, with the sidebar and list out of the way
 - Copy link, save as Markdown, save as PDF, QR code to a phone
 - Hide an article, or mark all as read from 1, 3 or 7 days back
 - Keyboard first, with a shortcut sheet on `?`
 - Checks for a new release at launch and shows it in the title bar (can be switched off), plus a manual check in Settings
 
 **Appearance**
-- Light, dark, or follow the system
-- Seven accent colours
+- Light, dark, paper (a warm, low-contrast page for long reading), or follow the system
+- Seven accent colours, or any colour you pick
 - Comfortable and compact density
 - Four interface sizes, on `Ctrl` `+` / `-` / `0`
-- Article font, text size, line width and text direction
+- Six open-source reading fonts, bundled so they work offline: Geist, [Libron](https://github.com/nicoverbruggen/libron), Literata, Source Serif 4, Merriweather and Atkinson Hyperlegible Next, plus the system serif and a mono. Other scripts and emoji fall back to the system's own fonts
+- Article text size, line width and text direction
 - Animations you can switch off
 
 **Feeds**
@@ -144,6 +146,26 @@ fn geolocation_cannot_survive_sanitising() {
 - Keep running in the tray when the window closes, so refreshes carry on: the notification area on Windows, the menu bar on macOS, the system tray on Linux (GNOME needs the AppIndicator extension)
 - Start at login, quietly in the tray
 - A notification when a background refresh brings new articles, for all feeds or pinned feeds only
+
+## Use it with AI agents
+
+Turbo Reader can be a news source for Claude Code, Codex, Claude Desktop,
+Cursor and any other agent that speaks the
+[Model Context Protocol](https://modelcontextprotocol.io). Ask "what's new in
+my feeds today?" or "summarise this week's articles about Kubernetes, with
+links", and the agent reads your own library.
+
+- **Two ways in.** A local server inside the app, with API keys, or
+  `turbo-reader --mcp`, which an agent starts itself with the app closed.
+- **Off by default**, and local to this computer unless you allow your network.
+- **Read-only unless you say otherwise**, per key.
+- 13 tools: latest articles, full-text search, full articles as Markdown,
+  digests, feeds and folders, and (with write access) subscribe, star and
+  mark read.
+
+Turn it on in Settings > AI agents, where the setup for each agent is ready to
+copy. The full guide, with every tool and real example answers, is in
+[docs/mcp.md](docs/mcp.md).
 
 ## Long-requested, finally shipped
 
@@ -234,14 +256,14 @@ Turbo Reader is an independent implementation. Thanks to
 [Fluent Reader](https://github.com/yang991178/fluent-reader) by Haoyuan Liu,
 whose feature design informed parts of this one.
 
-Built with [Tauri](https://tauri.app), [feed-rs](https://github.com/feed-rs/feed-rs), [ammonia](https://github.com/rust-ammonia/ammonia) and [rusqlite](https://github.com/rusqlite/rusqlite). Type is [Geist](https://vercel.com/font).
+Built with [Tauri](https://tauri.app), [feed-rs](https://github.com/feed-rs/feed-rs), [ammonia](https://github.com/rust-ammonia/ammonia) and [rusqlite](https://github.com/rusqlite/rusqlite). Type is [Geist](https://vercel.com/font). Reading fonts, all under the SIL Open Font License: [Libron](https://github.com/nicoverbruggen/libron) by Nico Verbruggen, [Literata](https://github.com/googlefonts/literata) by TypeTogether, [Source Serif 4](https://github.com/adobe-fonts/source-serif) by Adobe, [Merriweather](https://github.com/SorkinType/Merriweather) by Sorkin Type, and [Atkinson Hyperlegible Next](https://www.brailleinstitute.org/freefont/) by the Braille Institute.
 
 ## Fast and small
 
 | | |
 | --- | --- |
-| Windows installer | **3.2 MB** |
-| Installed on disk | **8 MB** |
+| Windows installer | **4.7 MB** |
+| Installed on disk | **11 MB** |
 | Memory, 500 feeds and 20,000 articles | **14 MB** app process, **~270 MB** with the system webview |
 | Refresh 500 feeds from a local test server | **0.2 s** |
 | Cold start to usable | **under half a second** |
