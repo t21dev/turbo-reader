@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-04
+
 ### Added
 - A welcome screen for a library with no feeds: add a feed, import an OPML
   file, or subscribe to a few starters (Hacker News, The Verge, Ars Technica,
@@ -195,7 +197,8 @@ First public release.
   to reason about, which is a failure mode browser engines do not let a page
   recover from.
 
-[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/t21dev/turbo-reader/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/t21dev/turbo-reader/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/t21dev/turbo-reader/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/t21dev/turbo-reader/compare/v0.4.0...v0.5.0
