@@ -13,7 +13,7 @@ const shot = (name, fn) => withShot(() => ctx, `reader-${name}`, fn)
 
 before(async () => {
   ctx = await launch()
-  for (const p of ["/teaser.xml", "/rss.xml", "/youtube.xml", "/hostile.xml"]) {
+  for (const p of ["/teaser.xml", "/rss.xml", "/youtube.xml", "/hostile.xml", "/media.xml"]) {
     await ctx.s.invoke("add_source", { url: ctx.url(p), groupId: null })
   }
   await ctx.reloadUi()
@@ -27,7 +27,10 @@ after(async () => {
 })
 
 const body = () => ctx.s.exec(`return document.querySelector('.prose-feed')?.innerHTML ?? ''`)
-const toast = () => ctx.s.exec(`return document.querySelector('[role=status]')?.textContent ?? null`)
+const toast = () => ctx.s.exec(`return document.querySelector('[data-reader-note]')?.textContent ?? null`)
+const toastKind = () => ctx.s.exec(`return document.querySelector('[data-reader-note]')?.dataset.readerNote ?? null`)
+const lightbox = () => ctx.s.exec(`return !!document.querySelector('[data-lightbox]')`)
+const zoomText = () => ctx.s.exec(`return [...document.querySelectorAll('[data-lightbox] span')].map((x) => x.textContent).join('')`)
 
 /* -------------------------------------------------------------------------- */
 
@@ -47,6 +50,8 @@ test("C2 load full content says so when there is nothing better", shot("C2", asy
   await ctx.tool("Load full content (f)")
   const msg = await ctx.s.waitFor(toast, "a message")
   assert.match(msg, /could not find/i)
+  assert.equal(await toastKind(), "error", "shown as a failure, not with a success check")
+  assert.equal(await ctx.s.exec(`return document.querySelector('[data-reader-note]').getAttribute('role')`), "alert")
 }))
 
 test("C3 copy link", shot("C3", async () => {
@@ -174,4 +179,57 @@ test("C11 hostile markup is stripped and nothing runs", shot("C11", async () => 
   assert.ok(!/javascript:/i.test(html), "no javascript: links")
   assert.equal(await ctx.s.exec(`return window.__pwned ?? null`), null, "and nothing executed")
   assert.match(html, /before[\s\S]*after/, "the ordinary text survives")
+}))
+
+test("C12 an image opens in a lightbox with zoom, and the reader stays", shot("C12", async () => {
+  await ctx.open("An article with pictures")
+  const before = await ctx.s.exec(`return location.href`)
+  await ctx.trap("plugin:opener|open_url", null)
+  await ctx.s.exec(`document.querySelector('.prose-feed img').click()`)
+  await ctx.s.waitFor(lightbox, "the lightbox")
+  assert.equal(await ctx.s.exec(`return location.href`), before, "the window did not navigate")
+  assert.equal((await ctx.trapped("plugin:opener|open_url")).length, 0, "the image's link did not open")
+  assert.equal(await zoomText(), "100%")
+  await ctx.s.exec(`document.querySelector('[data-lightbox] [aria-label="Zoom in"]').click()`)
+  await ctx.s.waitFor(async () => (await zoomText()) === "125%", "zoom in")
+  await ctx.s.press("+")
+  await ctx.s.waitFor(async () => (await zoomText()) !== "125%", "+ zooms in")
+  await ctx.s.press("0")
+  await ctx.s.waitFor(async () => (await zoomText()) === "100%", "0 fits it again")
+  await ctx.s.exec(`document.querySelector('[data-lightbox] [aria-label="Open link in browser"]').click()`)
+  await ctx.s.waitFor(async () => (await ctx.trapped("plugin:opener|open_url")).length === 1, "the image's link in the browser")
+  assert.equal((await ctx.trapped("plugin:opener|open_url"))[0].url, ctx.url("/photo-page"))
+  await ctx.s.press("Escape")
+  await ctx.s.waitFor(async () => !(await lightbox()), "Escape to close it")
+  assert.equal(await ctx.readerTitle(), "An article with pictures", "Escape closed the image, not the article")
+  await ctx.s.exec(`document.querySelector('.prose-feed img').click()`)
+  await ctx.s.waitFor(lightbox, "the lightbox again")
+  await ctx.s.exec(`document.querySelector('[data-lightbox]').click()`)
+  await ctx.s.waitFor(async () => !(await lightbox()), "a click outside to close it")
+}))
+
+test("C13 the lightbox downloads the image", shot("C13", async () => {
+  const out = path.join(os.tmpdir(), `turbo-e2e-${process.pid}.png`)
+  rmSync(out, { force: true })
+  await ctx.open("An article with pictures")
+  await ctx.trap("plugin:dialog|save", out)
+  await ctx.s.exec(`document.querySelector('.prose-feed img').click()`)
+  await ctx.s.waitFor(lightbox, "the lightbox")
+  await ctx.s.exec(`document.querySelector('[data-lightbox] [aria-label="Download image"]').click()`)
+  await ctx.s.waitFor(() => existsSync(out), "the image on disk")
+  assert.equal(readFileSync(out).subarray(1, 4).toString(), "PNG", "the real image bytes")
+  rmSync(out, { force: true })
+  await ctx.s.press("Escape")
+  await ctx.s.waitFor(async () => !(await lightbox()), "the lightbox to close")
+}))
+
+test("C14 links in an article open in the browser", shot("C14", async () => {
+  await ctx.open("An article with pictures")
+  const before = await ctx.s.exec(`return location.href`)
+  await ctx.trap("plugin:opener|open_url", null)
+  await ctx.s.exec(`[...document.querySelectorAll('.prose-feed a')].find((a) => a.textContent === 'a plain link').click()`)
+  await ctx.s.waitFor(async () => (await ctx.trapped("plugin:opener|open_url")).length === 1, "the link in the browser")
+  assert.equal((await ctx.trapped("plugin:opener|open_url"))[0].url, ctx.url("/elsewhere"))
+  assert.equal(await ctx.readerTitle(), "An article with pictures")
+  assert.equal((await ctx.s.exec(`return location.href`)).split("#")[0], before.split("#")[0], "the app never left")
 }))

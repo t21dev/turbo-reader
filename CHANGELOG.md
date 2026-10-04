@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Clicking a picture in an article opens it in a lightbox. Zoom with the
+  buttons, the mouse wheel, a double click or `+`, `-` and `0`, and drag to
+  look around once zoomed in. Download saves the picture, and when it linked
+  somewhere, that page opens in your browser. Escape, the close button or a
+  click outside closes it.
+
+### Changed
+- The title bar has three controls on the right: search, notifications and a
+  menu holding Settings, the view switch, keyboard shortcuts and About.
+  Refresh sits next to the unread count.
+
+### Fixed
+- Clicking a picture or a link inside an article no longer replaces the app
+  with that page and no way back. Links open in your browser, and the window
+  refuses to navigate anywhere outside the app.
+- A failure in the reader, such as "Could not find a fuller article", shows as
+  a warning instead of with a success check.
+- The new-version pill in the title bar can be clicked.
+
 ## [0.20.0] - 2026-10-05
 
 ### Added

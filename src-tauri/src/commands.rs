@@ -1175,6 +1175,22 @@ pub fn write_text_file(path: String, contents: String) -> Result<(), String> {
     std::fs::write(&path, contents).map_err(|err| format!("{path}: {err}"))
 }
 
+/// Save an article's image to a path the user picked in the save dialog. The
+/// fetch runs here, since a cross-origin image can't be read from the webview.
+#[tauri::command]
+pub async fn download_image(url: String, path: String) -> Result<(), String> {
+    if !(url.starts_with("http://") || url.starts_with("https://")) {
+        return Err("Only web images can be downloaded".into());
+    }
+    let client = crate::feed::client().map_err(e)?;
+    let res = client.get(&url).send().await.map_err(e)?;
+    if !res.status().is_success() {
+        return Err(format!("The image could not be fetched ({})", res.status()));
+    }
+    let bytes = res.bytes().await.map_err(e)?;
+    std::fs::write(&path, &bytes).map_err(|err| format!("{path}: {err}"))
+}
+
 /* ------------------------- article side actions ------------------------- */
 
 /// Hide an article from every list without deleting it, the way Fluent

@@ -215,6 +215,22 @@ A new paragraph about the video.</media:description>
       ]),
     ],
 
+    // An article with a linked image, and a plain link.
+    "/media.xml": () => [
+      200,
+      "application/rss+xml",
+      rss(base, "Media", [
+        rssItem({ guid: "media-1", title: "An article with pictures", link: `${base}/m/1`, date: now - HOUR,
+          html: `<p>Intro with <a href="${base}/elsewhere">a plain link</a>.</p>
+                 <p><a href="${base}/photo-page"><img src="${base}/pic.png" alt="A fixture picture" width="40" height="30"></a></p>` }),
+      ]),
+    ],
+    "/pic.png": () => [
+      200,
+      "image/png",
+      Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==", "base64"),
+    ],
+
     "/broken.xml": () => [500, "text/plain", "server error"],
 
     // A site, not a feed: it advertises its feed in the head.

@@ -49,6 +49,18 @@ pub fn data_dir<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<s
     }
 }
 
+/// The app's own pages: the bundled frontend, or the dev server in development.
+fn is_app_url(url: &tauri::Url) -> bool {
+    match url.scheme() {
+        "tauri" | "about" | "data" | "blob" => true,
+        "http" | "https" => matches!(
+            url.host_str(),
+            Some("tauri.localhost") | Some("localhost") | Some("127.0.0.1")
+        ),
+        _ => false,
+    }
+}
+
 /// The app's configuration and bundled pages. One expansion, used by both
 /// entry points, so the assets are not embedded twice.
 fn context() -> tauri::Context<tauri::Wry> {
@@ -89,7 +101,21 @@ pub fn run() {
                 .find(|w| w.label == "main")
                 .cloned()
                 .expect("main window in tauri.conf.json");
-            let mut window = tauri::WebviewWindowBuilder::from_config(app.handle(), &config)?;
+            let opener = app.handle().clone();
+            let mut window = tauri::WebviewWindowBuilder::from_config(app.handle(), &config)?
+                // The window only ever shows the app. Anything that tries to
+                // navigate it elsewhere (a link in an article, say) opens in
+                // the browser instead, so the reader is never lost.
+                .on_navigation(move |url| {
+                    if is_app_url(url) {
+                        return true;
+                    }
+                    if matches!(url.scheme(), "http" | "https" | "mailto") {
+                        use tauri_plugin_opener::OpenerExt;
+                        let _ = opener.opener().open_url(url.as_str(), None::<&str>);
+                    }
+                    false
+                });
             if portable_data_dir().is_some() {
                 window = window.data_directory(dir.join("webview"));
             }
@@ -234,6 +260,7 @@ pub fn run() {
             commands::reveal_window,
             commands::read_text_file,
             commands::write_text_file,
+            commands::download_image,
             background::get_background,
             background::set_background,
             background::start_hidden,

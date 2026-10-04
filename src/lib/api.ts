@@ -291,4 +291,6 @@ export const api = {
   readTextFile: (path: string) => call<string>("read_text_file", { path }),
   writeTextFile: (path: string, contents: string) =>
     call<void>("write_text_file", { path, contents }),
+  downloadImage: (url: string, path: string) =>
+    call<void>("download_image", { url, path }),
 }

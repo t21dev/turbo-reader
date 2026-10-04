@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
-import { ArrowLeft, Check, Circle, CircleDot, Download, ExternalLink, EyeOff, FileDown, Globe, Link2, Loader2, MoreHorizontal, Printer, QrCode, Star, Type, BookOpen, Minimize2 } from "lucide-react"
+import { ArrowLeft, Check, Circle, CircleDot, Download, ExternalLink, EyeOff, FileDown, Globe, Link2, Loader2, MoreHorizontal, Printer, QrCode, Star, Type, BookOpen, Minimize2, AlertCircle } from "lucide-react"
 import { openUrl } from "@tauri-apps/plugin-opener"
+import { Lightbox } from "@/components/Lightbox"
 import { save as saveDialog } from "@tauri-apps/plugin-dialog"
 import { api, type ItemFull } from "@/lib/api"
 import { READER_FONTS, READER_SIZES, useTheme, type LineWidth } from "@/lib/theme"
@@ -39,8 +40,36 @@ export function Reader({
   const theme = useTheme()
   const body = useRef<HTMLDivElement>(null)
   const [loadingFull, setLoadingFull] = useState(false)
-  const [note, setNote] = useState<string | null>(null)
+  const [note, setNoteText] = useState<string | null>(null)
+  const [noteError, setNoteError] = useState(false)
   const [noteLeaving, setNoteLeaving] = useState(false)
+  // A failure reads as one: a warning in the destructive colour, not a check.
+  const setNote = (text: string | null, error = false) => {
+    setNoteError(error)
+    setNoteText(text)
+  }
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string; link: string | null } | null>(null)
+
+  /**
+   * Clicks inside the article. An image opens in the lightbox, and a link
+   * opens in the browser: left to the webview, either one would navigate the
+   * app window away from the reader with no way back.
+   */
+  function onContentClick(ev: React.MouseEvent<HTMLDivElement>) {
+    const target = ev.target as HTMLElement
+    const anchor = target.closest("a")
+    const img = target.closest("img")
+    if (img) {
+      ev.preventDefault()
+      setLightbox({ src: img.currentSrc || img.src, alt: img.alt, link: anchor?.href ?? null })
+      return
+    }
+    if (!anchor) return
+    const href = anchor.getAttribute("href") ?? ""
+    if (href.startsWith("#")) return
+    ev.preventDefault()
+    if (/^(https?:|mailto:)/i.test(anchor.href)) void openUrl(anchor.href)
+  }
   const [qr, setQr] = useState<string | null>(null)
 
   // A new article always starts at the top, and the old one's toast goes away.
@@ -49,6 +78,7 @@ export function Reader({
     setNote(null)
     setNoteLeaving(false)
     setQr(null)
+    setLightbox(null)
   }, [item?.id])
 
   // The toast fades out on its own rather than blinking away at 2.6s.
@@ -104,7 +134,7 @@ export function Reader({
       onContentLoaded(item.id, html)
       setNote("Full article loaded")
     } catch (err) {
-      setNote(String(err))
+      setNote(String(err), true)
     } finally {
       setLoadingFull(false)
     }
@@ -122,7 +152,7 @@ export function Reader({
       await api.writeTextFile(path, markdown)
       setNote("Saved as Markdown")
     } catch (err) {
-      setNote(String(err))
+      setNote(String(err), true)
     }
   }
 
@@ -368,6 +398,8 @@ export function Reader({
               That allowlist is the security boundary, not this component. */}
           <div
             className="prose-feed mt-7"
+            onClick={onContentClick}
+            onAuxClick={onContentClick}
             dangerouslySetInnerHTML={{ __html: item.content }}
           />
         </article>
@@ -375,17 +407,23 @@ export function Reader({
 
       {note && (
         <div
-          role="status"
+          role={noteError ? "alert" : "status"}
+          data-reader-note={noteError ? "error" : "ok"}
           className={cn(
             "no-print pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5",
             "rounded-full border border-border bg-popover px-3 py-1.5 text-[11.5px] text-foreground shadow-float",
             noteLeaving ? "animate-fade-out" : "animate-rise",
           )}
         >
-          <Check size={12} className="text-system" />
+          {noteError ? (
+            <AlertCircle size={12} className="text-destructive" />
+          ) : (
+            <Check size={12} className="text-system" />
+          )}
           {note}
         </div>
       )}
+      {lightbox && <Lightbox {...lightbox} onClose={() => setLightbox(null)} />}
     </section>
   )
 }
