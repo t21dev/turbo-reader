@@ -2,20 +2,20 @@
 
 This file records how Turbo Reader looks and behaves today, taken from the code. New UI must follow it. If the code and this file disagree, fix one of them on purpose; do not let them drift.
 
-Sources of truth: `src/index.css` (tokens, utilities, motion), `tailwind.config.js` (token mapping, fonts, radii, shadows), `src/lib/theme.tsx` (modes, accent, density, reading prefs), `src/lib/scale.ts` (interface size), `index.html` (first paint).
+Sources of truth: `src/index.css` (tokens, utilities, motion, and the Tailwind v4 `@theme` blocks that map tokens, fonts, radii, shadows, easings and animations), `src/lib/theme.tsx` (modes, accent, density, reading prefs), `src/lib/scale.ts` (interface size), `index.html` (first paint).
 
 ## Principles
 
 - **Content first, chrome quiet.** The UI is greyscale. Colour is reserved for the accent (`system`), unread, starred and destructive. Article text is the loudest thing on screen.
 - **Small and dense, but legible.** UI text sits between 10.5px and 13.5px. Controls are 28px (`h-7`) or 32px (`h-8`) tall. No large buttons, no hero type outside empty and welcome screens.
 - **Hairlines, not boxes.** Panes are separated by one 1px `border-border` line. Surfaces differ by a few percent of lightness, not by shadow, except floating layers.
-- **Rows never move on hover.** Hover changes colour only (`.row`, `src/index.css:162`). Lift on hover is kept for cards and the welcome choices.
+- **Rows never move on hover.** Hover changes colour only (`.row`, `src/index.css:378`). Lift on hover is kept for cards and the welcome choices.
 - **Lean by default.** Background features start off and are switchable (Welcome "All off to start", `src/components/Welcome.tsx:161`). Animations can be turned off entirely.
 - **Plain copy.** Labels are short sentences in sentence case. Helper text explains consequences ("Nothing about your feeds is sent."), never sells.
 
 ## Colour tokens
 
-All colours are HSL triples on CSS variables, consumed as `hsl(var(--x))` through Tailwind names (`tailwind.config.js:33`). Opacity modifiers (`bg-system/10`, `border-border/60`) work because the triples have no `hsl()` wrapper.
+All colours are HSL triples on CSS variables, consumed as `hsl(var(--x))` through Tailwind names declared in `@theme inline` (`src/index.css:24`). `inline` makes each utility read the triple where it is used, so the runtime accent and the theme classes apply everywhere. Opacity modifiers (`bg-system/10`, `border-border/60`) work through Tailwind v4's `color-mix()`.
 
 Three palettes exist. `:root` is light, `.paper` overrides light on top of it, `.dark` replaces it. Paper inherits `--destructive`, `--unread`, `--starred`, `--system` and density from `:root`.
 
@@ -42,11 +42,11 @@ Three palettes exist. `:root` is light, `.paper` overrides light on top of it, `
 | `starred` | `38 92% 44%` | (light) | `38 92% 60%` | Star icon fill (`fill-starred text-starred`). Not tied to accent |
 | `system` | `215 78% 50%` | (light) | `215 90% 68%` | The accent. Overwritten at runtime |
 
-Other root variables: `--radius: 0.625rem`, density variables (see Spacing), reading variables (`--reader-font`, `--reader-size`, `--reader-width`), and easings `--ease-out: cubic-bezier(0.16, 1, 0.3, 1)`, `--ease-in: cubic-bezier(0.7, 0, 0.84, 0)`, `--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1)` (`src/index.css:54`).
+Other root variables: `--radius: 0.625rem`, density variables (see Spacing), reading variables (`--reader-font`, `--reader-size`, `--reader-width`), and easings `--ease-out: cubic-bezier(0.16, 1, 0.3, 1)`, `--ease-in: cubic-bezier(0.7, 0, 0.84, 0)`, `--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1)` (`@theme`, `src/index.css:68`; they replace Tailwind's own `ease-out`, `ease-in` and `ease-in-out`, so the utilities and `var(--ease-out)` are the same curve).
 
-Text selection is `hsl(var(--foreground) / 0.18)` (`src/index.css:135`).
+Text selection is `hsl(var(--foreground) / 0.18)` (`src/index.css:346`).
 
-Shadows (`tailwind.config.js:63`): `shadow-float` for anything that floats above panes (dialogs, menus, settings panel, toasts, the reader note); `shadow-card` for card tiles at rest. Both are fixed black-alpha values and are the same in every theme.
+Shadows (`@theme`, `src/index.css:72`): `shadow-float` for anything that floats above panes (dialogs, menus, settings panel, toasts, the reader note), a fixed black-alpha value, the same in every theme; `shadow-card` for card tiles at rest, the same geometry drawn in the `card` colour, so a tile at rest shows almost no shadow and lifts into `shadow-float` on hover. (Under Tailwind v3 the name `shadow-card` also matched the `card` colour and recoloured the shadow; the v4 theme keeps that look on purpose.)
 
 ## Accent
 
@@ -60,7 +60,7 @@ The accent token is `--system`. Use it as `text-system`, `bg-system`, `border-sy
 
 ## Typography
 
-**UI face.** `font-sans` is Geist Variable with system and colour emoji fallbacks; `font-mono` is Geist Mono Variable (`tailwind.config.js:10`). Body sets `font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1`, antialiased, `user-select: none` except inputs (`src/index.css:121`).
+**UI face.** `font-sans` is Geist Variable with system and colour emoji fallbacks; `font-mono` is Geist Mono Variable (`@theme`, `src/index.css:59`). Body sets `font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1`, antialiased, `user-select: none` except inputs (`src/index.css:313`).
 
 **UI scale actually in use** (arbitrary px sizes, not Tailwind's `text-sm` and friends):
 
@@ -79,9 +79,9 @@ The accent token is `--system`. Use it as `text-system`, `bg-system`, `border-sy
 
 Weights: 400 for body, `font-medium` for labels and unread headlines, `font-semibold` for titles. Headings get `tracking-tight`. Read headlines drop to `font-normal text-muted-foreground`.
 
-Numbers that change or line up (counts, times, versions, sizes) get `.tabular` (`src/index.css:158`).
+Numbers that change or line up (counts, times, versions, sizes) get `.tabular` (`src/index.css:373`).
 
-**Reading.** Article bodies use `.prose-feed` (`src/index.css:180`): `var(--reader-font)`, `var(--reader-size)`, `leading-[1.7]`, `text-foreground/90`, links `text-system` with `decoration-system/40`. The column is `max-width: var(--reader-width)` with `px-7 py-8` (`Reader.tsx:350`).
+**Reading.** Article bodies use `.prose-feed` (`src/index.css:402`): `var(--reader-font)`, `var(--reader-size)`, `leading-[1.7]`, `text-foreground/90`, links `text-system` with `decoration-system/40`. The column is `max-width: var(--reader-width)` with `px-7 py-8` (`Reader.tsx:350`).
 
 - Fonts (`READER_FONTS`, `src/lib/theme.tsx:87`): Geist (default), Libron, Literata, Source Serif 4, Merriweather, Atkinson Hyperlegible Next, System serif (Georgia), Geist Mono. All bundled OFL fonts, Latin only, declared in `src/reading-fonts.css`.
 - Sizes (rem): `0.86, 0.94 (default), 1.02, 1.12, 1.24`.
@@ -103,7 +103,7 @@ Reading prefs affect the article only. The UI chrome is scaled separately.
 
 **Interface size** (`src/lib/scale.ts`): webview zoom 0.9, 1 (default), 1.15, 1.3, stepped with Ctrl/Cmd `+`, `-`, `0`. Never build a separate font-size setting for chrome.
 
-**Density** (`:root[data-density="compact"]`, `src/index.css:240`):
+**Density** (`:root[data-density="compact"]`, `src/index.css:462`):
 
 | Variable | Comfortable | Compact |
 |---|---|---|
@@ -113,7 +113,7 @@ Reading prefs affect the article only. The UI chrome is scaled separately.
 | `--card-pad` | 1.25rem | 0.75rem |
 | `--card-inset` | 0.875rem | 0.625rem |
 
-Compact also hides `.snippet`, shrinks `.thumb` to 2.5rem, and sets list `article h3` to 12.5px. New list surfaces must size from these variables (`h-[var(--row-h)]`, `gap-[var(--card-gap)]`) and mark their secondary prose `.snippet`.
+Compact also hides `.snippet`, shrinks `.thumb` to 2.5rem, and sets list `article h3` to 12.5px. New list surfaces must size from these variables (`h-(--row-h)`, `gap-(--card-gap)`; Tailwind v4's shorthand for `h-[var(--row-h)]`) and mark their secondary prose `.snippet`.
 
 ## Shape and borders
 
@@ -134,8 +134,9 @@ Compact also hides `.snippet`, shrinks `.thumb` to 2.5rem, and sets list `articl
 
 ## Motion
 
-- Animate transform, opacity and colour. The one height animation uses `.collapse-grid` (`grid-template-rows`, `src/index.css:168`); do not animate `height`.
+- Animate transform, opacity and colour. The one height animation uses `.collapse-grid` (`grid-template-rows`, `src/index.css:390`); do not animate `height`.
 - Entrances use `--ease-out`; exits use `--ease-in`, run faster, and end with `forwards`.
+- Each `animate-*` class below is an `--animate-*` theme variable with its `@keyframes`, in the `@theme` block of `src/index.css`. A new animation goes there too; a plain `.animate-x` class would sit outside Tailwind's layers and beat every utility.
 
 | Class | Duration | Use |
 |---|---|---|
@@ -148,9 +149,9 @@ Compact also hides `.snippet`, shrinks `.thumb` to 2.5rem, and sets list `articl
 
 - Transitions: `duration-150` for colour, `duration-200 ease-out` for transforms and toggles, `duration-100` for menu item hover.
 - Press feedback: `active:scale-[0.96]` (segments), `0.97` (dialog buttons), `0.94` (swatches).
-- Hover lift: cards `hover:-translate-y-[3px] hover:shadow-float`; welcome choices `-translate-y-[2px]`.
+- Hover lift: cards `hover:translate-y-[-3px] hover:shadow-float`; welcome choices `translate-y-[-2px]`. Tailwind v4 moves elements with the `translate` and `scale` properties, not `transform`, so a transition list names them: `transition-[translate,box-shadow]`, `transition-[background-color,scale]`.
 - Exits are driven by `useDismissible(onClose, ms)` (`src/lib/presence.ts`), which keeps the element mounted for the exit animation.
-- **Animations off:** `:root[data-motion="none"]` cuts every animation and transition to 1ms (`src/index.css:398`). `prefers-reduced-motion` caps them at 150ms. State must still land correctly at 1ms.
+- **Animations off:** `:root[data-motion="none"]` cuts every animation and transition to 1ms (`src/index.css:488`). `prefers-reduced-motion` caps them at 150ms. State must still land correctly at 1ms.
 
 ## Components
 
@@ -166,7 +167,7 @@ Reuse these class strings. Line numbers point at the reference implementation.
 
 **Destructive outline button** (`StorageSettings.tsx`, `Action` with `tone="destructive"`). For an in-pane action that deletes something or cannot be undone, before its confirmation dialog: `row h-8 border px-3 text-[12px] font-medium border-destructive/40 text-destructive hover:border-destructive/70 hover:bg-destructive/10`. Never solid; the solid fill stays for the confirm button in the dialog.
 
-**Text input** (`Prompt.tsx:120`, `AddFeedDialog.tsx:149`). `h-9 w-full rounded-lg border border-input bg-secondary px-2.5 text-[12.5px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system`. Compact search: `h-7 rounded-md border-transparent bg-secondary pl-7 text-[12px]` with a 13px `Search` icon at `left-2` (`ArticleList.tsx:60`). URLs, hex codes and ports use `font-mono`. Invalid state: `border-destructive` (`SettingsPanel.tsx:119`).
+**Text input** (`Prompt.tsx:120`, `AddFeedDialog.tsx:149`). `h-9 w-full rounded-lg border border-input bg-secondary px-2.5 text-[12.5px] outline-hidden transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system`. Compact search: `h-7 rounded-md border-transparent bg-secondary pl-7 text-[12px]` with a 13px `Search` icon at `left-2` (`ArticleList.tsx:60`). URLs, hex codes and ports use `font-mono`. Invalid state: `border-destructive` (`SettingsPanel.tsx:119`).
 
 **Section and field** (`SettingsPanel.tsx`). Section: `border-t border-border py-5 first:border-t-0 first:pt-0`; the uppercase 11px label only when a tab holds more than one section, since the tab name is already the heading. Field: `mt-4 first:mt-0`, label `mb-2 text-[12px] text-muted-foreground`. Helper text below: `mt-1.5 text-[11px] leading-relaxed text-subtle`.
 
@@ -180,7 +181,7 @@ Reuse these class strings. Line numbers point at the reference implementation.
 
 **Checkbox cards** (`Welcome.tsx:113`). Same card shape with `role="checkbox"`; the box is `h-4 w-4 rounded-[4px] border`, checked `border-system bg-system text-background` with `Check size={11} strokeWidth={3}`.
 
-**Sidebar row** (`Sidebar.tsx:28`). `row relative flex w-full items-center gap-2 pr-2 text-[13px] h-[var(--row-h)]`; active `bg-elevated font-medium text-foreground` plus a 3px `bg-system` bar that grows from `h-0` to `h-4`; idle `text-muted-foreground hover:bg-secondary hover:text-foreground`. Counts: `tabular text-[11px] text-subtle`, capped at `999+`.
+**Sidebar row** (`Sidebar.tsx:28`). `row relative flex w-full items-center gap-2 pr-2 text-[13px] h-(--row-h)`; active `bg-elevated font-medium text-foreground` plus a 3px `bg-system` bar that grows from `h-0` to `h-4`; idle `text-muted-foreground hover:bg-secondary hover:text-foreground`. Counts: `tabular text-[11px] text-subtle`, capped at `999+`.
 
 **Article list item** (`ArticleList.tsx:104`). `border-b border-border/60 px-3 py-2.5`; active `bg-elevated` plus a 2px `bg-system` left bar; hover `bg-secondary/70`; read `opacity-[0.78]`. Meta line 11px subtle with `·` separators; unread dot `h-1.5 w-1.5 rounded-full bg-system`; secondary actions `opacity-0 group-hover:opacity-70`.
 
@@ -212,7 +213,7 @@ Reuse these class strings. Line numbers point at the reference implementation.
 - "Accent" means `system`. The Tailwind `accent` token is a neutral hover grey; do not use it for a brand colour.
 - Check every new surface in light, paper and dark, with at least two accents (blue, plus mono or amber). Paper is warm, so anything that assumes neutral grey shows up there.
 - Layering, back to front: `background`, `card`, `popover`. Hover and selection sit on top as `secondary` and `elevated`.
-- A new token goes in all three blocks of `src/index.css` (paper only if it should differ from light) and in `tailwind.config.js`.
+- A new token goes in all three blocks of `src/index.css` (paper only if it should differ from light) and as a `--color-*` line in the `@theme inline` block.
 - If a first-paint background changes, update `index.html` too, which hardcodes it.
 
 ## Accessibility
@@ -221,7 +222,7 @@ Reuse these class strings. Line numbers point at the reference implementation.
 - Custom controls use real roles: `radiogroup`/`radio` with `aria-checked`, `switch` with `aria-labelledby`, `checkbox`, `menu`/`menuitem`, `aria-expanded` on submenus, `dialog` with `aria-modal` and `aria-labelledby`.
 - Errors use `role="alert"`; passive confirmations use `role="status"`.
 - Decorative glyphs and indicator bars are `aria-hidden`.
-- Focus: inputs show `focus:border-system`; segmented items show `focus-visible:ring-2 focus-visible:ring-ring/50`, and `--ring` follows the accent. Most other buttons rely on the browser's default outline. New controls should add the segmented ring pattern, and never `outline-none` without a replacement.
+- Focus: inputs show `focus:border-system`; segmented items show `focus-visible:ring-2 focus-visible:ring-ring/50`, and `--ring` follows the accent. Most other buttons rely on the browser's default outline. New controls should add the segmented ring pattern, and never `outline-hidden` without a replacement.
 - Escape closes every overlay. Every action has a keyboard path, listed in `Shortcuts.tsx`.
 - The custom accent is lightness-clamped for contrast. `subtle` is the lowest-contrast text; keep it for secondary information, never for the only copy of something important.
 - Respect both the Animations setting and `prefers-reduced-motion`.

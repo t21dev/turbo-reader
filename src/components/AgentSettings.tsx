@@ -128,7 +128,7 @@ export function AgentSettings({ confirm }: { confirm: (spec: PromptSpec) => void
                 if (p >= 1024 && p <= 65535 && p !== status.config.port) void configure({ port: p })
                 else setPort(String(status.config.port))
               }}
-              className="h-8 w-20 rounded-md border border-input bg-secondary px-2 font-mono text-[12px] outline-none focus:border-system"
+              className="h-8 w-20 rounded-md border border-input bg-secondary px-2 font-mono text-[12px] outline-hidden focus:border-system"
             />
           </div>
           <div className="flex items-start justify-between gap-4">
@@ -180,7 +180,7 @@ export function AgentSettings({ confirm }: { confirm: (spec: PromptSpec) => void
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && newName.trim() && void createKey()}
             placeholder="Name, e.g. Claude Code on laptop"
-            className="h-8 min-w-0 flex-1 rounded-md border border-input bg-secondary px-2.5 text-[12px] outline-none placeholder:text-subtle focus:border-system"
+            className="h-8 min-w-0 flex-1 rounded-md border border-input bg-secondary px-2.5 text-[12px] outline-hidden placeholder:text-subtle focus:border-system"
           />
           <div role="radiogroup" aria-label="Key access" className="flex rounded-md border border-border p-[2px]">
             {[

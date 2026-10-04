@@ -59,7 +59,7 @@ function Row({
       title={title}
       className={cn(
         "row group relative flex w-full items-center gap-2 pr-2 text-left text-[13px]",
-        "h-[var(--row-h)]",
+        "h-(--row-h)",
         indent ? "pl-7" : "pl-2.5",
         active
           ? "bg-elevated font-medium text-foreground"

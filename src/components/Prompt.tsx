@@ -78,7 +78,7 @@ export function Prompt({ spec, onClose }: { spec: PromptSpec | null; onClose: ()
   return (
     <div
       className={cn(
-        "absolute inset-0 z-[80] grid place-items-center bg-black/50 p-6",
+        "absolute inset-0 z-80 grid place-items-center bg-black/50 p-6",
         closing ? "animate-fade-out" : "animate-fade",
       )}
       onClick={dismiss}
@@ -117,13 +117,13 @@ export function Prompt({ spec, onClose }: { spec: PromptSpec | null; onClose: ()
                 onChange={(e) => setValue(e.target.value)}
                 placeholder={spec.field.placeholder}
                 spellCheck={false}
-                className="h-9 w-full rounded-lg border border-input bg-secondary px-2.5 text-[12.5px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
+                className="h-9 w-full rounded-lg border border-input bg-secondary px-2.5 text-[12.5px] outline-hidden transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
               />
             </label>
           )}
           {error && (
             <p role="alert" className="mt-3 flex items-start gap-2 text-[12px] leading-relaxed text-destructive">
-              <AlertCircle size={14} className="mt-[1px] shrink-0" />
+              <AlertCircle size={14} className="mt-px shrink-0" />
               {error}
             </p>
           )}
@@ -143,7 +143,7 @@ export function Prompt({ spec, onClose }: { spec: PromptSpec | null; onClose: ()
             disabled={invalid || busy}
             className={cn(
               "row h-8 px-3 text-[12px] font-medium",
-              "transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]",
+              "transition-[background-color,scale] duration-150 ease-out active:scale-[0.97]",
               "disabled:opacity-40 disabled:active:scale-100",
               spec.destructive
                 ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"

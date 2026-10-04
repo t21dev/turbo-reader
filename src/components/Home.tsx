@@ -165,7 +165,7 @@ export function Home({ prefs, onPrefs, onCustomize, onOpen, onStar, onScope, rev
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Escape" && setQuery("")}
               placeholder="Search everything"
-              className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-[13px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
+              className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-[13px] outline-hidden transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
             />
           </div>
         )}
@@ -197,8 +197,8 @@ export function Home({ prefs, onPrefs, onCustomize, onOpen, onStar, onScope, rev
                   onClick={() => onScope("source", p.id)}
                   className={cn(
                     "row flex h-9 items-center gap-2 border border-border bg-card px-3 text-[12.5px]",
-                    "transition-[transform,border-color] duration-200 ease-out",
-                    "hover:-translate-y-[2px] hover:border-system/60 active:translate-y-0",
+                    "transition-[translate,border-color] duration-200 ease-out",
+                    "hover:translate-y-[-2px] hover:border-system/60 active:translate-y-0",
                   )}
                 >
                   <FeedIcon source={{ name: p.name, iconUrl: p.iconUrl }} size={14} />
@@ -419,8 +419,8 @@ function Magazine({
         onClick={() => onOpen(lead)}
         className={cn(
           "group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card",
-          "transition-[transform,box-shadow] duration-200 ease-out",
-          "hover:-translate-y-[3px] hover:shadow-float active:translate-y-0 active:duration-100",
+          "transition-[translate,box-shadow] duration-200 ease-out",
+          "hover:translate-y-[-3px] hover:shadow-float active:translate-y-0 active:duration-100",
           lead.read && "opacity-[0.72]",
         )}
       >
@@ -470,8 +470,8 @@ function Card({
       style={lead ? { gridColumn: "span 2", gridRow: "span 2" } : undefined}
       className={cn(
         "group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card",
-        "transition-[transform,box-shadow] duration-200 ease-out",
-        "hover:-translate-y-[3px] hover:shadow-float active:translate-y-0 active:duration-100",
+        "transition-[translate,box-shadow] duration-200 ease-out",
+        "hover:translate-y-[-3px] hover:shadow-float active:translate-y-0 active:duration-100",
         item.read && "opacity-[0.72]",
       )}
     >

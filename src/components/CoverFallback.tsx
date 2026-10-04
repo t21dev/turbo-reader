@@ -61,7 +61,7 @@ export function CoverFallback({
         }}
       />
       {/* Hairline, so the panel has an edge against the card in both themes. */}
-      <div className="absolute inset-0 ring-1 ring-inset ring-foreground/[0.045]" />
+      <div className="absolute inset-0 ring-1 ring-inset ring-foreground/4.5" />
 
       <div className="absolute inset-0 grid place-items-center">
         <ImageIcon size={26} strokeWidth={1.25} className="text-foreground/20" />

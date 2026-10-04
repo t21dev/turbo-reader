@@ -6,9 +6,193 @@
 @import "@fontsource-variable/geist-mono";
 @import "./reading-fonts.css";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Scan only the app's own sources, as v3's content globs did, so class-like
+   words in the docs, tests and scripts never become CSS. */
+@import "tailwindcss" source(none);
+@source "../index.html";
+@source "../src";
+
+/* Dark is a class on <html>, set by the theme provider, not the OS query.
+   Paper is a palette only (the .paper block below), so it needs no variant. */
+@custom-variant dark (&:is(.dark *));
+
+/* Tailwind v4 limits hover to devices that can hover. Keep v3's behaviour,
+   so hover styles look the same everywhere they did before. */
+@custom-variant hover (&:hover);
+
+/* Colour tokens. The palettes are HSL triples on plain variables (:root,
+   .paper, .dark below), and the runtime accent rewrites --system, --unread
+   and --ring on <html>. `inline` makes every utility read the triple where it
+   is used, as v3 did, so opacity modifiers (bg-system/10) and local overrides
+   keep working. */
+@theme inline {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-elevated: hsl(var(--elevated));
+  --color-subtle: hsl(var(--subtle));
+  --color-unread: hsl(var(--unread));
+  --color-starred: hsl(var(--starred));
+  --color-system: hsl(var(--system));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+@theme {
+  /* The system fonts and colour emoji come last, for every character Geist
+     does not draw: other scripts, symbols and emoji. */
+  --font-sans:
+    "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Noto Sans", sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono:
+    "Geist Mono Variable", ui-monospace, SFMono-Regular, monospace, "Apple Color Emoji", "Segoe UI Emoji",
+    "Noto Color Emoji";
+
+  /* The app's own curves replace Tailwind's under the same names, so the
+     ease-out utility and var(--ease-out) in plain CSS are the same curve. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --shadow-float:
+    0 1px 0 0 hsl(0 0% 100% / 0.03) inset, 0 12px 32px -8px rgb(0 0 0 / 0.45), 0 2px 6px -2px rgb(0 0 0 / 0.3);
+  /* Drawn in the card colour, so a tile at rest shows almost no shadow.
+     That is how it has always rendered: under v3 the name shadow-card also
+     matched the card colour and recoloured this shadow. Kept so the grid
+     looks exactly as before. */
+  --shadow-card: 0 1px 2px hsl(var(--card)), 0 8px 20px -8px hsl(var(--card));
+
+  /* Motion. Entrances use --ease-out; exits are quicker, use --ease-in and
+     hold their last frame, so a surface leaves decisively instead of
+     lingering on the way out. */
+  --animate-rise: tr-rise 260ms var(--ease-out) both;
+  --animate-card: tr-card 300ms var(--ease-out) both;
+  --animate-menu: tr-menu 140ms var(--ease-out);
+  --animate-menu-out: tr-menu-out 110ms var(--ease-in) forwards;
+  --animate-pop: tr-pop 220ms var(--ease-out);
+  --animate-pop-out: tr-pop-out 150ms var(--ease-in) forwards;
+  --animate-fade: tr-fade 160ms linear;
+  --animate-fade-out: tr-fade-out 150ms linear forwards;
+  --animate-slide-in: tr-slide-in 220ms var(--ease-out);
+  --animate-slide-out: tr-slide-out 180ms var(--ease-in) forwards;
+
+  @keyframes tr-rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes tr-card {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes tr-menu {
+    from {
+      opacity: 0;
+      transform: scaleY(0.94) translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes tr-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes tr-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes tr-slide-in {
+    from {
+      transform: translateX(16px);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  @keyframes tr-slide-out {
+    from {
+      transform: none;
+      opacity: 1;
+    }
+    to {
+      transform: translateX(16px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes tr-pop-out {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.97) translateY(6px);
+    }
+  }
+  @keyframes tr-menu-out {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: scaleY(0.96) translateY(-3px);
+    }
+  }
+  @keyframes tr-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+}
 
 @layer base {
   :root {
@@ -50,10 +234,6 @@
     --reader-font: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
     --reader-size: 0.94rem;
     --reader-width: 68ch;
-
-    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
-    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   }
 
   /* Paper: a warm, low-contrast off-white for long reading. Light accents,
@@ -109,8 +289,24 @@
 }
 
 @layer base {
-  * {
+  /* Every hairline is the border token. v4's default border colour is
+     currentColor, so this also covers pseudo-elements and backdrops. */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
     @apply border-border;
+  }
+  /* v4's preflight dropped these two v3 defaults; the design keeps them. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    opacity: 1;
+    color: #9ca3af;
   }
   html,
   body,
@@ -174,6 +370,9 @@
   }
 }
 
+/* Plain classes in the utilities layer, after the generated utilities, so
+   they win over a same-specificity utility on the same element as they did
+   in v3 (for example .row's transition over a duration-200 beside it). */
 @layer utilities {
   .tabular {
     font-variant-numeric: tabular-nums;
@@ -182,6 +381,13 @@
   /* Rows never move on hover. Colour only. */
   .row {
     @apply rounded-lg transition-colors duration-150 ease-in-out;
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  }
+
+  /* v3's list. v4 added outline-color, which would fade the browser's focus
+     ring in instead of showing it at once. */
+  .transition-colors {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
   }
 
   /* Expanding region without animating height. */
@@ -279,138 +485,6 @@
 }
 
 /* ------------------------------ motion ------------------------------ */
-
-@keyframes tr-rise {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes tr-card {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes tr-menu {
-  from {
-    opacity: 0;
-    transform: scaleY(0.94) translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes tr-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.96) translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes tr-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes tr-slide-in {
-  from {
-    transform: translateX(16px);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
-@keyframes tr-slide-out {
-  from {
-    transform: none;
-    opacity: 1;
-  }
-  to {
-    transform: translateX(16px);
-    opacity: 0;
-  }
-}
-
-@keyframes tr-pop-out {
-  from {
-    opacity: 1;
-    transform: none;
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.97) translateY(6px);
-  }
-}
-@keyframes tr-menu-out {
-  from {
-    opacity: 1;
-    transform: none;
-  }
-  to {
-    opacity: 0;
-    transform: scaleY(0.96) translateY(-3px);
-  }
-}
-@keyframes tr-fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-.animate-rise {
-  animation: tr-rise 260ms var(--ease-out) both;
-}
-.animate-card {
-  animation: tr-card 300ms var(--ease-out) both;
-}
-.animate-menu {
-  animation: tr-menu 140ms var(--ease-out);
-}
-.animate-pop {
-  animation: tr-pop 220ms var(--ease-out);
-}
-.animate-fade {
-  animation: tr-fade 160ms linear;
-}
-.animate-slide-in {
-  animation: tr-slide-in 220ms var(--ease-out);
-}
-.animate-slide-out {
-  animation: tr-slide-out 180ms var(--ease-in) forwards;
-}
-
-/* Exits are quicker than entrances and use ease-in, so a surface leaves
-   decisively instead of lingering on the way out. */
-.animate-pop-out {
-  animation: tr-pop-out 150ms var(--ease-in) forwards;
-}
-.animate-menu-out {
-  animation: tr-menu-out 110ms var(--ease-in) forwards;
-}
-.animate-fade-out {
-  animation: tr-fade-out 150ms linear forwards;
-}
 
 /* The Animations switch in Settings, and the system preference, both land
    here. Transitions are cut to a frame rather than removed, so state still

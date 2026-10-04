@@ -58,7 +58,7 @@ export function AboutDialog({
   return (
     <div
       className={cn(
-        "absolute inset-0 z-[60] grid place-items-center bg-black/50 p-6",
+        "absolute inset-0 z-60 grid place-items-center bg-black/50 p-6",
         closing ? "animate-fade-out" : "animate-fade",
       )}
       onClick={dismiss}
@@ -125,7 +125,7 @@ export function AboutDialog({
             type="button"
             onClick={() => void check()}
             disabled={checking}
-            className="row flex h-9 w-full items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            className="row flex h-9 w-full items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             <RefreshCw size={13} className={checking ? "animate-spin" : undefined} />
             {checking ? "Checking" : "Check for updates"}
@@ -136,7 +136,7 @@ export function AboutDialog({
               {update.newer ? (
                 <>
                   <p className="flex items-start gap-2 text-[12px] leading-relaxed text-foreground">
-                    <ArrowUpCircle size={14} className="mt-[1px] shrink-0 text-system" />
+                    <ArrowUpCircle size={14} className="mt-px shrink-0 text-system" />
                     <span>
                       Version <span className="tabular">{update.latest}</span> is out.
                       {update.published ? ` Published ${update.published}.` : ""} You are on{" "}
@@ -184,7 +184,7 @@ export function AboutDialog({
               onClick={() => onPrefs({ ...prefs, updateCheck: !prefs.updateCheck })}
               className={cn(
                 "relative mt-0.5 h-5 w-9 shrink-0 rounded-full border transition-colors duration-200 ease-out",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50",
                 prefs.updateCheck ? "border-system bg-system" : "border-border bg-elevated",
               )}
             >

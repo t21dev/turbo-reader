@@ -25,8 +25,8 @@ function useSummary() {
 }
 
 function KindIcon({ n }: { n: AppNotification }) {
-  if (n.kind === "agent") return <Bot size={14} className="mt-[1px] shrink-0 text-subtle" />
-  return <Newspaper size={14} className="mt-[1px] shrink-0 text-subtle" />
+  if (n.kind === "agent") return <Bot size={14} className="mt-px shrink-0 text-subtle" />
+  return <Newspaper size={14} className="mt-px shrink-0 text-subtle" />
 }
 
 function Entry({
@@ -53,7 +53,7 @@ function Entry({
         </span>
         {n.body && <span className="mt-0.5 block text-[11.5px] leading-relaxed text-subtle">{n.body}</span>}
       </button>
-      <span className="tabular shrink-0 pt-[1px] text-[11px] text-subtle">{relativeTime(n.created)}</span>
+      <span className="tabular shrink-0 pt-px text-[11px] text-subtle">{relativeTime(n.created)}</span>
       {onRemove && (
         <button
           type="button"
@@ -137,7 +137,7 @@ export function NotificationBell({
                 <ul>
                   {update && (
                     <li className="flex items-start gap-2.5 rounded-lg px-2.5 py-2">
-                      <ArrowUpCircle size={14} className="mt-[1px] shrink-0 text-system" />
+                      <ArrowUpCircle size={14} className="mt-px shrink-0 text-system" />
                       <span className="min-w-0 flex-1 text-[12.5px] text-foreground">
                         Turbo Reader <span className="tabular">{update.latest}</span> is out
                       </span>
@@ -155,7 +155,7 @@ export function NotificationBell({
                   )}
                   {failing.map((f) => (
                     <li key={f.id} className="flex items-start gap-2.5 rounded-lg px-2.5 py-2" data-failing-feed>
-                      <AlertTriangle size={14} className="mt-[1px] shrink-0 text-destructive" />
+                      <AlertTriangle size={14} className="mt-px shrink-0 text-destructive" />
                       <button
                         type="button"
                         onClick={() => {
@@ -282,7 +282,7 @@ function AllNotifications({ onClose, onOpenFeed }: { onClose: () => void; onOpen
 
   return createPortal(
     <div
-      className={cn("fixed inset-0 z-[60] grid place-items-center bg-black/50 p-6", closing ? "animate-fade-out" : "animate-fade")}
+      className={cn("fixed inset-0 z-60 grid place-items-center bg-black/50 p-6", closing ? "animate-fade-out" : "animate-fade")}
       onClick={dismiss}
     >
       <div

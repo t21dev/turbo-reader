@@ -104,7 +104,7 @@ export function ContextMenu({
         visibility: pos ? "visible" : "hidden",
       }}
       className={cn(
-        "fixed z-[70] origin-top-left overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-float",
+        "fixed z-70 origin-top-left overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-float",
         closing ? "animate-menu-out" : "animate-menu",
       )}
     >

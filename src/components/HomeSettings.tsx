@@ -231,7 +231,7 @@ function KeywordList({
         spellCheck={false}
         rows={4}
         placeholder={placeholder}
-        className="w-full resize-y rounded-lg border border-input bg-secondary px-2.5 py-2 font-mono text-[11.5px] leading-relaxed outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
+        className="w-full resize-y rounded-lg border border-input bg-secondary px-2.5 py-2 font-mono text-[11.5px] leading-relaxed outline-hidden transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
       />
       <p className="mt-1 text-[11px] leading-relaxed text-subtle">
         {lines.length === 0
@@ -458,7 +458,7 @@ function GroupRow({
           onLayout((e.target.value || null) as BandLayout | null)
         }}
         title="How this category is laid out. Auto decides from whether its feeds carry images."
-        className="h-8 shrink-0 rounded-md border border-border bg-background px-2 text-[11.5px] text-muted-foreground outline-none focus:border-system"
+        className="h-8 shrink-0 rounded-md border border-border bg-background px-2 text-[11.5px] text-muted-foreground outline-hidden focus:border-system"
       >
         <option value="">Auto</option>
         {LAYOUTS.map((l) => (

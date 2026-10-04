@@ -12,58 +12,66 @@
       because waiting for the React provider is already too late.
     -->
     <style>
-      :root {
-        color-scheme: dark;
-      }
-      html,
-      body {
-        margin: 0;
-        height: 100%;
-        background: #0d0d0d;
-        overflow: clip;
-      }
-      html.light,
-      html.light body {
-        background: #fbfbfb;
-      }
-      /* Paper's --background, 40 33% 93.5%, so it opens without a white flash. */
-      html.paper,
-      html.paper body {
-        background: #f4f0e9;
-      }
-      #splash {
-        position: fixed;
-        inset: 0;
-        display: grid;
-        place-items: center;
-        background: inherit;
-        transition: opacity 220ms cubic-bezier(0.16, 1, 0.3, 1);
-      }
-      #splash[hidden] {
-        display: grid;
-        opacity: 0;
-        pointer-events: none;
-      }
-      #splash svg {
-        width: 46px;
-        height: 46px;
-        animation: splash-breathe 1400ms ease-in-out infinite;
-      }
-      @keyframes splash-breathe {
-        0%,
-        100% {
-          opacity: 0.55;
-          transform: scale(0.97);
+      /* Tailwind v4 puts the app's styles in cascade layers, and unlayered
+         CSS beats every layer. So this first-paint CSS sits in the same base
+         layer: the app's body background still takes over once it loads, and
+         the splash can fade out even though v4 hides [hidden] with
+         !important. */
+      @layer theme, base, components, utilities;
+      @layer base {
+        :root {
+          color-scheme: dark;
         }
-        50% {
-          opacity: 1;
-          transform: scale(1);
+        html,
+        body {
+          margin: 0;
+          height: 100%;
+          background: #0d0d0d;
+          overflow: clip;
         }
-      }
-      @media (prefers-reduced-motion: reduce) {
+        html.light,
+        html.light body {
+          background: #fbfbfb;
+        }
+        /* Paper's --background, 40 33% 93.5%, so it opens without a white flash. */
+        html.paper,
+        html.paper body {
+          background: #f4f0e9;
+        }
+        #splash {
+          position: fixed;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          background: inherit;
+          transition: opacity 220ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #splash[hidden] {
+          display: grid !important;
+          opacity: 0;
+          pointer-events: none;
+        }
         #splash svg {
-          animation: none;
-          opacity: 0.8;
+          width: 46px;
+          height: 46px;
+          animation: splash-breathe 1400ms ease-in-out infinite;
+        }
+        @keyframes splash-breathe {
+          0%,
+          100% {
+            opacity: 0.55;
+            transform: scale(0.97);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          #splash svg {
+            animation: none;
+            opacity: 0.8;
+          }
         }
       }
     </style>

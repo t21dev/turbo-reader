@@ -71,7 +71,7 @@ export function Welcome({
           <button
             type="button"
             onClick={onAddFeed}
-            className="row flex flex-col items-start gap-1.5 border border-system/50 bg-card p-4 text-left transition-[border-color,transform] duration-200 ease-out hover:-translate-y-[2px] hover:border-system active:translate-y-0"
+            className="row flex flex-col items-start gap-1.5 border border-system/50 bg-card p-4 text-left transition-[border-color,translate] duration-200 ease-out hover:translate-y-[-2px] hover:border-system active:translate-y-0"
           >
             <span className="flex items-center gap-2 text-[13.5px] font-semibold text-foreground">
               <Plus size={15} className="text-system" />
@@ -85,7 +85,7 @@ export function Welcome({
             type="button"
             onClick={() => void run("import", onImportOpml)}
             disabled={busy !== null}
-            className="row flex flex-col items-start gap-1.5 border border-border bg-card p-4 text-left transition-[border-color,transform] duration-200 ease-out hover:-translate-y-[2px] hover:border-system/60 active:translate-y-0 disabled:opacity-60"
+            className="row flex flex-col items-start gap-1.5 border border-border bg-card p-4 text-left transition-[border-color,translate] duration-200 ease-out hover:translate-y-[-2px] hover:border-system/60 active:translate-y-0 disabled:opacity-60"
           >
             <span className="flex items-center gap-2 text-[13.5px] font-semibold text-foreground">
               {busy === "import" ? (

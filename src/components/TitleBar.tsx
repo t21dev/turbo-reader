@@ -194,7 +194,7 @@ function WindowButton({
       className={cn(
         "flex h-full w-11 items-center justify-center text-muted-foreground",
         "transition-colors duration-150 ease-out",
-        "focus-visible:bg-accent focus-visible:text-foreground focus-visible:outline-none",
+        "focus-visible:bg-accent focus-visible:text-foreground focus-visible:outline-hidden",
         danger
           ? "hover:bg-[#e81123] hover:text-white active:bg-[#c50f1f]"
           : "hover:bg-accent hover:text-foreground active:bg-elevated",

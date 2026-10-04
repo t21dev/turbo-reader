@@ -90,7 +90,7 @@ function CustomSwatch() {
     <label
       title="Custom colour"
       className={cn(
-        "relative grid h-7 cursor-pointer place-items-center overflow-hidden rounded-md border-2 transition-[border-color,transform] duration-200 ease-out active:scale-[0.94]",
+        "relative grid h-7 cursor-pointer place-items-center overflow-hidden rounded-md border-2 transition-[border-color,scale] duration-200 ease-out active:scale-[0.94]",
         on ? "border-foreground" : "border-transparent",
       )}
       style={{
@@ -100,7 +100,7 @@ function CustomSwatch() {
       }}
       onClick={() => theme.set("accent", "custom")}
     >
-      <Pipette size={12} className={on ? "text-background" : "text-white drop-shadow"} />
+      <Pipette size={12} className={on ? "text-background" : "text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.1),0_1px_1px_rgb(0_0_0/0.06)]"} />
       <input
         type="color"
         aria-label="Custom accent colour"
@@ -136,7 +136,7 @@ function HexInput() {
         }}
         onBlur={() => setText(theme.customAccent)}
         className={cn(
-          "h-8 w-28 rounded-md border bg-secondary px-2.5 font-mono text-[12px] uppercase outline-none transition-colors duration-150 ease-out",
+          "h-8 w-28 rounded-md border bg-secondary px-2.5 font-mono text-[12px] uppercase outline-hidden transition-colors duration-150 ease-out",
           valid ? "border-input focus:border-system" : "border-destructive",
         )}
       />
@@ -185,8 +185,8 @@ function Segmented<T extends string | number>({
           style={o.style}
           className={cn(
             "flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-[12px] font-medium leading-none",
-            "transition-[background-color,color,transform] duration-200 ease-out active:scale-[0.96]",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+            "transition-[background-color,color,scale] duration-200 ease-out active:scale-[0.96]",
+            "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50",
             value === o.value
               ? "bg-elevated text-foreground"
               : "text-subtle hover:text-muted-foreground",
@@ -439,7 +439,7 @@ export function SettingsPanel({
               placeholder="Search settings"
               spellCheck={false}
               autoComplete="off"
-              className="h-8 w-full rounded-lg border border-border bg-background/60 pl-7 pr-2 text-[12px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
+              className="h-8 w-full rounded-lg border border-border bg-background/60 pl-7 pr-2 text-[12px] outline-hidden transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system"
             />
           </div>
           {query.trim() ? (
@@ -456,7 +456,7 @@ export function SettingsPanel({
                     onClick={() => goTo(e)}
                     className={cn(
                       "row flex w-full flex-col items-start px-2.5 py-1.5 text-left",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                      "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50",
                       i === 0 ? "bg-secondary" : "hover:bg-secondary",
                     )}
                   >
@@ -486,7 +486,7 @@ export function SettingsPanel({
                 onClick={() => setTab(t.key)}
                 className={cn(
                   "row flex h-8 w-full items-center gap-2.5 px-2.5 text-left text-[12.5px]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                  "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50",
                   tab === t.key
                     ? "bg-elevated font-medium text-foreground"
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -558,7 +558,7 @@ export function SettingsPanel({
                   title={ACCENTS[key].label}
                   onClick={() => theme.set("accent", key)}
                   className={cn(
-                    "h-7 rounded-md border-2 transition-[border-color,transform] duration-200 ease-out active:scale-[0.94]",
+                    "h-7 rounded-md border-2 transition-[border-color,scale] duration-200 ease-out active:scale-[0.94]",
                     theme.accent === key ? "border-foreground" : "border-transparent",
                   )}
                   style={{ background: `hsl(${ACCENTS[key][theme.resolved]})` }}

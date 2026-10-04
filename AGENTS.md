@@ -10,6 +10,10 @@ before writing a new one, and check new UI in every theme the app has.
 If a change needs something DESIGN.md does not cover, add it to DESIGN.md in
 the same change, so the two never disagree.
 
+Styling is Tailwind CSS v4, configured in CSS: the `@theme` blocks in
+`src/index.css` map the tokens, fonts, radii, shadows, easings and
+animations. There is no `tailwind.config.js`.
+
 ## Size
 
 The Windows installer must stay under 5 MB (it is 4.7 MB at 0.10.0). Check

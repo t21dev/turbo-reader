@@ -48,6 +48,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   included, as long as the copyright notice stays.
 - Every release carries `SHA256SUMS.txt`, the SHA-256 checksum of each
   download.
+- Built with Tailwind CSS v4 instead of v3. The app looks the same. Two
+  motions now run as designed: the sidebar slides away over 280ms (v3 quietly
+  dropped that duration and used 150ms), and the first cards in the card view
+  lift on hover like the rest.
 
 ### Fixed
 - A window left maximized opens maximized again, and goes back to its last

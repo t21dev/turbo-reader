@@ -38,7 +38,7 @@ function Cover({ item }: { item: ItemSummary }) {
     return <CoverFallback source={{ name: item.sourceName, iconUrl: null }} />
   }
   return (
-    <div className="relative aspect-[16/10] w-full overflow-hidden bg-secondary">
+    <div className="relative aspect-16/10 w-full overflow-hidden bg-secondary">
       <img
         src={item.thumbnail}
         alt=""
@@ -71,7 +71,7 @@ export function CardGrid({
 
   return (
     <section ref={scroller} className="min-h-0 flex-1 overflow-y-auto bg-background">
-      <div className="flex items-center justify-between gap-3 px-[var(--card-pad)] pt-[var(--card-pad)]">
+      <div className="flex items-center justify-between gap-3 px-(--card-pad) pt-(--card-pad)">
         <h2 className="min-w-0 truncate text-[15px] font-semibold tracking-tight text-foreground" data-card-title>
           {title}
         </h2>
@@ -81,7 +81,7 @@ export function CardGrid({
         </div>
       </div>
       <div
-        className="grid gap-[var(--card-gap)] px-[var(--card-pad)] pb-[var(--card-pad)] pt-3"
+        className="grid gap-(--card-gap) px-(--card-pad) pb-(--card-pad) pt-3"
         style={{ gridTemplateColumns: "repeat(auto-fill, minmax(var(--card-min), 1fr))" }}
       >
         {items.map((it, i) => {
@@ -95,8 +95,8 @@ export function CardGrid({
               className={cn(
                 "group relative flex cursor-pointer flex-col overflow-hidden rounded-xl",
                 "border border-border bg-card shadow-card",
-                "transition-[transform,box-shadow,border-color] duration-200 ease-out",
-                "hover:-translate-y-[3px] hover:border-border hover:shadow-float",
+                "transition-[translate,box-shadow,border-color] duration-200 ease-out",
+                "hover:translate-y-[-3px] hover:border-border hover:shadow-float",
                 "active:translate-y-0 active:duration-100",
                 it.read && "opacity-[0.72]",
                 i < 18 && "animate-card",
@@ -105,7 +105,7 @@ export function CardGrid({
             >
               <Cover item={it} />
 
-              <div className="flex min-h-0 flex-1 flex-col p-[var(--card-inset)]">
+              <div className="flex min-h-0 flex-1 flex-col p-(--card-inset)">
                 <div className="flex items-center gap-1.5 text-[11px] text-subtle">
                   {source ? (
                     <FeedIcon source={source} size={13} />
