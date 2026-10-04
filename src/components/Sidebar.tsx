@@ -244,8 +244,8 @@ export function Sidebar(props: Props) {
 
         {sources.length === 0 && (
           <p className="px-3 py-6 text-[12px] leading-relaxed text-subtle">
-            No feeds yet. Add one with <span className="text-foreground">+</span>, or import an OPML
-            file from Settings. Right-click a feed to rename, move or delete it.
+            No feeds yet. Add one with <span className="text-foreground">+</span>, or start from the
+            welcome page. Right-click a feed later to rename, move or delete it.
           </p>
         )}
       </div>

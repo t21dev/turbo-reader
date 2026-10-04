@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- A welcome screen for a library with no feeds: add a feed, import an OPML
+  file, or subscribe to a few starters (Hacker News, The Verge, Ars Technica,
+  BBC News, Smashing Magazine, xkcd) in one go. It used to open on an empty
+  home page.
+
 ## [0.7.0] - 2026-10-04
 
 ### Added

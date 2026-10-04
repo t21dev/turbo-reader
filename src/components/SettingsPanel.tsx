@@ -14,12 +14,13 @@ import {
   MessageSquare,
   Pipette,
 } from "lucide-react"
-import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog"
+import { save as saveDialog } from "@tauri-apps/plugin-dialog"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { api, type Group, type Source, type Stats, type UpdateCheck } from "@/lib/api"
 import { type HomePrefs } from "@/lib/home"
 import { REFRESH_CHOICES, sinceLabel, type AppPrefs } from "@/lib/prefs"
 import { recordUpdateCheck } from "@/lib/updates"
+import { pickAndImportOpml } from "@/lib/opml"
 import { HomeSettings } from "@/components/HomeSettings"
 import type { PromptSpec } from "@/components/Prompt"
 import {
@@ -230,14 +231,10 @@ export function SettingsPanel({
   }, [dismiss])
 
   async function importOpml() {
-    const path = await openDialog({
-      multiple: false,
-      filters: [{ name: "OPML", extensions: ["opml", "xml"] }],
-    })
-    if (typeof path !== "string") return
     setBusy("import")
     try {
-      const added = await api.importOpml(await api.readTextFile(path))
+      const added = await pickAndImportOpml()
+      if (added === null) return
       setNote(`Imported ${added} feed${added === 1 ? "" : "s"}.`)
       onImported()
     } catch (err) {

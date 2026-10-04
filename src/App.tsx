@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Home as HomeIcon, Keyboard, LayoutGrid, List as ListIcon, RefreshCw, Settings2 } from "lucide-react"
 import { listen } from "@tauri-apps/api/event"
 import { useUpdateCheck } from "@/lib/updates"
+import { pickAndImportOpml } from "@/lib/opml"
+import { Welcome } from "@/components/Welcome"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { TitleBar } from "@/components/TitleBar"
 import { Sidebar } from "@/components/Sidebar"
@@ -81,10 +83,15 @@ export default function App() {
 
   useEffect(() => installScale(), [])
 
+  // Whether the feed list has loaded once, so the welcome screen for an empty
+  // library never flashes up during an ordinary start.
+  const [treeLoaded, setTreeLoaded] = useState(false)
+
   const loadTree = useCallback(async () => {
     const [g, s] = await Promise.all([api.listGroups(), api.listSources()])
     setGroups(g)
     setSources(s)
+    setTreeLoaded(true)
   }, [])
 
   const loadItems = useCallback(async () => {
@@ -174,6 +181,27 @@ export default function App() {
   async function afterTreeChange() {
     await Promise.all([loadTree(), loadItems()])
     setHomeRevision((n) => n + 1)
+  }
+
+  /** Imported feeds are saved without articles, so fetch them straight away. */
+  async function afterImport() {
+    await Promise.all([loadTree(), loadItems()])
+    await refresh()
+  }
+
+  // The welcome screen's starter feeds: subscribe to all at once, then say how
+  // it went. Each subscription fetches its own articles.
+  async function subscribeStarters(urls: string[]) {
+    const results = await Promise.allSettled(urls.map((url) => api.addSource(url, null)))
+    const failed = urls.filter((_, i) => results[i].status === "rejected")
+    await afterTreeChange()
+    const added = urls.length - failed.length
+    if (added > 0) notify(`Subscribed to ${added} feed${added === 1 ? "" : "s"}.`)
+    if (failed.length > 0) {
+      notify(`Could not subscribe to ${failed.join(", ")}. Try again later.`, "error")
+    }
+    // Their icons arrive with the next refresh; start one now.
+    if (added > 0) void refresh()
   }
 
   const sidebarActions = {
@@ -604,7 +632,18 @@ export default function App() {
           />
         </div>
 
-        {atHome && homePrefs.enabled ? (
+        {treeLoaded && sources.length === 0 ? (
+          <Welcome
+            onAddFeed={() => setAddOpen(true)}
+            onImportOpml={async () => {
+              const added = await pickAndImportOpml()
+              if (added === null) return
+              notify(`Imported ${added} feed${added === 1 ? "" : "s"}.`)
+              await afterImport()
+            }}
+            onSubscribe={subscribeStarters}
+          />
+        ) : atHome && homePrefs.enabled ? (
           <Home
             prefs={homePrefs}
             onPrefs={updateHomePrefs}
@@ -699,12 +738,7 @@ export default function App() {
           }}
           confirm={setPrompt}
           focus={settingsFocus}
-          onImported={async () => {
-            // Imported feeds are saved without articles. Fetch them now, or
-            // they would sit empty until someone thought to press r.
-            await Promise.all([loadTree(), loadItems()])
-            await refresh()
-          }}
+          onImported={afterImport}
         />
       )}
 
