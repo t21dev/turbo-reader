@@ -52,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   motions now run as designed: the sidebar slides away over 280ms (v3 quietly
   dropped that duration and used 150ms), and the first cards in the card view
   lift on hover like the rest.
+- Class names are joined and merged by the `cn` package, replacing clsx and
+  tailwind-merge.
 
 ### Fixed
 - A window left maximized opens maximized again, and goes back to its last
