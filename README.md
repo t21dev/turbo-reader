@@ -6,7 +6,7 @@
 
 **A modern RSS reader that is actually fast and actually small.**
 
-<sub>A 5 MB installer that opens in under a second and holds 20,000 articles in a 14 MB core process. Rust core, React shell, built with Tauri 2.</sub>
+<sub>An installer under 5 MB that opens in under a second and holds 20,000 articles in a 14 MB core process. Rust core, React shell, built with Tauri 2.</sub>
 
 <br />
 
@@ -264,13 +264,17 @@ Built with [Tauri](https://tauri.app), [feed-rs](https://github.com/feed-rs/feed
 
 | | |
 | --- | --- |
-| Windows installer | **4.7 MB** |
+| Windows installer | **4.7 MB**, kept under 5 MB |
 | Installed on disk | **11 MB** |
 | Memory, 500 feeds and 20,000 articles | **14 MB** app process, **~270 MB** with the system webview |
 | Refresh 500 feeds from a local test server | **0.2 s** |
 | Cold start to usable | **under half a second** |
 
 Measured, not estimated, on one Windows machine.
+
+**Size budget.** The Windows installer stays under 5 MB. The reading fonts are
+cut to Latin characters only for that reason, and anything new that would push
+the installer past 5 MB has to make room first.
 
 **Where the memory goes.** The Rust process that holds your library, the
 database and the fetcher uses about 14 MB, and that number barely moves as the
