@@ -33,7 +33,7 @@ Three palettes exist. `:root` is light, `.paper` overrides light on top of it, `
 | `muted-foreground` | `0 0% 40%` | `30 12% 36%` | `0 0% 58%` | Secondary text, idle icons, read headlines |
 | `subtle` | `0 0% 58%` | `32 9% 50%` | `0 0% 40%` | Tertiary text: meta lines, section labels, helper text, placeholders |
 | `accent` | `0 0% 95.5%` | `38 28% 90%` | `0 0% 10.5%` | Neutral hover for title bar window buttons. Not the accent colour |
-| `destructive` | `0 72% 50%` | (light) | `0 75% 62%` | Errors, delete, destructive confirm |
+| `destructive` | `347 77% 50%` | (light) | `350 89% 66%` | Rose red. Errors, delete, destructive confirm and destructive buttons |
 | `destructive-foreground` | `0 0% 98%` | (light) | `0 0% 98%` | Text on destructive |
 | `border` | `0 0% 90%` | `37 22% 82%` | `0 0% 12.5%` | Every hairline. Applied globally via `* { @apply border-border }` |
 | `input` | `0 0% 88%` | `37 20% 78%` | `0 0% 15%` | Input borders, unchecked checkbox, scrollbar hover |
@@ -163,6 +163,8 @@ Reuse these class strings. Line numbers point at the reference implementation.
 **Emphasised button** (`SettingsPanel.tsx:709`, `Welcome.tsx:147`). `row flex h-9 items-center gap-2 border border-system bg-elevated px-4 text-[12.5px] font-medium text-foreground hover:bg-secondary disabled:border-border disabled:opacity-50`.
 
 **Dialog buttons** (`Prompt.tsx:136`, `Prompt.tsx:144`). Cancel: `row h-8 px-3 text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground`. Confirm: `row h-8 px-3 text-[12px] font-medium active:scale-[0.97] bg-primary text-primary-foreground hover:bg-primary/90`, or `bg-destructive text-destructive-foreground` when destructive. This is the only place solid fills are used.
+
+**Destructive outline button** (`StorageSettings.tsx`, `Action` with `tone="destructive"`). For an in-pane action that deletes something or cannot be undone, before its confirmation dialog: `row h-8 border px-3 text-[12px] font-medium border-destructive/40 text-destructive hover:border-destructive/70 hover:bg-destructive/10`. Never solid; the solid fill stays for the confirm button in the dialog.
 
 **Text input** (`Prompt.tsx:120`, `AddFeedDialog.tsx:149`). `h-9 w-full rounded-lg border border-input bg-secondary px-2.5 text-[12.5px] outline-none transition-colors duration-150 ease-out placeholder:text-subtle focus:border-system`. Compact search: `h-7 rounded-md border-transparent bg-secondary pl-7 text-[12px]` with a 13px `Search` icon at `left-2` (`ArticleList.tsx:60`). URLs, hex codes and ports use `font-mono`. Invalid state: `border-destructive` (`SettingsPanel.tsx:119`).
 

@@ -128,7 +128,7 @@ export function StorageSettings({
             : "None"
         }
       >
-        <Action busy={busy === "full"} disabled={!!busy || info.fullCount === 0} onClick={clearFull}>
+        <Action tone="destructive" busy={busy === "full"} disabled={!!busy || info.fullCount === 0} onClick={clearFull}>
           Remove
         </Action>
       </Row>
@@ -136,31 +136,47 @@ export function StorageSettings({
       <Row
         id="st-old"
         title="Old read articles"
-        detail="Read articles past the age you choose. Starred and unread articles always stay."
-        size={old ? `${old.count.toLocaleString()} article${old.count === 1 ? "" : "s"}, about ${formatBytes(old.bytes)}` : "Counting"}
+        detail="Read articles published before the age you pick. Starred and unread articles always stay."
         below
       >
-        <div className="mt-2 flex items-center gap-1.5">
-          <span className="mr-1 text-[11.5px] text-muted-foreground">Older than</span>
-          <div role="radiogroup" aria-label="Older than" className="flex rounded-lg border border-border bg-background p-[2px]">
-            {AGES.map((d) => (
-              <button
-                key={d}
-                type="button"
-                role="radio"
-                aria-checked={age === d}
-                onClick={() => setAge(d)}
-                className={cn(
-                  "h-7 rounded-md px-2 text-[11.5px] font-medium transition-colors duration-150",
-                  age === d ? "bg-elevated text-foreground" : "text-subtle hover:text-muted-foreground",
-                )}
-              >
-                {d}d
-              </button>
-            ))}
-          </div>
-          <Action busy={busy === "old"} disabled={!!busy || !old || old.count === 0} onClick={deleteOld}>
-            Delete
+        <div
+          role="radiogroup"
+          aria-label="Older than"
+          className="mt-2.5 grid grid-cols-3 gap-0.5 rounded-lg border border-border bg-background p-[3px]"
+        >
+          {AGES.map((d) => (
+            <button
+              key={d}
+              type="button"
+              role="radio"
+              aria-checked={age === d}
+              onClick={() => setAge(d)}
+              className={cn(
+                "flex h-8 items-center justify-center rounded-md px-2 text-[12px] font-medium leading-none",
+                "transition-[background-color,color,transform] duration-200 ease-out active:scale-[0.96]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                age === d ? "bg-elevated text-foreground" : "text-subtle hover:text-muted-foreground",
+              )}
+            >
+              {d} days
+            </button>
+          ))}
+        </div>
+        <div className="mt-2.5 flex items-center justify-between gap-3">
+          <p className="tabular min-w-0 text-[12px] text-muted-foreground" data-old-summary>
+            {!old
+              ? "Counting"
+              : old.count === 0
+                ? `No read articles older than ${age} days.`
+                : `${old.count.toLocaleString()} article${old.count === 1 ? "" : "s"}, about ${formatBytes(old.bytes)}`}
+          </p>
+          <Action
+            tone="destructive"
+            busy={busy === "old"}
+            disabled={!!busy || !old || old.count === 0}
+            onClick={deleteOld}
+          >
+            {old && old.count > 0 ? `Delete ${old.count.toLocaleString()}` : "Delete"}
           </Action>
         </div>
       </Row>
@@ -176,7 +192,7 @@ export function StorageSettings({
             <Action disabled={!!busy} onClick={() => clearWebview(false)}>
               Cancel
             </Action>
-            <Action primary disabled={!!busy} onClick={() => void api.restartApp()}>
+            <Action tone="primary" disabled={!!busy} onClick={() => void api.restartApp()}>
               Restart now
             </Action>
           </div>
@@ -207,7 +223,8 @@ function Row({
   id: string
   title: string
   detail: string
-  size: string
+  /** Shown beside the title. Rows that summarise below leave it out. */
+  size?: string
   /** Controls too wide to sit beside the text go under it. */
   below?: boolean
   children: React.ReactNode
@@ -221,9 +238,11 @@ function Row({
       <div className="min-w-0">
         <p id={id} className="flex items-baseline gap-2 text-[12.5px] font-medium text-foreground">
           {title}
-          <span className="tabular text-[11.5px] font-normal text-muted-foreground" data-size>
-            {size}
-          </span>
+          {size !== undefined && (
+            <span className="tabular text-[11.5px] font-normal text-muted-foreground" data-size>
+              {size}
+            </span>
+          )}
         </p>
         <p className="mt-0.5 text-[11.5px] leading-relaxed text-subtle">{detail}</p>
       </div>
@@ -235,13 +254,14 @@ function Row({
 function Action({
   busy,
   disabled,
-  primary,
+  tone = "default",
   onClick,
   children,
 }: {
   busy?: boolean
   disabled?: boolean
-  primary?: boolean
+  /** Destructive is for anything that deletes or cannot be undone. */
+  tone?: "default" | "primary" | "destructive"
   onClick: () => void
   children: React.ReactNode
 }) {
@@ -254,9 +274,10 @@ function Action({
       className={cn(
         "row h-8 shrink-0 border px-3 text-[12px] font-medium disabled:opacity-50",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-        primary
-          ? "border-system bg-elevated text-foreground hover:bg-secondary"
-          : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground",
+        tone === "primary" && "border-system bg-elevated text-foreground hover:bg-secondary",
+        tone === "destructive" &&
+          "border-destructive/40 text-destructive hover:border-destructive/70 hover:bg-destructive/10 disabled:hover:bg-transparent",
+        tone === "default" && "border-border text-muted-foreground hover:bg-secondary hover:text-foreground",
       )}
     >
       {children}

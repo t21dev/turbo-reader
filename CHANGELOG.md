@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     because the webview holds it open. Settings are kept.
 
 ### Changed
+- Destructive actions and errors use a rose red instead of a pure red.
 - Search matches the last word as you type it, so "kuber" finds
   "kubernetes", in the list search and for AI agents too.
 - Loading the full article keeps the feed's own text aside, so the download
