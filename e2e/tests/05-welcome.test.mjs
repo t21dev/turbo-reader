@@ -53,17 +53,21 @@ test("W3 adding a feed from the welcome screen leaves it for the library", shot(
   // The steps carry on after the first feed, and say it was added.
   await ctx.s.waitFor(() => ctx.s.exec(`return document.querySelector('[data-welcome-count]')?.textContent.trim() === '1 feed added'`), "the count on step one")
   const step = () => ctx.s.exec(`return document.querySelector('[data-welcome-step]')?.textContent ?? ''`)
-  const footer = (label) => ctx.s.exec(`return [...document.querySelectorAll('[data-welcome] footer button')].find(b => b.textContent.trim().startsWith(arguments[0])) ?? null`, label)
-  await (await footer("Next")).click()
+  const footerClick = (label) =>
+    ctx.s.waitFor(
+      () => ctx.s.exec(`const b = [...document.querySelectorAll('[data-welcome] footer button')].find(b => b.textContent.trim().startsWith(arguments[0]) && !b.disabled); b?.click(); return !!b`, label),
+      `the ${label} button`,
+    )
+  await footerClick("Next")
   await ctx.s.waitFor(async () => (await step()).startsWith("Step 2 of 3"), "step two, the look")
   await ctx.s.exec(`[...document.querySelectorAll('[aria-label=Theme] [role=radio]')].find(b => b.textContent.includes('Paper')).click()`)
   await ctx.s.waitFor(() => ctx.s.exec(`return document.documentElement.classList.contains('paper')`), "Paper applied from the welcome")
-  await (await footer("Back")).click()
+  await footerClick("Back")
   await ctx.s.waitFor(async () => (await step()).startsWith("Step 1 of 3"), "back to step one")
-  await (await footer("Next")).click()
-  await (await footer("Next")).click()
+  await footerClick("Next")
+  await footerClick("Next")
   await ctx.s.waitFor(async () => (await step()).startsWith("Step 3 of 3"), "step three")
-  await (await footer("Start reading")).click()
+  await footerClick("Start reading")
   await ctx.s.waitFor(async () => !(await heading()), "the welcome screen to give way")
   await sleep(300)
   assert.ok((await ctx.sources()).length === 1, "subscribed")

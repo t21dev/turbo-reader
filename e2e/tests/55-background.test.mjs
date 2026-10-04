@@ -23,11 +23,11 @@ test("K1 everything is off by default, and the welcome screen offers it", shot("
   assert.deepEqual(prefs, { closeToTray: false, notify: "off" })
   // the third welcome step
   for (let i = 0; i < 2; i++) {
-    await (await ctx.s.waitFor(
-      () => ctx.s.exec(`return [...document.querySelectorAll('[data-welcome] footer button')].find(b => /Next|Skip for now/.test(b.textContent)) ?? null`),
+    await ctx.s.waitFor(
+      () => ctx.s.exec(`const b = [...document.querySelectorAll('[data-welcome] footer button')].find(b => /Next|Skip for now/.test(b.textContent)); b?.click(); return !!b`),
       "the next step button",
-    )).click()
-    await sleep(250)
+    )
+    await sleep(350)
   }
   await ctx.s.waitFor(() => ctx.s.exec(`return !!document.querySelector('[data-background-prefs]')`), "the background choices on the welcome screen")
   const text = await ctx.pageText()
