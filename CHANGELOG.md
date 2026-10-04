@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-05
+
 ### Added
+- The welcome screen comes in three short steps: bring in your feeds, pick a
+  look (each theme shown in its own colours), and choose how the app runs.
+  Back and Next move between them, every step can be skipped, and it stays
+  until you finish, even after the first feed is added.
 - A notification bell in the title bar. A number on it means something needs
   you: a feed that keeps failing, or a new version. A dot means something new
   landed: refreshes that found articles while you were away, and changes AI
@@ -320,7 +326,8 @@ First public release.
   to reason about, which is a failure mode browser engines do not let a page
   recover from.
 
-[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/t21dev/turbo-reader/compare/v0.10.0...v0.20.0
 [0.10.0]: https://github.com/t21dev/turbo-reader/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/t21dev/turbo-reader/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/t21dev/turbo-reader/compare/v0.7.0...v0.8.0
