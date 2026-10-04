@@ -48,6 +48,19 @@ export type ItemFull = {
   starred: boolean
 }
 
+/** The MCP server for AI agents. Off by default. */
+export type McpConfig = { enabled: boolean; port: number; lan: boolean }
+export type McpStatus = { config: McpConfig; listening: string | null; error: string | null }
+export type McpKey = {
+  id: number
+  name: string
+  prefix: string
+  write: boolean
+  created: number
+  lastUsed: number | null
+}
+export type McpActivity = { at: number; key: string; tool: string }
+
 /** Background mode. All off by default. */
 export type BackgroundPrefs = {
   /** Closing the window keeps the app running in the tray. */
@@ -210,6 +223,14 @@ export const api = {
   getBackground: () => call<BackgroundPrefs>("get_background"),
   setBackground: (prefs: BackgroundPrefs) => call<BackgroundPrefs>("set_background", { prefs }),
   startHidden: () => call<boolean>("start_hidden"),
+  mcpStatus: () => call<McpStatus>("mcp_status"),
+  mcpConfigure: (config: McpConfig) => call<McpStatus>("mcp_configure", { config }),
+  mcpKeys: () => call<McpKey[]>("mcp_keys"),
+  mcpCreateKey: (name: string, write: boolean) => call<string>("mcp_create_key", { name, write }),
+  mcpRevokeKey: (id: number) => call<void>("mcp_revoke_key", { id }),
+  mcpActivity: () => call<McpActivity[]>("mcp_activity"),
+  mcpLanAddresses: () => call<string[]>("mcp_lan_addresses"),
+  mcpExePath: () => call<string>("mcp_exe_path"),
   settleWindow: () => call<void>("settle_window"),
 
   home: (req: { window?: HomeWindow; perBand?: number; masthead?: string }) =>

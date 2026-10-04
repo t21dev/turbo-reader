@@ -161,7 +161,7 @@ export function Welcome({
             All off to start, so it stays light. Change these any time in Settings.
           </p>
           <div className="mt-4 max-w-[520px]">
-            <BackgroundPrefs />
+            <BackgroundPrefs withAgents />
           </div>
         </div>
 

@@ -15,6 +15,8 @@ pub struct AppState {
     pub fetching: tokio::sync::Mutex<()>,
     /// Tray, notification and start-hidden preferences, kept in memory.
     pub background: crate::background::Live,
+    /// The MCP server for AI agents, when running, and its recent calls.
+    pub mcp: crate::agent::http::McpControl,
 }
 
 /// Tauri needs a `String` error; keep the real message.
@@ -235,7 +237,13 @@ pub async fn preview_source(
     state: State<'_, AppState>,
     url: String,
 ) -> Result<discover::Preview, String> {
-    let resolved = discover::resolve(&state.http, &url).await?;
+    preview_url(&state, &url).await
+}
+
+/// What a feed address (or a site with a feed) holds, before subscribing.
+/// Shared by the Add Feed dialog and the agent tools.
+pub async fn preview_url(state: &AppState, url: &str) -> Result<discover::Preview, String> {
+    let resolved = discover::resolve(&state.http, url).await?;
     let existing = {
         let conn = state.db.lock().map_err(e)?;
         existing_source(&conn, &resolved.url)?
@@ -252,7 +260,17 @@ pub async fn add_source(
     url: String,
     group_id: Option<i64>,
 ) -> Result<i64, String> {
-    let resolved = discover::resolve(&state.http, &url).await?;
+    subscribe_url(&state, &url, group_id).await
+}
+
+/// Subscribe to a feed, or to the feed a site advertises, storing its
+/// articles at once. Shared by the Add Feed dialog and the agent tools.
+pub async fn subscribe_url(
+    state: &AppState,
+    url: &str,
+    group_id: Option<i64>,
+) -> Result<i64, String> {
+    let resolved = discover::resolve(&state.http, url).await?;
     let conn = state.db.lock().map_err(e)?;
     if let Some(found) = existing_source(&conn, &resolved.url)? {
         return Err(format!("Already subscribed as \"{}\".", found.name));
@@ -785,7 +803,7 @@ pub fn list_items(state: State<AppState>, filter: Filter) -> Result<Vec<ItemSumm
 }
 
 /// Quote each term so user input can never be read as FTS5 syntax.
-fn fts_escape(q: &str) -> String {
+pub(crate) fn fts_escape(q: &str) -> String {
     q.split_whitespace()
         .map(|t| format!("\"{}\"", t.replace('"', "")))
         .collect::<Vec<_>>()

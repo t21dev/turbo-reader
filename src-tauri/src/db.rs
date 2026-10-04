@@ -10,7 +10,7 @@ use anyhow::Result;
 use rusqlite::{Connection, OptionalExtension};
 use std::path::Path;
 
-pub const SCHEMA_VERSION: i32 = 3;
+pub const SCHEMA_VERSION: i32 = 4;
 
 pub fn open(path: &Path) -> Result<Connection> {
     if let Some(dir) = path.parent() {
@@ -45,6 +45,9 @@ fn migrate(conn: &Connection) -> Result<()> {
     }
     if current < 3 {
         conn.execute_batch(SCHEMA_V3)?;
+    }
+    if current < 4 {
+        conn.execute_batch(SCHEMA_V4)?;
     }
     conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     Ok(())
@@ -157,6 +160,26 @@ CREATE INDEX IF NOT EXISTS idx_items_hidden   ON items(hidden, published DESC);
 /// sidebar with 500 feeds and 20,000 articles, against a millisecond with it.
 const SCHEMA_V3: &str = r#"
 CREATE INDEX IF NOT EXISTS idx_items_source_state ON items(source_id, read, hidden);
+"#;
+
+/// The full schema on a fresh connection, for other modules' tests.
+#[cfg(test)]
+pub(crate) fn migrate_for_tests(conn: &Connection) {
+    migrate(conn).unwrap();
+}
+
+/// API keys for AI agents connecting over HTTP. Only a SHA-256 hash of each
+/// key is kept; the key itself is shown once, when it is made.
+const SCHEMA_V4: &str = r#"
+CREATE TABLE IF NOT EXISTS api_keys (
+    id         INTEGER PRIMARY KEY,
+    name       TEXT    NOT NULL,
+    prefix     TEXT    NOT NULL,
+    hash       TEXT    NOT NULL UNIQUE,
+    can_write  INTEGER NOT NULL DEFAULT 0,
+    created    INTEGER NOT NULL,
+    last_used  INTEGER
+);
 "#;
 
 fn add_column(conn: &Connection, table: &str, column: &str, decl: &str) {

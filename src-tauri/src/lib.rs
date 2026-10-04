@@ -5,6 +5,7 @@
 //! allowlist in `feed::sanitise`, which is what makes a malformed article
 //! unable to take the window down with it.
 
+mod agent;
 mod background;
 mod commands;
 mod db;
@@ -44,6 +45,18 @@ pub fn data_dir<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<s
         Some(dir) => Ok(dir),
         None => app.path().app_data_dir(),
     }
+}
+
+/// The app's configuration and bundled pages. One expansion, used by both
+/// entry points, so the assets are not embedded twice.
+fn context() -> tauri::Context<tauri::Wry> {
+    tauri::generate_context!()
+}
+
+/// `turbo-reader --mcp [--allow-write]`: serve AI agents over stdio, no window.
+pub fn run_mcp_stdio(allow_write: bool) -> i32 {
+    let identifier = context().config().identifier.clone();
+    agent::stdio::run(&identifier, allow_write)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -90,11 +103,13 @@ pub fn run() {
                 http,
                 fetching: tokio::sync::Mutex::new(()),
                 background: background::Live::default(),
+                mcp: agent::http::McpControl::default(),
             });
             {
                 let state = app.state::<AppState>();
                 let conn = state.db.lock().map_err(|e| e.to_string())?;
                 background::init(app.handle(), &conn);
+                agent::http::init(app.handle(), &conn);
             }
             spawn_refresh_schedule(app.handle().clone());
             Ok(())
@@ -204,8 +219,16 @@ pub fn run() {
             background::get_background,
             background::set_background,
             background::start_hidden,
+            agent::http::mcp_status,
+            agent::http::mcp_configure,
+            agent::http::mcp_keys,
+            agent::http::mcp_create_key,
+            agent::http::mcp_revoke_key,
+            agent::http::mcp_activity,
+            agent::http::mcp_lan_addresses,
+            agent::http::mcp_exe_path,
         ])
-        .build(tauri::generate_context!())
+        .build(context())
         .expect("error while building Turbo Reader")
         .run(|app, event| {
             // macOS: clicking the Dock icon brings back a window hidden to the

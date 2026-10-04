@@ -16,15 +16,29 @@ const NOTIFY: { value: Prefs["notify"]; label: string }[] = [
  * login, and notifications. Everything here is off until switched on. Used in
  * Settings and on the welcome screen, so a new reader can choose up front.
  */
-export function BackgroundPrefs() {
+export function BackgroundPrefs({ withAgents = false }: { withAgents?: boolean }) {
   const [prefs, setPrefs] = useState<Prefs | null>(null)
+  const [agents, setAgents] = useState<boolean | null>(null)
   const [atLogin, setAtLogin] = useState(false)
   const [note, setNote] = useState<string | null>(null)
 
   useEffect(() => {
     api.getBackground().then(setPrefs).catch(() => undefined)
     autostartEnabled().then(setAtLogin).catch(() => undefined)
-  }, [])
+    if (withAgents) api.mcpStatus().then((s) => setAgents(s.config.enabled)).catch(() => undefined)
+  }, [withAgents])
+
+  async function setAgentAccess(on: boolean) {
+    setNote(null)
+    try {
+      const s = await api.mcpStatus()
+      const next = await api.mcpConfigure({ ...s.config, enabled: on })
+      setAgents(next.config.enabled)
+      if (next.error) setNote(next.error)
+    } catch (err) {
+      setNote(String(err))
+    }
+  }
 
   async function save(next: Prefs) {
     setNote(null)
@@ -119,6 +133,16 @@ export function BackgroundPrefs() {
           ))}
         </div>
       </Row>
+
+      {withAgents && (
+        <Row
+          id="bg-agents"
+          title="Let AI agents connect"
+          detail="A local server so Claude Code, Codex and other agents can use your feeds as a news source. Make a key for each one in Settings > AI agents."
+        >
+          <Switch on={!!agents} disabled={agents === null} labelledBy="bg-agents" onToggle={() => void setAgentAccess(!agents)} />
+        </Row>
+      )}
 
       {note && (
         <p role="alert" className="text-[11.5px] leading-relaxed text-destructive">
