@@ -113,12 +113,14 @@ fn geolocation_cannot_survive_sanitising() {
 - Two views: a dense three-pane list, or a card grid with cover art
 - Unread, starred and all filters, scoped per feed or per group
 - Newest-first or oldest-first ordering
-- Full-text search across every article, backed by SQLite FTS5
+- Full-text search across every article, backed by SQLite FTS5, matching as you type
+- Search everything from the title bar or `Ctrl` `K`: feeds, folders and articles in one box
 - Load full content for feeds that only publish a teaser
 - Reading mode on `z`: the article alone, with the sidebar and list out of the way
 - Copy link, save as Markdown, save as PDF, QR code to a phone
 - Hide an article, or mark all as read from 1, 3 or 7 days back
 - Keyboard first, with a shortcut sheet on `?`
+- Settings > Storage shows what the library and the webview take on disk, and frees it: compact the database, drop downloaded full articles, delete old read articles (starred and unread stay), or clear the webview cache
 - Checks for a new release at launch and shows it in the title bar (can be switched off), plus a manual check in Settings
 
 **Appearance**

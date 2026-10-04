@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Search everything from one box: the search button in the title bar or
+  `Ctrl+K` (`Cmd+K` on macOS) finds feeds and folders by name or address, and
+  articles through the full-text index. Enter opens the result, and the last
+  row hands the words to the list search.
+- Settings > Storage, with the size of each part and a way to free it:
+  - Compact the database, which gives back the space left by deleted
+    articles. Nothing is deleted.
+  - Remove downloaded full articles, which puts back the text the feed sent.
+  - Delete read articles older than 30, 90 or 180 days. Starred and unread
+    articles stay, and deleted ones do not come back on the next refresh.
+  - Clear the webview cache (images and page files), done at the next start
+    because the webview holds it open. Settings are kept.
+
+### Changed
+- Search matches the last word as you type it, so "kuber" finds
+  "kubernetes", in the list search and for AI agents too.
+- Loading the full article keeps the feed's own text aside, so the download
+  can be removed later.
+
+### Fixed
+- The Paper theme no longer flashes white while the app starts.
+
 ## [0.9.0] - 2026-10-04
 
 ### Added

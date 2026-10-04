@@ -291,7 +291,8 @@ The newest articles, most recent first.
 
 ### search_articles
 
-Searches titles and full text. Every word must appear. Newest first.
+Searches titles and full text. Every word must appear, and the last one also
+matches as the start of a word ("kuber" finds "kubernetes"). Newest first.
 
 | Parameter | Type | Default | |
 | --- | --- | --- | --- |
