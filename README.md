@@ -140,6 +140,11 @@ fn geolocation_cannot_survive_sanitising() {
 - Per-feed retention limits
 - Duplicate collapsing across feeds, keyed on the destination URL with tracking parameters stripped, so a story syndicated through three feeds shows up once
 
+**Background** (all off until you switch them on, on the welcome screen or in Settings)
+- Keep running in the tray when the window closes, so refreshes carry on: the notification area on Windows, the menu bar on macOS, the system tray on Linux (GNOME needs the AppIndicator extension)
+- Start at login, quietly in the tray
+- A notification when a background refresh brings new articles, for all feeds or pinned feeds only
+
 ## Long-requested, finally shipped
 
 The feature set is not guesswork. These are the most-upvoted open requests in

@@ -26,6 +26,10 @@
     "dialog:allow-open",
     "dialog:allow-save",
     "opener:default",
+    "notification:default",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled",
     {
       "identifier": "opener:allow-open-url",
       "allow": [

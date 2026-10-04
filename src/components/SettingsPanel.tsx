@@ -22,6 +22,7 @@ import { REFRESH_CHOICES, sinceLabel, type AppPrefs } from "@/lib/prefs"
 import { recordUpdateCheck } from "@/lib/updates"
 import { pickAndImportOpml } from "@/lib/opml"
 import { HomeSettings } from "@/components/HomeSettings"
+import { BackgroundPrefs } from "@/components/BackgroundPrefs"
 import type { PromptSpec } from "@/components/Prompt"
 import {
   ACCENTS,
@@ -626,6 +627,10 @@ export function SettingsPanel({
             </dl>
           </Section>
         )}
+
+        <Section title="Background" hidden={onlyHome}>
+          <BackgroundPrefs />
+        </Section>
 
         <Section title="Updates" hidden={onlyHome}>
           <Field label="Check at launch">

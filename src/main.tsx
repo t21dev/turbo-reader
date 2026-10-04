@@ -21,7 +21,12 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
  * committed, the second after the browser has actually painted that commit.
  * Showing on the first still catches an empty window on a slow start.
  */
-function reveal() {
+async function reveal() {
+  // Started at login with the tray on: stay in the tray until opened.
+  if (await api.startHidden().catch(() => false)) {
+    document.getElementById("splash")?.remove()
+    return
+  }
   requestAnimationFrame(() =>
     requestAnimationFrame(() => {
       const splash = document.getElementById("splash")
@@ -45,5 +50,5 @@ if (document.fonts?.ready) {
   // Geist loading late would otherwise show one frame of fallback type.
   void document.fonts.ready.then(reveal).catch(reveal)
 } else {
-  reveal()
+  void reveal()
 }

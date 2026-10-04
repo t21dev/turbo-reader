@@ -5,6 +5,7 @@
 //! allowlist in `feed::sanitise`, which is what makes a malformed article
 //! unable to take the window down with it.
 
+mod background;
 mod commands;
 mod db;
 mod discover;
@@ -50,6 +51,12 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
+        // A launch at login passes --hidden, so it can start in the tray.
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec![background::HIDDEN_ARG]),
+        ))
         .setup(|app| {
             let dir = data_dir(app.handle())?;
             std::fs::create_dir_all(&dir)?;
@@ -82,7 +89,13 @@ pub fn run() {
                 db: Mutex::new(conn),
                 http,
                 fetching: tokio::sync::Mutex::new(()),
+                background: background::Live::default(),
             });
+            {
+                let state = app.state::<AppState>();
+                let conn = state.db.lock().map_err(|e| e.to_string())?;
+                background::init(app.handle(), &conn);
+            }
             spawn_refresh_schedule(app.handle().clone());
             Ok(())
         })
@@ -99,8 +112,18 @@ pub fn run() {
                     WindowEvent::Moved(_) | WindowEvent::Resized(_) => {}
                     // Closing saves at once, so a position held for less than
                     // the debounce still survives quitting.
-                    WindowEvent::CloseRequested { .. } => {
+                    WindowEvent::CloseRequested { api, .. } => {
                         save_now(window);
+                        // Keep running in the tray: hide instead of quitting.
+                        let tray = window
+                            .app_handle()
+                            .try_state::<AppState>()
+                            .map(|s| s.background.close_to_tray())
+                            .unwrap_or(false);
+                        if tray {
+                            api.prevent_close();
+                            let _ = window.hide();
+                        }
                         return;
                     }
                     _ => return,
@@ -178,9 +201,21 @@ pub fn run() {
             commands::settle_window,
             commands::read_text_file,
             commands::write_text_file,
+            background::get_background,
+            background::set_background,
+            background::start_hidden,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running Turbo Reader");
+        .build(tauri::generate_context!())
+        .expect("error while building Turbo Reader")
+        .run(|app, event| {
+            // macOS: clicking the Dock icon brings back a window hidden to the
+            // tray. Windows and Linux use the tray icon for that.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = event {
+                background::show_window(app);
+            }
+            let _ = (app, &event);
+        });
 }
 
 /// How often the schedule looks at the clock. Cheap: one query, no network.
@@ -209,11 +244,7 @@ fn spawn_refresh_schedule(app: tauri::AppHandle) {
             let Ok(_guard) = state.fetching.try_lock() else {
                 continue;
             };
-            let _ = tauri::Emitter::emit(&app, "refresh-started", ());
-            if let Ok(report) = commands::refresh_all(&state).await {
-                let _ = tauri::Emitter::emit(&app, "feeds-updated", &report);
-                commands::spawn_icon_fill(app.clone());
-            }
+            let _ = commands::run_refresh(&app, &state).await;
         }
     });
 }

@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Check, FileUp, Keyboard, Loader2, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { BackgroundPrefs } from "@/components/BackgroundPrefs"
 
 /** A few well-known feeds across subjects, so a new reader has something to
     read within seconds. Each was checked to serve a working feed. */
@@ -152,6 +153,16 @@ export function Welcome({
                 ? "Choose feeds above"
                 : `Subscribe to ${picked.size} feed${picked.size === 1 ? "" : "s"}`}
           </button>
+        </div>
+
+        <div className="animate-rise mt-10 border-t border-border pt-8" style={{ animationDelay: "100ms" }}>
+          <h2 className="text-[13px] font-semibold tracking-tight">How Turbo Reader runs</h2>
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            All off to start, so it stays light. Change these any time in Settings.
+          </p>
+          <div className="mt-4 max-w-[520px]">
+            <BackgroundPrefs />
+          </div>
         </div>
 
         {error && (

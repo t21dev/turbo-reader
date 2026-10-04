@@ -48,6 +48,14 @@ export type ItemFull = {
   starred: boolean
 }
 
+/** Background mode. All off by default. */
+export type BackgroundPrefs = {
+  /** Closing the window keeps the app running in the tray. */
+  closeToTray: boolean
+  /** New-article notifications after background refreshes. */
+  notify: "off" | "all" | "pinned"
+}
+
 export type UpdateCheck = {
   current: string
   latest: string | null
@@ -199,6 +207,9 @@ export const api = {
     call<{ filename: string; markdown: string }>("article_markdown", { id }),
   qrSvg: (text: string) => call<string>("qr_svg", { text }),
   checkForUpdates: () => call<UpdateCheck>("check_for_updates"),
+  getBackground: () => call<BackgroundPrefs>("get_background"),
+  setBackground: (prefs: BackgroundPrefs) => call<BackgroundPrefs>("set_background", { prefs }),
+  startHidden: () => call<boolean>("start_hidden"),
   settleWindow: () => call<void>("settle_window"),
 
   home: (req: { window?: HomeWindow; perBand?: number; masthead?: string }) =>

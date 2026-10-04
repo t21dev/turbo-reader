@@ -9,11 +9,18 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-22.04
+    # Every platform, so code behind cfg(target_os) (the macOS Dock reopen,
+    # the Linux tray) is compiled and linted on each push, not only at release.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Install system dependencies
+        if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
@@ -40,6 +47,7 @@ jobs:
         run: npm run build
 
       - name: Check Rust formatting
+        if: matrix.os == 'ubuntu-22.04'
         working-directory: src-tauri
         run: cargo fmt --check
 

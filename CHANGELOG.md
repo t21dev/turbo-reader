@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Background mode, all off by default and offered on the welcome screen as
+  well as in Settings > Background:
+  - Keep running in the tray when the window closes, so scheduled refreshes
+    carry on. The tray menu opens the window, refreshes now, or quits.
+  - Start at login, quietly in the tray when the tray is on.
+  - New-article notifications after a background refresh, for all feeds or
+    pinned feeds only. The system asks for permission first where it needs to.
+- On macOS, clicking the Dock icon brings back a window hidden to the menu bar.
+
+### Changed
+- The build checks run on Windows, macOS and Linux on every push.
+
 ## [0.8.0] - 2026-10-04
 
 ### Added

@@ -13,6 +13,8 @@ pub struct AppState {
     /// Held for the length of a refresh, so the background schedule and a
     /// manual refresh never fetch every feed twice at the same time.
     pub fetching: tokio::sync::Mutex<()>,
+    /// Tray, notification and start-hidden preferences, kept in memory.
+    pub background: crate::background::Live,
 }
 
 /// Tauri needs a `String` error; keep the real message.
@@ -487,13 +489,33 @@ pub async fn fetch_all(
 ) -> Result<FetchReport, String> {
     // A manual refresh waits for a scheduled one already in flight, then runs.
     let _guard = state.fetching.lock().await;
-    let _ = tauri::Emitter::emit(&app, "refresh-started", ());
-    let report = refresh_all(&state).await;
+    run_refresh(&app, &state).await
+}
+
+/// One refresh with everything around it: tell the window it started and
+/// finished, look up missing icons afterwards, and notify about new articles
+/// if that is switched on. The caller holds `fetching`.
+pub async fn run_refresh(app: &tauri::AppHandle, state: &AppState) -> Result<FetchReport, String> {
+    let started = chrono::Utc::now().timestamp();
+    let _ = tauri::Emitter::emit(app, "refresh-started", ());
+    let report = refresh_all(state).await;
     if let Ok(r) = &report {
-        let _ = tauri::Emitter::emit(&app, "feeds-updated", r);
+        let _ = tauri::Emitter::emit(app, "feeds-updated", r);
         spawn_icon_fill(app.clone());
+        if r.new_items > 0 {
+            crate::background::notify_new(app, started);
+        }
     }
     report
+}
+
+/// "Refresh now" from the tray menu. Skipped if a refresh is already running.
+pub async fn refresh_from_tray(app: &tauri::AppHandle) {
+    let state = app.state::<AppState>();
+    let Ok(_guard) = state.fetching.try_lock() else {
+        return;
+    };
+    let _ = run_refresh(app, &state).await;
 }
 
 /// Fetch every feed. Shared by the refresh button and the background schedule.
