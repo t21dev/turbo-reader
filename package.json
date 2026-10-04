@@ -1,6 +1,7 @@
 {
   "name": "turbo-reader",
   "private": true,
+  "license": "MIT",
   "version": "0.10.0",
   "type": "module",
   "description": "A fast, modern RSS reader. Rust core, React shell.",

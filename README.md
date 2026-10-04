@@ -14,7 +14,7 @@ By **[t21 dev](https://github.com/t21dev)** and **[TriptoAfsin](https://github.c
 
 [![Release](https://img.shields.io/github/v/release/t21dev/turbo-reader?style=flat-square&label=release)](https://github.com/t21dev/turbo-reader/releases/latest)
 [![Build](https://img.shields.io/github/actions/workflow/status/t21dev/turbo-reader/build.yml?branch=main&style=flat-square)](https://github.com/t21dev/turbo-reader/actions)
-[![Licence](https://img.shields.io/badge/licence-non--commercial-blue?style=flat-square)](LICENSE)
+[![Licence](https://img.shields.io/badge/licence-MIT-blue?style=flat-square)](LICENSE)
 
 </div>
 
@@ -303,10 +303,40 @@ The home page already ranks without it, on local scoring and your own interest
 and mute lists. The assistant is meant to make that better, not to be the thing
 that makes it work.
 
+## Code signing policy
+
+Windows releases are being set up for free code signing through
+[SignPath.io](https://signpath.io), with a certificate from the
+[SignPath Foundation](https://signpath.org). Once that is in place, signed
+releases will say so here: "Free code signing provided by SignPath.io,
+certificate by SignPath Foundation". Until then the Windows builds are
+unsigned, and SmartScreen shows "Windows protected your PC" on first run: click
+More info, then Run anyway. Every release lists the SHA-256 checksum of each
+download in `SHA256SUMS.txt`, so you can check what you installed.
+
+Every release is built by GitHub Actions from the tagged source in this
+repository, and signed only after it is approved by hand.
+
+| Role | People |
+| --- | --- |
+| Committers and reviewers | [TriptoAfsin](https://github.com/TriptoAfsin) |
+| Approvers | [TriptoAfsin](https://github.com/TriptoAfsin) |
+
+### Privacy
+
+Turbo Reader keeps your library on your computer and has no account, no
+analytics and no telemetry. It connects to other systems only for these:
+
+- The feeds and websites you add: to fetch new articles, their icons, and the
+  full article when you ask for it.
+- GitHub, once when the app opens, to check for a new release. Turn this off
+  under Settings > Updates.
+- AI agents, only if you turn the agent server on. It answers programs on this
+  computer, or on your network if you allow that, and only with a key you made.
+
 ## Licence
 
-Free for personal, educational and other non-commercial use. Commercial use
-needs a separate licence, so [get in touch](https://github.com/t21dev).
+Turbo Reader is free and open source under the [MIT licence](LICENSE).
 
 Turbo Reader is by [t21 dev](https://github.com/t21dev) and
 [TriptoAfsin](https://github.com/TriptoAfsin). See [LICENSE](LICENSE) for the

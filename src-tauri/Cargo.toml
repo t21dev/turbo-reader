@@ -3,6 +3,7 @@ name = "turbo-reader"
 version = "0.10.0"
 description = "A fast, modern RSS reader"
 authors = ["t21dev"]
+license = "MIT"
 edition = "2021"
 rust-version = "1.77"
 

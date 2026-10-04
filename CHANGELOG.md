@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Turbo Reader is now free and open source under the MIT licence, replacing
+  the non-commercial licence. Anyone can use it for anything, commercial use
+  included, as long as the copyright notice stays.
+- Every release carries `SHA256SUMS.txt`, the SHA-256 checksum of each
+  download.
+
 ## [0.10.0] - 2026-10-04
 
 ### Added

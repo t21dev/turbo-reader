@@ -776,7 +776,7 @@ export function SettingsPanel({
           </dl>
 
           <p className="mt-3.5 text-[12px] leading-relaxed text-muted-foreground">
-            Free for personal and other non-commercial use. For commercial use, get in touch first.
+            Free and open source under the MIT licence.
           </p>
 
           <div className="mt-3.5 grid grid-cols-2 gap-1.5">
