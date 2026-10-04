@@ -467,7 +467,19 @@ fn insert_entries(
          ON CONFLICT(source_id, guid) DO NOTHING",
     )?;
     let now = chrono::Utc::now().timestamp();
+    // Articles older than a clean-up stay deleted, even while the feed still
+    // lists them.
+    let pruned_before: i64 = conn
+        .query_row(
+            "SELECT COALESCE(pruned_before, 0) FROM sources WHERE id = ?1",
+            [source_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
     for it in &outcome.entries {
+        if it.published < pruned_before {
+            continue;
+        }
         let n = stmt.execute(params![
             source_id,
             it.guid,
@@ -802,12 +814,44 @@ pub fn list_items(state: State<AppState>, filter: Filter) -> Result<Vec<ItemSumm
     Ok(rows)
 }
 
-/// Quote each term so user input can never be read as FTS5 syntax.
+/// Quote each term so user input can never be read as FTS5 syntax. The last
+/// term matches as a prefix, so results follow along while a word is typed.
 pub(crate) fn fts_escape(q: &str) -> String {
-    q.split_whitespace()
-        .map(|t| format!("\"{}\"", t.replace('"', "")))
+    let terms: Vec<String> = q
+        .split_whitespace()
+        .map(|t| t.replace('"', ""))
+        .filter(|t| !t.is_empty())
+        .collect();
+    if terms.is_empty() {
+        // Only quotes were typed: an empty phrase, which matches nothing.
+        return "\"\"".into();
+    }
+    let last = terms.len().saturating_sub(1);
+    terms
+        .iter()
+        .enumerate()
+        .map(|(i, t)| {
+            if i == last {
+                format!("\"{t}\"*")
+            } else {
+                format!("\"{t}\"")
+            }
+        })
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+#[cfg(test)]
+mod fts_tests {
+    use super::fts_escape;
+
+    #[test]
+    fn last_term_is_a_prefix_and_syntax_is_quoted() {
+        assert_eq!(fts_escape("kuber"), "\"kuber\"*");
+        assert_eq!(fts_escape("rust  async"), "\"rust\" \"async\"*");
+        assert_eq!(fts_escape("a\"b OR"), "\"ab\" \"OR\"*");
+        assert_eq!(fts_escape("\" "), "\"\"");
+    }
 }
 
 #[tauri::command]
@@ -1087,8 +1131,11 @@ pub async fn load_full_content(state: State<'_, AppState>, id: i64) -> Result<St
     match readable::fetch(&state.http, &link).await? {
         Some(body) if body.len() > current.len() => {
             let conn = state.db.lock().map_err(e)?;
+            // The feed's version is kept aside so Settings > Storage can
+            // drop the download later.
             conn.execute(
-                "UPDATE items SET content = ?2 WHERE id = ?1",
+                "UPDATE items SET feed_content = COALESCE(feed_content, content), content = ?2
+                  WHERE id = ?1",
                 params![id, &body],
             )
             .map_err(e)?;

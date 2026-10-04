@@ -59,6 +59,19 @@ export type McpKey = {
   created: number
   lastUsed: number | null
 }
+/** Settings > Storage. Sizes are bytes. */
+export type StorageInfo = {
+  dbBytes: number
+  reclaimableBytes: number
+  articles: number
+  fullCount: number
+  fullBytes: number
+  webviewBytes: number
+  webviewPending: boolean
+}
+
+export type OldRead = { count: number; bytes: number }
+
 export type McpActivity = { at: number; key: string; tool: string }
 
 /** Background mode. All off by default. */
@@ -231,6 +244,13 @@ export const api = {
   mcpActivity: () => call<McpActivity[]>("mcp_activity"),
   mcpLanAddresses: () => call<string[]>("mcp_lan_addresses"),
   mcpExePath: () => call<string>("mcp_exe_path"),
+  storageInfo: () => call<StorageInfo>("storage_info"),
+  storageCompact: () => call<StorageInfo>("storage_compact"),
+  storageClearFull: () => call<number>("storage_clear_full"),
+  storageOldRead: (days: number) => call<OldRead>("storage_old_read", { days }),
+  storageDeleteOldRead: (days: number) => call<number>("storage_delete_old_read", { days }),
+  storageClearWebview: (clear: boolean) => call<void>("storage_clear_webview", { clear }),
+  restartApp: () => call<void>("restart_app"),
   settleWindow: () => call<void>("settle_window"),
 
   home: (req: { window?: HomeWindow; perBand?: number; masthead?: string }) =>

@@ -16,6 +16,7 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
       [`${MOD} B`, "Show or hide the sidebar"],
       ["v", "Switch between cards and list"],
       ["g", "Home"],
+      [`${MOD} K`, "Search feeds and articles"],
     ],
   },
   {
@@ -37,7 +38,7 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
       ["u", "Unread only"],
       ["d", "Hide duplicates"],
       ["t", "Newest or oldest first"],
-      ["/", "Search"],
+      ["/", "Search this list"],
       ["n", "Add a feed"],
     ],
   },

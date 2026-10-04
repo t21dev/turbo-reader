@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Home as HomeIcon, Keyboard, LayoutGrid, List as ListIcon, RefreshCw, Settings2 } from "lucide-react"
+import { Home as HomeIcon, Keyboard, LayoutGrid, List as ListIcon, RefreshCw, Search, Settings2 } from "lucide-react"
 import { listen } from "@tauri-apps/api/event"
 import { useUpdateCheck } from "@/lib/updates"
 import { pickAndImportOpml } from "@/lib/opml"
 import { Welcome } from "@/components/Welcome"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { TitleBar } from "@/components/TitleBar"
+import { CommandPalette } from "@/components/CommandPalette"
+import { isMac } from "@/lib/platform"
 import { Sidebar } from "@/components/Sidebar"
 import { ArticleList } from "@/components/ArticleList"
 import { CardGrid } from "@/components/CardGrid"
@@ -57,6 +59,7 @@ export default function App() {
   // Set when Settings is opened from home's Customize button.
   const [settingsFocus, setSettingsFocus] = useState<"home" | undefined>(undefined)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
   const [view, setView] = useState<"cards" | "list">(
     () => (localStorage.getItem("turbo-view") as "cards" | "list") ?? "cards",
   )
@@ -449,7 +452,13 @@ export default function App() {
     function onKey(ev: KeyboardEvent) {
       // While a dialog is open its keys are its own. Without this, pressing h
       // with a confirmation focused would act on the article behind it.
-      if (prompt || addOpen || settingsOpen || shortcutsOpen) return
+      if (prompt || addOpen || settingsOpen || shortcutsOpen || paletteOpen) return
+      // Search everything. Works from inside a text field too.
+      if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "k") {
+        ev.preventDefault()
+        setPaletteOpen(true)
+        return
+      }
       const el = ev.target as HTMLElement | null
       const typing =
         el?.tagName === "INPUT" || el?.tagName === "TEXTAREA" || el?.isContentEditable === true
@@ -563,6 +572,15 @@ export default function App() {
         sidebarOpen={sidebarOpen}
         onToggleSidebar={toggleSidebar}
       >
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          title={`Search feeds and articles (${isMac ? "⌘" : "Ctrl"} K)`}
+          aria-label="Search feeds and articles"
+          className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
+        >
+          <Search size={14} />
+        </button>
         {homePrefs.enabled && (
           <button
             type="button"
@@ -756,6 +774,26 @@ export default function App() {
       )}
 
       {shortcutsOpen && <Shortcuts onClose={() => setShortcutsOpen(false)} />}
+      {paletteOpen && (
+        <CommandPalette
+          groups={groups}
+          sources={sources}
+          onClose={() => setPaletteOpen(false)}
+          onFolder={(id) => select("group", id)}
+          onSource={(id) => select("source", id)}
+          onArticle={(it) => {
+            setAtHome(false)
+            void selectItem(it)
+          }}
+          onSearchAll={(q) => {
+            select("all", null)
+            if (view === "cards") toggleView()
+            if (searchTimer.current) window.clearTimeout(searchTimer.current)
+            setSearchInput(q)
+            setSearch(q)
+          }}
+        />
+      )}
 
       <SidebarContextMenu
         target={menuTarget}

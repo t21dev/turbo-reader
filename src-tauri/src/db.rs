@@ -10,7 +10,7 @@ use anyhow::Result;
 use rusqlite::{Connection, OptionalExtension};
 use std::path::Path;
 
-pub const SCHEMA_VERSION: i32 = 4;
+pub const SCHEMA_VERSION: i32 = 5;
 
 pub fn open(path: &Path) -> Result<Connection> {
     if let Some(dir) = path.parent() {
@@ -48,6 +48,14 @@ fn migrate(conn: &Connection) -> Result<()> {
     }
     if current < 4 {
         conn.execute_batch(SCHEMA_V4)?;
+    }
+    if current < 5 {
+        // The feed's own text, kept when a full article replaces it, so the
+        // download can be undone to free space.
+        add_column(conn, "items", "feed_content", "TEXT");
+        // Articles published before this were deleted on purpose, and a
+        // refresh must not bring them back as new.
+        add_column(conn, "sources", "pruned_before", "INTEGER");
     }
     conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     Ok(())

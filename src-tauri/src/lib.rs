@@ -16,6 +16,7 @@ mod markdown;
 mod opml;
 mod rank;
 mod readable;
+mod storage;
 mod winstate;
 
 use commands::AppState;
@@ -74,6 +75,7 @@ pub fn run() {
             let dir = data_dir(app.handle())?;
             std::fs::create_dir_all(&dir)?;
             let conn = db::open(&dir.join("turbo-reader.db"))?;
+            storage::clear_webview_if_pending(app.handle(), &conn);
 
             // The window is built here rather than from the config file, so
             // portable mode can keep the webview's storage in the data folder.
@@ -181,6 +183,13 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::list_groups,
+            storage::storage_info,
+            storage::storage_compact,
+            storage::storage_clear_full,
+            storage::storage_old_read,
+            storage::storage_delete_old_read,
+            storage::storage_clear_webview,
+            storage::restart_app,
             commands::create_group,
             commands::rename_group,
             commands::delete_group,

@@ -25,6 +25,7 @@ import { pickAndImportOpml } from "@/lib/opml"
 import { HomeSettings } from "@/components/HomeSettings"
 import { BackgroundPrefs } from "@/components/BackgroundPrefs"
 import { AgentSettings } from "@/components/AgentSettings"
+import { StorageSettings } from "@/components/StorageSettings"
 import type { PromptSpec } from "@/components/Prompt"
 import {
   ACCENTS,
@@ -646,7 +647,6 @@ export function SettingsPanel({
                 ["Articles", stats.items.toLocaleString()],
                 ["Unread", stats.unread.toLocaleString()],
                 ["Starred", stats.starred.toLocaleString()],
-                ["Database", `${(stats.dbBytes / 1024 / 1024).toFixed(1)} MB`],
               ].map(([k, v]) => (
                 <div key={k} className="contents">
                   <dt className="text-muted-foreground">{k}</dt>
@@ -656,6 +656,16 @@ export function SettingsPanel({
             </dl>
           </Section>
         )}
+
+        <Section title="Storage" hidden={onlyHome}>
+          <StorageSettings
+            confirm={confirm}
+            onChanged={() => {
+              onImported()
+              api.stats().then(setStats).catch(() => undefined)
+            }}
+          />
+        </Section>
 
         <Section title="Background" hidden={onlyHome}>
           <BackgroundPrefs />
