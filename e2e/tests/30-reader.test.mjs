@@ -13,7 +13,7 @@ const shot = (name, fn) => withShot(() => ctx, `reader-${name}`, fn)
 
 before(async () => {
   ctx = await launch()
-  for (const p of ["/teaser.xml", "/rss.xml", "/youtube.xml", "/hostile.xml", "/media.xml"]) {
+  for (const p of ["/teaser.xml", "/rss.xml", "/youtube.xml", "/hostile.xml", "/media.xml", "/blocked.xml"]) {
     await ctx.s.invoke("add_source", { url: ctx.url(p), groupId: null })
   }
   await ctx.reloadUi()
@@ -52,6 +52,15 @@ test("C2 load full content says so when there is nothing better", shot("C2", asy
   assert.match(msg, /could not find/i)
   assert.equal(await toastKind(), "error", "shown as a failure, not with a success check")
   assert.equal(await ctx.s.exec(`return document.querySelector('[data-reader-note]').getAttribute('role')`), "alert")
+}))
+
+test("C2b a page behind a bot check says to read it in the browser", shot("C2b", async () => {
+  await ctx.open("A teaser behind a bot check")
+  await ctx.tool("Load full content (f)")
+  const msg = await ctx.s.waitFor(toast, "a message")
+  assert.match(msg, /only shows the full article in a browser\. Press o/)
+  assert.ok(!/403|Forbidden|https?:/.test(msg), "no raw status or address")
+  assert.equal(await toastKind(), "error")
 }))
 
 test("C3 copy link", shot("C3", async () => {

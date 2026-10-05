@@ -231,6 +231,17 @@ A new paragraph about the video.</media:description>
       Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==", "base64"),
     ],
 
+    // A teaser whose page sits behind a bot check, as Cloudflare answers apps.
+    "/blocked.xml": () => [
+      200,
+      "application/rss+xml",
+      rss(base, "Blocked", [
+        rssItem({ guid: "blocked-1", title: "A teaser behind a bot check", link: `${base}/article/blocked`,
+          date: now - HOUR, html: "<p>One line.</p>" }),
+      ]),
+    ],
+    "/article/blocked": () => [403, "text/html", "<!doctype html><title>Just a moment...</title>"],
+
     "/broken.xml": () => [500, "text/plain", "server error"],
 
     // A site, not a feed: it advertises its feed in the head.

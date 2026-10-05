@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Retry every feed is an icon at the right of the bell's Needs attention
+  heading, named on hover, instead of a row of its own.
+
+### Fixed
+- When a site will not hand its full article to an app (Cloudflare's
+  "Verify you are human" check answers 403), Load full content says the site
+  only shows it in a browser and that `o` opens it there, instead of printing
+  the address and "403 Forbidden".
+- View all in notifications shows what needs attention too, such as a new
+  version or a failing feed, instead of "No notifications" while the bell
+  showed a count.
+
 ## [0.22.0] - 2026-10-05
 
 ### Changed

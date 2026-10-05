@@ -89,11 +89,28 @@ pub async fn fetch(client: &reqwest::Client, url: &str) -> Result<Option<String>
         .await
         .map_err(|err| err.to_string())?;
     if !res.status().is_success() {
-        return Err(format!("{} returned {}", url, res.status()));
+        return Err(refused(url, res.status()));
     }
     let base = Url::parse(res.url().as_str()).ok();
     let html = res.text().await.map_err(|err| err.to_string())?;
     Ok(extract(&html).map(|body| feed::sanitise(&body, base.as_ref())))
+}
+
+/// Why a page could not be loaded, in words for the reader's message. 401,
+/// 403, 429 and 503 are what bot checks answer an app with: the site wants a
+/// person in a browser, which no request from here can be.
+fn refused(url: &str, status: reqwest::StatusCode) -> String {
+    let site = Url::parse(url)
+        .ok()
+        .and_then(|u| u.host_str().map(|h| h.trim_start_matches("www.").to_string()))
+        .unwrap_or_else(|| "The site".into());
+    match status.as_u16() {
+        401 | 403 | 429 | 503 => format!(
+            "{site} only shows the full article in a browser. Press o to read it there."
+        ),
+        404 | 410 => format!("{site} no longer has this article."),
+        _ => format!("{site} could not send the page ({status}). Press o to read it in your browser."),
+    }
 }
 
 /// Pick the densest prose container in a page. Public for the tests.
