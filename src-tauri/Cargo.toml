@@ -1,6 +1,6 @@
 [package]
 name = "turbo-reader"
-version = "0.22.1"
+version = "0.23.0"
 description = "A fast, modern RSS reader"
 authors = ["t21dev"]
 license = "MIT"
