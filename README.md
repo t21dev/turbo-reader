@@ -37,9 +37,12 @@ reader moves with the folder. Delete the `portable` file to use the normal
 per-user data folder instead. It needs the Microsoft Edge WebView2 Runtime,
 which Windows 10 and 11 already have.
 
-The builds are not code-signed, so Windows SmartScreen and macOS Gatekeeper
-warn on first run. On macOS, right-click the app and choose Open, or run
-`xattr -cr "/Applications/Turbo Reader.app"`.
+The builds are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper
+warn on first run. On Windows, click More info, then Run anyway. On macOS,
+right-click the app and choose Open, or run
+`xattr -cr "/Applications/Turbo Reader.app"`. Each release lists the SHA-256
+checksum of every download in `SHA256SUMS.txt`, so you can check what you
+installed.
 
 ## Screenshots
 
@@ -303,26 +306,7 @@ The home page already ranks without it, on local scoring and your own interest
 and mute lists. The assistant is meant to make that better, not to be the thing
 that makes it work.
 
-## Code signing policy
-
-Windows releases are being set up for free code signing through
-[SignPath.io](https://signpath.io), with a certificate from the
-[SignPath Foundation](https://signpath.org). Once that is in place, signed
-releases will say so here: "Free code signing provided by SignPath.io,
-certificate by SignPath Foundation". Until then the Windows builds are
-unsigned, and SmartScreen shows "Windows protected your PC" on first run: click
-More info, then Run anyway. Every release lists the SHA-256 checksum of each
-download in `SHA256SUMS.txt`, so you can check what you installed.
-
-Every release is built by GitHub Actions from the tagged source in this
-repository, and signed only after it is approved by hand.
-
-| Role | People |
-| --- | --- |
-| Committers and reviewers | [TriptoAfsin](https://github.com/TriptoAfsin) |
-| Approvers | [TriptoAfsin](https://github.com/TriptoAfsin) |
-
-### Privacy
+## Privacy
 
 Turbo Reader keeps your library on your computer and has no account, no
 analytics and no telemetry. It connects to other systems only for these:
