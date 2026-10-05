@@ -102,14 +102,19 @@ pub async fn fetch(client: &reqwest::Client, url: &str) -> Result<Option<String>
 fn refused(url: &str, status: reqwest::StatusCode) -> String {
     let site = Url::parse(url)
         .ok()
-        .and_then(|u| u.host_str().map(|h| h.trim_start_matches("www.").to_string()))
+        .and_then(|u| {
+            u.host_str()
+                .map(|h| h.trim_start_matches("www.").to_string())
+        })
         .unwrap_or_else(|| "The site".into());
     match status.as_u16() {
-        401 | 403 | 429 | 503 => format!(
-            "{site} only shows the full article in a browser. Press o to read it there."
-        ),
+        401 | 403 | 429 | 503 => {
+            format!("{site} only shows the full article in a browser. Press o to read it there.")
+        }
         404 | 410 => format!("{site} no longer has this article."),
-        _ => format!("{site} could not send the page ({status}). Press o to read it in your browser."),
+        _ => format!(
+            "{site} could not send the page ({status}). Press o to read it in your browser."
+        ),
     }
 }
 
