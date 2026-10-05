@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-10-05
+
 ### Changed
 - Right click opens a native menu with what fits the spot: Copy for selected
   text, Cut, Copy and Paste in text fields, Open in browser and Copy link on
@@ -395,7 +397,8 @@ First public release.
   to reason about, which is a failure mode browser engines do not let a page
   recover from.
 
-[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.23.0...HEAD
+[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.24.0...HEAD
+[0.24.0]: https://github.com/t21dev/turbo-reader/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/t21dev/turbo-reader/compare/v0.22.1...v0.23.0
 [0.22.1]: https://github.com/t21dev/turbo-reader/compare/v0.22.0...v0.22.1
 [0.22.0]: https://github.com/t21dev/turbo-reader/compare/v0.21.0...v0.22.0
