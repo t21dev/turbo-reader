@@ -95,9 +95,7 @@ export function CardGrid({
               className={cn(
                 "group relative flex cursor-pointer flex-col overflow-hidden rounded-xl",
                 "border border-border bg-card shadow-card",
-                "transition-[translate,box-shadow,border-color] duration-200 ease-out",
-                "hover:translate-y-[-3px] hover:border-border hover:shadow-float",
-                "active:translate-y-0 active:duration-100",
+                "transition-[border-color] duration-200 ease-out hover:border-subtle/50",
                 it.read && "opacity-[0.72]",
                 i < 18 && "animate-card",
               )}

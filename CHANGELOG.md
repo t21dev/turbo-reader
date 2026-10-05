@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Search in long Settings lists: the pinned feeds picker finds a feed by a
+  loose name, and recent agent activity filters by key or tool. Each box
+  shows once the list passes six entries, and Escape clears it before it
+  closes Settings.
+
+### Changed
+- Cards no longer lift on hover. Only the picture inside eases in, and the
+  border brightens.
+
 ## [0.22.1] - 2026-10-05
 
 ### Changed

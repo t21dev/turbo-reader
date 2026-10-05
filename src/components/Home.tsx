@@ -197,8 +197,7 @@ export function Home({ prefs, onPrefs, onCustomize, onOpen, onStar, onScope, rev
                   onClick={() => onScope("source", p.id)}
                   className={cn(
                     "row flex h-9 items-center gap-2 border border-border bg-card px-3 text-[12.5px]",
-                    "transition-[translate,border-color] duration-200 ease-out",
-                    "hover:translate-y-[-2px] hover:border-system/60 active:translate-y-0",
+                    "transition-[border-color] duration-200 ease-out hover:border-system/60",
                   )}
                 >
                   <FeedIcon source={{ name: p.name, iconUrl: p.iconUrl }} size={14} />
@@ -419,8 +418,7 @@ function Magazine({
         onClick={() => onOpen(lead)}
         className={cn(
           "group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card",
-          "transition-[translate,box-shadow] duration-200 ease-out",
-          "hover:translate-y-[-3px] hover:shadow-float active:translate-y-0 active:duration-100",
+          "transition-[border-color] duration-200 ease-out hover:border-subtle/50",
           lead.read && "opacity-[0.72]",
         )}
       >
@@ -470,8 +468,7 @@ function Card({
       style={lead ? { gridColumn: "span 2", gridRow: "span 2" } : undefined}
       className={cn(
         "group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card",
-        "transition-[translate,box-shadow] duration-200 ease-out",
-        "hover:translate-y-[-3px] hover:shadow-float active:translate-y-0 active:duration-100",
+        "transition-[border-color] duration-200 ease-out hover:border-subtle/50",
         item.read && "opacity-[0.72]",
       )}
     >
