@@ -330,9 +330,11 @@ analytics and no telemetry. It connects to other systems only for these:
 - The feeds and websites you add: to fetch new articles, their icons, and the
   full article when you ask for it.
 - GitHub, once when the app opens, to check for a new release. Turn this off
-  under Settings > Updates.
+  in About.
 - AI agents, only if you turn the agent server on. It answers programs on this
   computer, or on your network if you allow that, and only with a key you made.
+
+The full policy is in [PRIVACY.md](PRIVACY.md).
 
 ## Licence
 
