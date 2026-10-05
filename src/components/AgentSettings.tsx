@@ -3,6 +3,7 @@ import { Check, Copy, KeyRound, Trash2 } from "lucide-react"
 import { api, type McpActivity, type McpKey, type McpStatus } from "@/lib/api"
 import { cn, relativeTime } from "@/lib/utils"
 import type { PromptSpec } from "@/components/Prompt"
+import { ListFilter } from "@/components/ListFilter"
 
 /** "5m ago", "just now". */
 function ago(unixSeconds: number): string {
@@ -22,6 +23,12 @@ export function AgentSettings({ confirm }: { confirm: (spec: PromptSpec) => void
   const [status, setStatus] = useState<McpStatus | null>(null)
   const [keys, setKeys] = useState<McpKey[]>([])
   const [activity, setActivity] = useState<McpActivity[]>([])
+  const [activityQuery, setActivityQuery] = useState("")
+  // Newest first stays the order: a filter narrows the log, it does not rank it.
+  const activityWords = activityQuery.toLowerCase().split(/\s+/).filter(Boolean)
+  const shownActivity = activityWords.length
+    ? activity.filter((a) => activityWords.every((w) => `${a.key} ${a.tool}`.toLowerCase().includes(w)))
+    : activity
   const [lanIps, setLanIps] = useState<string[]>([])
   const [exe, setExe] = useState("")
   const [port, setPort] = useState("")
@@ -284,11 +291,23 @@ export function AgentSettings({ confirm }: { confirm: (spec: PromptSpec) => void
             Refresh
           </button>
         </div>
+        {activity.length > 6 && (
+          <div className="mt-1.5">
+            <ListFilter
+              value={activityQuery}
+              onChange={setActivityQuery}
+              placeholder="Filter by key or tool"
+              label="Filter agent activity"
+            />
+          </div>
+        )}
         {activity.length === 0 ? (
           <p className="mt-1 text-[11.5px] text-subtle">No calls yet.</p>
+        ) : shownActivity.length === 0 ? (
+          <p className="mt-1.5 text-[11.5px] text-subtle">No call matches.</p>
         ) : (
           <ul className="mt-1.5 max-h-40 space-y-0.5 overflow-y-auto font-mono text-[10.5px] text-muted-foreground" data-activity>
-            {activity.map((a, i) => (
+            {shownActivity.map((a, i) => (
               <li key={i}>
                 {ago(a.at)} · {a.key} · {a.tool}
               </li>

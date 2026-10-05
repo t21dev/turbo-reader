@@ -11,6 +11,8 @@ import {
   type HomePrefs,
 } from "@/lib/home"
 import { cn } from "@/lib/utils"
+import { fuzzyFilter } from "@/lib/fuzzy"
+import { ListFilter } from "@/components/ListFilter"
 
 type Props = {
   home: HomePrefs
@@ -269,6 +271,10 @@ function QuotesHint() {
 function PinPicker({ sources, onChanged }: { sources: Source[]; onChanged: () => void }) {
   const [pinned, setPinned] = useState<Set<number>>(new Set())
   const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  // A handful of feeds is quicker to scan than to search.
+  const searchable = sources.length > 6
+  const shown = fuzzyFilter(query, sources, (s) => [s.name, s.url])
 
   useEffect(() => {
     api
@@ -301,8 +307,13 @@ function PinPicker({ sources, onChanged }: { sources: Source[]; onChanged: () =>
       </button>
       <div className="collapse-grid" data-open={open}>
         <div className="overflow-hidden">
-          <div className="max-h-56 space-y-0.5 overflow-y-auto pt-1.5">
-            {sources.map((s) => (
+          {searchable && (
+            <div className="pt-1.5">
+              <ListFilter value={query} onChange={setQuery} placeholder="Find a feed" label="Find a feed to pin" />
+            </div>
+          )}
+          <div className="max-h-56 space-y-0.5 overflow-y-auto pt-1.5" data-pin-list>
+            {shown.map((s) => (
               <button
                 key={s.id}
                 type="button"
@@ -323,6 +334,9 @@ function PinPicker({ sources, onChanged }: { sources: Source[]; onChanged: () =>
             ))}
             {sources.length === 0 && (
               <p className="px-2 py-3 text-[11.5px] text-subtle">No feeds to pin yet.</p>
+            )}
+            {sources.length > 0 && shown.length === 0 && (
+              <p className="px-2 py-3 text-[11.5px] text-subtle">No feed matches.</p>
             )}
           </div>
         </div>
