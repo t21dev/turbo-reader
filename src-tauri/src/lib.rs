@@ -8,6 +8,8 @@
 mod agent;
 mod background;
 mod commands;
+#[cfg(windows)]
+mod ctxmenu;
 mod db;
 mod discover;
 mod feed;
@@ -119,7 +121,9 @@ pub fn run() {
             if portable_data_dir().is_some() {
                 window = window.data_directory(dir.join("webview"));
             }
-            window.build()?;
+            let _window = window.build()?;
+            #[cfg(windows)]
+            ctxmenu::install(&_window);
 
             // Put the window back before it is shown. It is created hidden and
             // revealed from the frontend once React has painted, so none of

@@ -253,14 +253,14 @@ test("C14 links in an article open in the browser", shot("C14", async () => {
   assert.equal((await ctx.s.exec(`return location.href`)).split("#")[0], before.split("#")[0], "the app never left")
 }))
 
-test("C15 the webview's own right-click menu never shows", shot("C15", async () => {
+test("C15 the right-click menu is left to the trimmed native one on Windows", shot("C15", async () => {
   await ctx.open("An article with pictures")
-  // dispatchEvent answers false when the event was cancelled: the browser menu
-  // (Back, Reload, Inspect) is suppressed. Nothing here to act on, so no menu.
-  const shown = await ctx.s.exec(
+  // On Windows the page leaves the event alone: WebView2's own menu opens,
+  // with everything but the clipboard, links and pictures removed in Rust.
+  const allowed = await ctx.s.exec(
     `return document.querySelector('.reader-column h1, article h1, h1').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 }))`,
   )
-  assert.equal(shown, false, "the default menu is cancelled")
+  assert.equal(allowed, true, "the page does not cancel the menu")
 }))
 
 test("C16 Copy image gets the picture's bytes through the app", shot("C16", async () => {

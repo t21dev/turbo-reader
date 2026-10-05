@@ -1,24 +1,25 @@
 import { Menu, MenuItem, PredefinedMenuItem } from "@tauri-apps/api/menu"
-import { LogicalPosition } from "@tauri-apps/api/dpi"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { save as saveDialog } from "@tauri-apps/plugin-dialog"
 import { api } from "@/lib/api"
+import { isWindows } from "@/lib/platform"
 
 /**
  * The right-click menu, app-wide.
  *
- * The webview's own menu is a browser's: Back, Reload, Inspect, links to the
- * app's internal pages. It never shows. Where a right click has something to
- * act on, a native menu offers that instead: copy a selection, edit a text
- * field, open or copy a link, copy or save a picture. Anywhere else nothing
- * opens. Components with menus of their own (the sidebar) call
- * preventDefault, and this steps aside.
+ * The webview's own menu is a browser's: Back, Reload, Inspect. On Windows it
+ * stays, trimmed in Rust to the clipboard, links and pictures (see
+ * src-tauri/src/ctxmenu.rs), since it opens where it should and looks right.
+ * Elsewhere it is replaced: where a right click has something to act on, a
+ * native menu offers that, and anywhere else nothing opens. Components with
+ * menus of their own (the sidebar) call preventDefault, and this steps aside.
  */
 export function installContextMenu() {
+  if (isWindows) return
   window.addEventListener("contextmenu", (ev) => {
     if (ev.defaultPrevented) return
     ev.preventDefault()
-    void popupFor(ev.target as Element | null, new LogicalPosition(ev.clientX, ev.clientY))
+    void popupFor(ev.target as Element | null)
   })
 }
 
@@ -54,7 +55,7 @@ export async function saveImage(src: string) {
   if (path) await api.downloadImage(src, path)
 }
 
-async function popupFor(target: Element | null, at: LogicalPosition) {
+async function popupFor(target: Element | null) {
   if (!target) return
   const items: (MenuItem | PredefinedMenuItem)[] = []
   const separate = async () => {
@@ -94,6 +95,7 @@ async function popupFor(target: Element | null, at: LogicalPosition) {
   }
   if (!items.length) return
   const menu = await Menu.new({ items })
-  // At the click: the webview fills the window, so page and window agree.
-  await menu.popup(at)
+  // At the pointer. A position from the page is off whenever the UI is
+  // zoomed, since page pixels and window pixels then differ.
+  await menu.popup()
 }

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- On Windows the right-click menu is the webview's own again, which opens
+  right at the pointer, trimmed to what helps: Copy for selected text, the
+  editing items in text fields, Copy link on links, and Copy image, Copy image
+  address and Save image as on pictures. Back, Reload, Print, Open link in new
+  window and More tools are gone, and empty space opens no menu. On macOS and
+  Linux the native menu now opens at the pointer instead of drifting when the
+  interface is zoomed.
+
 ## [0.24.0] - 2026-10-05
 
 ### Changed

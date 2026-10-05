@@ -66,6 +66,11 @@ windows-sys = { version = "0.59", features = [
   "Win32_Foundation",
   "Win32_UI_WindowsAndMessaging",
 ] }
+# The webview's right-click menu is trimmed through WebView2 itself. Both are
+# already built for Tauri at these versions, so they add nothing to the size.
+# See src/ctxmenu.rs.
+webview2-com = "0.39"
+windows-core = "0.62"
 
 [features]
 default = ["custom-protocol"]
