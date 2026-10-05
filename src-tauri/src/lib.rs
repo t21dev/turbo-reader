@@ -261,6 +261,7 @@ pub fn run() {
             commands::read_text_file,
             commands::write_text_file,
             commands::download_image,
+            commands::image_bytes,
             background::get_background,
             background::set_background,
             background::start_hidden,

@@ -4,7 +4,10 @@ import { getCurrentWindow } from "@tauri-apps/api/window"
 import App from "./App"
 import { api } from "./lib/api"
 import { ThemeProvider } from "./lib/theme"
+import { installContextMenu } from "./lib/contextMenu"
 import "./index.css"
+
+installContextMenu()
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

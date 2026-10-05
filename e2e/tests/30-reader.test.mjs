@@ -194,6 +194,16 @@ test("C12 an image opens in a lightbox with zoom, and the reader stays", shot("C
   await ctx.open("An article with pictures")
   const before = await ctx.s.exec(`return location.href`)
   await ctx.trap("plugin:opener|open_url", null)
+  assert.equal(
+    await ctx.s.exec(`return getComputedStyle(document.querySelector('.prose-feed img')).cursor`),
+    "pointer",
+    "a picture shows it can be clicked",
+  )
+  // A right click is for the context menu, not the lightbox.
+  await ctx.s.exec(`document.querySelector('.prose-feed img').dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 2 }))`)
+  await sleep(300)
+  assert.equal(await lightbox(), false, "no lightbox on a right click")
+  assert.equal((await ctx.trapped("plugin:opener|open_url")).length, 0, "and nothing opened")
   await ctx.s.exec(`document.querySelector('.prose-feed img').click()`)
   await ctx.s.waitFor(lightbox, "the lightbox")
   assert.equal(await ctx.s.exec(`return location.href`), before, "the window did not navigate")
@@ -241,4 +251,23 @@ test("C14 links in an article open in the browser", shot("C14", async () => {
   assert.equal((await ctx.trapped("plugin:opener|open_url"))[0].url, ctx.url("/elsewhere"))
   assert.equal(await ctx.readerTitle(), "An article with pictures")
   assert.equal((await ctx.s.exec(`return location.href`)).split("#")[0], before.split("#")[0], "the app never left")
+}))
+
+test("C15 the webview's own right-click menu never shows", shot("C15", async () => {
+  await ctx.open("An article with pictures")
+  // dispatchEvent answers false when the event was cancelled: the browser menu
+  // (Back, Reload, Inspect) is suppressed. Nothing here to act on, so no menu.
+  const shown = await ctx.s.exec(
+    `return document.querySelector('.reader-column h1, article h1, h1').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 }))`,
+  )
+  assert.equal(shown, false, "the default menu is cancelled")
+}))
+
+test("C16 Copy image gets the picture's bytes through the app", shot("C16", async () => {
+  const head = await ctx.s.exec(
+    `return window.__TAURI_INTERNALS__.invoke('image_bytes', { url: arguments[0] })
+       .then((b) => Array.from(new Uint8Array(b).slice(1, 4)).map((c) => String.fromCharCode(c)).join(''))`,
+    ctx.url("/pic.png"),
+  )
+  assert.equal(head, "PNG")
 }))

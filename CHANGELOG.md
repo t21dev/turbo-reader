@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Right click opens a native menu with what fits the spot: Copy for selected
+  text, Cut, Copy and Paste in text fields, Open in browser and Copy link on
+  links, and Copy image, Copy image address and Save image as on pictures.
+  The webview's own browser menu, with Reload and its developer tools, no
+  longer appears anywhere in the app.
+
+### Fixed
+- A right click on a picture in an article no longer opens the lightbox.
+  Pictures show a pointer, since a click opens them.
+
 ## [0.23.0] - 2026-10-05
 
 ### Added

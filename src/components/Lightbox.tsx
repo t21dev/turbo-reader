@@ -4,6 +4,7 @@ import { Download, ExternalLink, Maximize, X, ZoomIn, ZoomOut } from "lucide-rea
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { save as saveDialog } from "@tauri-apps/plugin-dialog"
 import { api } from "@/lib/api"
+import { imageFileName } from "@/lib/contextMenu"
 import { useDismissible } from "@/lib/presence"
 import { cn } from "@/lib/utils"
 
@@ -12,17 +13,6 @@ const MAX = 6
 const STEP = 1.25
 
 const clamp = (z: number) => Math.min(MAX, Math.max(MIN, z))
-
-/** A file name for the save dialog, from the image's URL. */
-function fileName(src: string): string {
-  try {
-    const last = decodeURIComponent(new URL(src).pathname.split("/").pop() ?? "")
-    if (/\.(png|jpe?g|gif|webp|avif|svg|bmp)$/i.test(last)) return last
-    return (last || "image") + ".jpg"
-  } catch {
-    return "image.jpg"
-  }
-}
 
 /**
  * An article's image at full size, over the app. Zoom with the buttons, the
@@ -55,7 +45,7 @@ export function Lightbox({
 
   async function download() {
     try {
-      const path = await saveDialog({ defaultPath: fileName(src) })
+      const path = await saveDialog({ defaultPath: imageFileName(src) })
       if (!path) return
       setStatus({ text: "Downloading", error: false })
       await api.downloadImage(src, path)

@@ -293,4 +293,5 @@ export const api = {
     call<void>("write_text_file", { path, contents }),
   downloadImage: (url: string, path: string) =>
     call<void>("download_image", { url, path }),
+  imageBytes: (url: string) => call<ArrayBuffer>("image_bytes", { url }),
 }

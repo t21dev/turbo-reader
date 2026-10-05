@@ -1179,16 +1179,27 @@ pub fn write_text_file(path: String, contents: String) -> Result<(), String> {
 /// fetch runs here, since a cross-origin image can't be read from the webview.
 #[tauri::command]
 pub async fn download_image(url: String, path: String) -> Result<(), String> {
+    let bytes = fetch_image_bytes(&url).await?;
+    std::fs::write(&path, &bytes).map_err(|err| format!("{path}: {err}"))
+}
+
+/// An article's image as raw bytes, for Copy image. The webview cannot read
+/// another site's picture itself, so the fetch runs here.
+#[tauri::command]
+pub async fn image_bytes(url: String) -> Result<tauri::ipc::Response, String> {
+    Ok(tauri::ipc::Response::new(fetch_image_bytes(&url).await?))
+}
+
+async fn fetch_image_bytes(url: &str) -> Result<Vec<u8>, String> {
     if !(url.starts_with("http://") || url.starts_with("https://")) {
         return Err("Only web images can be downloaded".into());
     }
     let client = crate::feed::client().map_err(e)?;
-    let res = client.get(&url).send().await.map_err(e)?;
+    let res = client.get(url).send().await.map_err(e)?;
     if !res.status().is_success() {
         return Err(format!("The image could not be fetched ({})", res.status()));
     }
-    let bytes = res.bytes().await.map_err(e)?;
-    std::fs::write(&path, &bytes).map_err(|err| format!("{path}: {err}"))
+    Ok(res.bytes().await.map_err(e)?.to_vec())
 }
 
 /* ------------------------- article side actions ------------------------- */
