@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.1] - 2026-10-05
+
 ### Changed
 - Retry every feed is an icon at the right of the bell's Needs attention
   heading, named on hover, instead of a row of its own.
@@ -370,7 +372,8 @@ First public release.
   to reason about, which is a failure mode browser engines do not let a page
   recover from.
 
-[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.22.1...HEAD
+[0.22.1]: https://github.com/t21dev/turbo-reader/compare/v0.22.0...v0.22.1
 [0.22.0]: https://github.com/t21dev/turbo-reader/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/t21dev/turbo-reader/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/t21dev/turbo-reader/compare/v0.10.0...v0.20.0
