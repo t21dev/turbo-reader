@@ -431,6 +431,10 @@
   .prose-feed video {
     @apply my-5 rounded-lg max-w-full h-auto;
   }
+  /* A click opens the picture in the lightbox. */
+  .prose-feed img {
+    @apply cursor-pointer;
+  }
   .prose-feed pre {
     @apply my-5 overflow-x-auto rounded-lg bg-secondary p-4 font-mono text-[0.82rem];
   }

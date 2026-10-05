@@ -56,10 +56,13 @@ export function Reader({
    * app window away from the reader with no way back.
    */
   function onContentClick(ev: React.MouseEvent<HTMLDivElement>) {
+    // Left click opens; a middle click opens a link too. A right click is
+    // left alone, for the context menu.
+    if (ev.button !== 0 && ev.button !== 1) return
     const target = ev.target as HTMLElement
     const anchor = target.closest("a")
     const img = target.closest("img")
-    if (img) {
+    if (img && ev.button === 0) {
       ev.preventDefault()
       setLightbox({ src: img.currentSrc || img.src, alt: img.alt, link: anchor?.href ?? null })
       return
