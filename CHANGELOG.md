@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The list and card view switch is back in the title bar, beside search, and
+  hidden on Home, where there is no list for it to change. `v` does nothing
+  on Home either.
+
 ## [0.21.0] - 2026-10-05
 
 ### Added

@@ -265,12 +265,14 @@ function makeContext(s, base) {
     /** Switch the article area to list or cards. */
     async view(mode) {
       const want = mode === "list" ? "Switch to list view" : "Switch to card view"
-      // The view switch lives in the title bar's menu.
-      await (await s.waitFor(() => s.byLabel("Menu"), "the menu button")).click()
-      const item = await s.waitFor(() => s.byText('[role="menu"] button', "Switch to"), "the view item")
-      const text = await s.exec(`return arguments[0].textContent`, item)
-      if (text.includes(want)) await item.click()
-      else await s.press("Escape")
+      // The view switch sits in the title bar, away from Home, which has no
+      // list for it to change.
+      const btn = await s.waitFor(
+        () => s.exec(`return document.querySelector('[aria-label^="Switch to"]')`),
+        "the view switch (not on Home)",
+      )
+      const label = await s.exec(`return arguments[0].getAttribute('aria-label')`, btn)
+      if (label === want) await s.exec(`arguments[0].click()`, btn)
       await sleep(300)
     },
 

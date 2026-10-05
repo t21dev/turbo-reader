@@ -295,3 +295,28 @@ test("D13 Customize on home opens Settings on the Home tab, with the others a cl
   await ctx.s.waitFor(async () => (await selected()) === "Reading", "ArrowDown to the next tab")
   await ctx.closeSettings()
 }))
+
+test("D14 the view switch sits in the title bar, except on home", shot("D14", async () => {
+  const viewSwitch = () => ctx.s.exec(`return document.querySelector('[aria-label^="Switch to"]')?.getAttribute('aria-label') ?? null`)
+  await goHome()
+  assert.equal(await viewSwitch(), null, "no view switch on home, where it changes nothing")
+  await ctx.s.exec(`document.activeElement?.blur()`)
+  const before = await ctx.s.exec(`return localStorage.getItem('turbo-view')`)
+  await ctx.s.press("v")
+  await sleep(200)
+  assert.equal(await ctx.s.exec(`return localStorage.getItem('turbo-view')`), before, "v does nothing on home")
+  await (await ctx.railOrFail("All articles")).click()
+  await ctx.s.waitFor(viewSwitch, "the view switch away from home")
+  const first = await viewSwitch()
+  await ctx.s.exec(`document.querySelector('[aria-label^="Switch to"]').click()`)
+  await ctx.s.waitFor(async () => (await viewSwitch()) !== first, "the switch to flip the view")
+  await (await ctx.s.waitFor(() => ctx.s.byLabel("Menu"), "the menu")).click()
+  await sleep(250)
+  assert.equal(
+    await ctx.s.exec(`return [...document.querySelectorAll('[role="menu"] button')].some((b) => /Switch to/.test(b.textContent))`),
+    false,
+    "and it is no longer in the menu",
+  )
+  await ctx.s.press("Escape")
+  await goHome()
+}))

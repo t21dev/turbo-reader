@@ -75,6 +75,8 @@ export default function App() {
   // Home opens on launch when it is enabled: the point of it is being the
   // first thing you see.
   const [atHome, setAtHome] = useState(() => readHomePrefs().enabled)
+  // Home has its own layout, so the list/card view does not apply there.
+  const onHomePage = atHome && homePrefs.enabled
   const [homeRevision, setHomeRevision] = useState(0)
   const [menuTarget, setMenuTarget] = useState<Target | null>(null)
   const [prompt, setPrompt] = useState<PromptSpec | null>(null)
@@ -629,7 +631,8 @@ export default function App() {
           setSort((s) => (s === "newest" ? "oldest" : "newest"))
           break
         case "v":
-          toggleView()
+          // Home has one layout of its own; the view applies to article lists.
+          if (!onHomePage) toggleView()
           break
         case "g":
           if (homePrefs.enabled) setAtHome((v) => !v)
@@ -672,6 +675,17 @@ export default function App() {
         onToggleSidebar={toggleSidebar}
         onRefresh={refresh}
       >
+        {!onHomePage && (
+          <button
+            type="button"
+            onClick={toggleView}
+            title={view === "cards" ? "Switch to list view (v)" : "Switch to card view (v)"}
+            aria-label={view === "cards" ? "Switch to list view" : "Switch to card view"}
+            className="row grid h-7 w-7 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            {view === "cards" ? <ListIcon size={14} /> : <LayoutGrid size={14} />}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setPaletteOpen(true)}
@@ -682,8 +696,8 @@ export default function App() {
           <Search size={14} />
         </button>
         <NotificationBell update={update} onOpenFeed={(id) => select("source", id)} onRefresh={refresh} />
-        {/* Settings, shortcuts, the view and About share one menu, so the title
-            bar keeps three controls: search, notifications and this. */}
+        {/* Settings, shortcuts and About share one menu. The view switch stays
+            out here, and only where there is a list for it to change. */}
         <Menu
           width={232}
           label="Menu"
@@ -713,16 +727,6 @@ export default function App() {
                 }}
               >
                 Settings
-              </MenuItem>
-              <MenuItem
-                icon={view === "cards" ? <ListIcon size={13} /> : <LayoutGrid size={13} />}
-                hint="V"
-                onClick={() => {
-                  close()
-                  toggleView()
-                }}
-              >
-                {view === "cards" ? "Switch to list view" : "Switch to card view"}
               </MenuItem>
               <MenuItem
                 icon={<Keyboard size={13} />}
@@ -792,7 +796,7 @@ export default function App() {
             }}
             onSubscribe={subscribeStarters}
           />
-        ) : atHome && homePrefs.enabled ? (
+        ) : onHomePage ? (
           <Home
             prefs={homePrefs}
             onPrefs={updateHomePrefs}
