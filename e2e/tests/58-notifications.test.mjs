@@ -43,6 +43,11 @@ test("N1 a failing feed shows as a count on the bell and opens from the panel", 
   await openBell()
   assert.match(await panelText(), /Broken is failing/)
   assert.match(await panelText(), /Nothing yet/, "no history yet")
+  assert.equal(
+    await ctx.s.exec(`return document.querySelector('[data-bell-panel] [aria-label="Retry every feed"]')?.title ?? null`),
+    "Retry every feed",
+    "retry is an icon beside the heading, named on hover",
+  )
   await (await ctx.s.byText("[data-failing-feed] button", "Broken is failing")).click()
   await ctx.s.waitFor(
     () => ctx.s.exec(`return !document.querySelector('[data-bell-panel]')`),
@@ -84,7 +89,9 @@ test("N2 agent changes land in the history; View all pages, removes and clears",
     () => ctx.s.exec(`const b = [...document.querySelectorAll('[aria-labelledby=notifications-title] button')].find(b => b.textContent.trim() === 'Clear all'); b?.click(); return !!b`),
     "Clear all",
   )
-  await ctx.waitText("No notifications.")
+  await ctx.waitText("No history yet.")
+  const dialogText = await ctx.s.exec(`return document.querySelector('[aria-labelledby=notifications-title]').innerText`)
+  assert.match(dialogText, /needs attention[\s\S]*Broken is failing/i, "View all shows what needs attention, as the bell does")
   const page = await ctx.s.invoke("notifications_page", {})
   assert.equal(page.items.length, 0, "cleared in the database too")
   await ctx.s.press("Escape")

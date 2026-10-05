@@ -69,6 +69,82 @@ function Entry({
   )
 }
 
+/** What needs you now: a new version, feeds that keep failing. Worked out
+    live rather than stored, so the bell and View all both show it. */
+function Attention({
+  update,
+  failing,
+  onDone,
+  onOpenFeed,
+  onRefresh,
+}: {
+  update: { latest: string; url: string } | null
+  failing: NotificationSummary["failing"]
+  onDone: () => void
+  onOpenFeed: (id: number) => void
+  onRefresh: () => void
+}) {
+  return (
+    <section className="p-1.5">
+      <div className="flex items-center justify-between pl-2.5 pr-1">
+        <p className="pb-1 pt-1 text-[11px] font-medium uppercase tracking-wider text-subtle">Needs attention</p>
+        {failing.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              onDone()
+              onRefresh()
+            }}
+            title="Retry every feed"
+            aria-label="Retry every feed"
+            className="row grid h-6 w-6 place-items-center text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            <RefreshCw size={12} />
+          </button>
+        )}
+      </div>
+      <ul>
+        {update && (
+          <li className="flex items-start gap-2.5 rounded-lg px-2.5 py-2">
+            <ArrowUpCircle size={14} className="mt-px shrink-0 text-system" />
+            <span className="min-w-0 flex-1 text-[12.5px] text-foreground">
+              Turbo Reader <span className="tabular">{update.latest}</span> is out
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                onDone()
+                void openUrl(update.url)
+              }}
+              className="row h-6 shrink-0 px-2 text-[11.5px] text-system hover:bg-secondary"
+            >
+              Get it
+            </button>
+          </li>
+        )}
+        {failing.map((f) => (
+          <li key={f.id} className="flex items-start gap-2.5 rounded-lg px-2.5 py-2" data-failing-feed>
+            <AlertTriangle size={14} className="mt-px shrink-0 text-destructive" />
+            <button
+              type="button"
+              onClick={() => {
+                onDone()
+                onOpenFeed(f.id)
+              }}
+              className="min-w-0 flex-1 text-left"
+            >
+              <span className="block truncate text-[12.5px] text-foreground">{f.name} is failing</span>
+              <span className="block truncate text-[11.5px] text-subtle" title={f.error}>
+                {f.error}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 /**
  * The bell in the title bar. A dot when something new landed; a number when
  * something needs you (a feed that keeps failing, an update). The panel shows
@@ -130,62 +206,7 @@ export function NotificationBell({
           <div className="-m-1 flex max-h-[min(520px,70vh)] flex-col" data-bell-panel>
             <div className="min-h-0 flex-1 overflow-y-auto">
             {attention > 0 && (
-              <section className="p-1.5">
-                <p className="px-2.5 pb-1 pt-1 text-[11px] font-medium uppercase tracking-wider text-subtle">
-                  Needs attention
-                </p>
-                <ul>
-                  {update && (
-                    <li className="flex items-start gap-2.5 rounded-lg px-2.5 py-2">
-                      <ArrowUpCircle size={14} className="mt-px shrink-0 text-system" />
-                      <span className="min-w-0 flex-1 text-[12.5px] text-foreground">
-                        Turbo Reader <span className="tabular">{update.latest}</span> is out
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          close()
-                          void openUrl(update.url)
-                        }}
-                        className="row h-6 shrink-0 px-2 text-[11.5px] text-system hover:bg-secondary"
-                      >
-                        Get it
-                      </button>
-                    </li>
-                  )}
-                  {failing.map((f) => (
-                    <li key={f.id} className="flex items-start gap-2.5 rounded-lg px-2.5 py-2" data-failing-feed>
-                      <AlertTriangle size={14} className="mt-px shrink-0 text-destructive" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          close()
-                          onOpenFeed(f.id)
-                        }}
-                        className="min-w-0 flex-1 text-left"
-                      >
-                        <span className="block truncate text-[12.5px] text-foreground">{f.name} is failing</span>
-                        <span className="block truncate text-[11.5px] text-subtle" title={f.error}>
-                          {f.error}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                {failing.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      close()
-                      onRefresh()
-                    }}
-                    className="row ml-2.5 mt-0.5 flex h-7 items-center gap-1.5 px-2 text-[11.5px] text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  >
-                    <RefreshCw size={12} />
-                    Retry every feed
-                  </button>
-                )}
-              </section>
+              <Attention update={update} failing={failing} onDone={close} onOpenFeed={onOpenFeed} onRefresh={onRefresh} />
             )}
 
             <section className={cn("p-1.5", attention > 0 && "border-t border-border")}>
@@ -244,6 +265,9 @@ export function NotificationBell({
             reload()
           }}
           onOpenFeed={onOpenFeed}
+          update={update}
+          failing={failing}
+          onRefresh={onRefresh}
         />
       )}
     </>
@@ -253,11 +277,24 @@ export function NotificationBell({
 /** Every kept entry, newest first, a page at a time. Rendered at the top of
     the page: the title bar's backdrop blur would otherwise become the box this
     centres in, and the window would sit in a 40 pixel strip. */
-function AllNotifications({ onClose, onOpenFeed }: { onClose: () => void; onOpenFeed: (id: number) => void }) {
+function AllNotifications({
+  onClose,
+  onOpenFeed,
+  update,
+  failing,
+  onRefresh,
+}: {
+  onClose: () => void
+  onOpenFeed: (id: number) => void
+  update: { latest: string; url: string } | null
+  failing: NotificationSummary["failing"]
+  onRefresh: () => void
+}) {
   const { closing, dismiss } = useDismissible(onClose)
   const [items, setItems] = useState<AppNotification[]>([])
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
+  const attention = update !== null || failing.length > 0
 
   const more = useCallback(async (before?: number) => {
     setLoading(true)
@@ -327,8 +364,19 @@ function AllNotifications({ onClose, onOpenFeed }: { onClose: () => void; onOpen
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          {attention && (
+            <div className="-m-2 mb-2 border-b border-border p-2">
+              <Attention update={update} failing={failing} onDone={dismiss} onOpenFeed={onOpenFeed} onRefresh={onRefresh} />
+            </div>
+          )}
+          {attention && (
+            <p className="px-2.5 pb-1 pt-1 text-[11px] font-medium uppercase tracking-wider text-subtle">History</p>
+          )}
           {items.length === 0 && !loading ? (
-            <p className="px-3 py-10 text-center text-[12px] text-subtle">No notifications.</p>
+            <p className={cn("px-3 text-center text-[12px] leading-relaxed text-subtle", attention ? "py-6" : "py-10")}>
+              No history yet. Refreshes that find articles while you are away, and changes AI agents make, show up
+              here.
+            </p>
           ) : (
             <ul>
               {items.map((n) => (
