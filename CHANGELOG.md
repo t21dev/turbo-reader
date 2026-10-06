@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Share in the article's More menu opens the system share sheet with the
+  article's title and link: Windows' Share, or the Mac's. It shows only where
+  the system has one.
+
 ## [0.24.1] - 2026-10-05
 
 ### Changed

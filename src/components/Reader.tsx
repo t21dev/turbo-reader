@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { ArrowLeft, Check, Circle, CircleDot, Download, ExternalLink, EyeOff, FileDown, Globe, Link2, Loader2, MoreHorizontal, Printer, QrCode, Star, Type, BookOpen, Minimize2, AlertCircle } from "lucide-react"
+import { ArrowLeft, Check, Circle, CircleDot, Download, ExternalLink, EyeOff, FileDown, Globe, Link2, Loader2, MoreHorizontal, Printer, QrCode, Share2, Star, Type, BookOpen, Minimize2, AlertCircle } from "lucide-react"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { Lightbox } from "@/components/Lightbox"
 import { save as saveDialog } from "@tauri-apps/plugin-dialog"
@@ -127,6 +127,20 @@ export function Reader({
       el.remove()
     }
     setNote("Link copied")
+  }
+
+  /** The system share sheet: Windows' Share, or the Mac's. Linux webviews have
+      none, so the item only shows where there is one. */
+  const canShare = typeof navigator.share === "function"
+  async function share() {
+    if (!item?.link) return
+    try {
+      await navigator.share({ title: item.title, url: item.link })
+    } catch (err) {
+      // Closing the sheet without picking anything is not a failure.
+      if (err instanceof DOMException && err.name === "AbortError") return
+      setNote(`Could not share: ${err instanceof Error ? err.message : String(err)}`, true)
+    }
   }
 
   async function loadFull() {
@@ -278,6 +292,18 @@ export function Reader({
               >
                 Copy link
               </MenuItem>
+              {canShare && (
+                <MenuItem
+                  icon={<Share2 size={13} />}
+                  disabled={!item.link}
+                  onClick={() => {
+                    close()
+                    void share()
+                  }}
+                >
+                  Share…
+                </MenuItem>
+              )}
               <MenuItem
                 icon={<FileDown size={13} />}
                 onClick={() => {

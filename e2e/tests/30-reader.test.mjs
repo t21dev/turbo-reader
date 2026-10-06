@@ -271,3 +271,21 @@ test("C16 Copy image gets the picture's bytes through the app", shot("C16", asyn
   )
   assert.equal(head, "PNG")
 }))
+
+test("C17 Share hands the title and link to the system share sheet", shot("C17", async () => {
+  await ctx.open("Alpha arrives within the hour")
+  // The real sheet is a system window; stand in for it and record the call.
+  await ctx.s.exec(`window.__shared = [];
+    Object.defineProperty(navigator, 'share', { configurable: true, value: (data) => { window.__shared.push(data); return Promise.resolve() } })`)
+  await ctx.more("Share…")
+  await ctx.s.waitFor(() => ctx.s.exec(`return window.__shared.length === 1`), "the share sheet asked for")
+  const data = await ctx.s.exec(`return window.__shared[0]`)
+  assert.equal(data.url, ctx.url("/a/1"))
+  assert.equal(data.title, "Alpha arrives within the hour")
+
+  // Closing the sheet without picking anything says nothing.
+  await ctx.s.exec(`Object.defineProperty(navigator, 'share', { configurable: true, value: () => Promise.reject(new DOMException('cancelled', 'AbortError')) })`)
+  await ctx.more("Share…")
+  await sleep(400)
+  assert.equal(await toastKind(), null, "no message when the sheet is dismissed")
+}))
