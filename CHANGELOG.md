@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Turning on AI agents offers to keep Turbo Reader running in the tray, since
+  agents can only reach the app while it runs. It shows in Settings > AI
+  agents and on the welcome screen, changes nothing unless you say yes, and
+  "Not now" is remembered.
+
 ## [0.27.0] - 2026-10-07
 
 ### Added

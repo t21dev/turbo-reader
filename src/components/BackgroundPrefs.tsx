@@ -4,6 +4,7 @@ import { isPermissionGranted, requestPermission } from "@tauri-apps/plugin-notif
 import { api, type BackgroundPrefs as Prefs } from "@/lib/api"
 import { isLinux, isMac } from "@/lib/platform"
 import { cn } from "@/lib/utils"
+import { KeepRunningOffer } from "@/components/KeepRunningOffer"
 
 const NOTIFY: { value: Prefs["notify"]; label: string }[] = [
   { value: "off", label: "Off" },
@@ -143,6 +144,7 @@ export function BackgroundPrefs({ withAgents = false }: { withAgents?: boolean }
           <Switch on={!!agents} disabled={agents === null} labelledBy="bg-agents" onToggle={() => void setAgentAccess(!agents)} />
         </Row>
       )}
+      {withAgents && <KeepRunningOffer agentsOn={!!agents} prefs={prefs} onChange={setPrefs} />}
 
       {note && (
         <p role="alert" className="text-[11.5px] leading-relaxed text-destructive">

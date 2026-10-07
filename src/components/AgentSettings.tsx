@@ -5,6 +5,7 @@ import { cn, relativeTime } from "@/lib/utils"
 import type { PromptSpec } from "@/components/Prompt"
 import { ListFilter } from "@/components/ListFilter"
 import { SkillSettings } from "@/components/SkillSettings"
+import { KeepRunningOffer } from "@/components/KeepRunningOffer"
 
 /** "5m ago", "just now". */
 function ago(unixSeconds: number): string {
@@ -110,6 +111,8 @@ export function AgentSettings({ confirm }: { confirm: (spec: PromptSpec) => void
         </div>
         <Switch on={on} labelledBy="mcp-enabled" onToggle={() => void configure({ enabled: !on })} />
       </div>
+
+      <KeepRunningOffer agentsOn={on} />
 
       {on && (
         <div className="space-y-3">
