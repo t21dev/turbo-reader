@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.1] - 2026-10-07
+
 ### Changed
 - All articles in the sidebar no longer shows a count. It was the unread
   total, the same number Unread shows right below it.
@@ -454,7 +456,8 @@ First public release.
   to reason about, which is a failure mode browser engines do not let a page
   recover from.
 
-[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.28.0...HEAD
+[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.28.1...HEAD
+[0.28.1]: https://github.com/t21dev/turbo-reader/compare/v0.28.0...v0.28.1
 [0.28.0]: https://github.com/t21dev/turbo-reader/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/t21dev/turbo-reader/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/t21dev/turbo-reader/compare/v0.25.0...v0.26.0
