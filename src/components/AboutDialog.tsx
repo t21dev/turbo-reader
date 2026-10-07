@@ -68,7 +68,7 @@ export function AboutDialog({
         aria-modal="true"
         aria-labelledby="about-title"
         className={cn(
-          "w-full max-w-[440px] overflow-hidden rounded-xl border border-border bg-popover shadow-float",
+          "w-full max-w-[440px] max-h-[calc(100vh-48px)] overflow-y-auto overflow-x-hidden overscroll-contain rounded-xl border border-border bg-popover shadow-float",
           closing ? "animate-pop-out" : "animate-pop",
         )}
         onClick={(e) => e.stopPropagation()}

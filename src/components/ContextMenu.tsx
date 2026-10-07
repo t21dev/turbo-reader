@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils"
 export type MenuPoint = { x: number; y: number }
 
 const EXIT_MS = 110
+/** Space kept between the menu and the window's edges. */
+const MARGIN = 8
 
 /**
  * A menu that opens where the pointer is.
@@ -77,18 +79,27 @@ export function ContextMenu({
   })
 
   // Measure, then place. Doing it in a layout effect means the menu never
-  // paints at the wrong spot first.
+  // paints at the wrong spot first. It places again whenever its size
+  // changes: expanding a group such as Move to makes it taller, and without
+  // this it ran off the bottom of the window.
   useLayoutEffect(() => {
     if (!at) {
       setPos(null)
       return
     }
-    const h = panel.current?.offsetHeight ?? 260
-    const margin = 8
-    setPos({
-      x: Math.min(at.x, window.innerWidth - width - margin),
-      y: Math.max(margin, Math.min(at.y, window.innerHeight - h - margin)),
-    })
+    const place = () => {
+      const h = panel.current?.offsetHeight ?? 260
+      setPos({
+        x: Math.max(MARGIN, Math.min(at.x, window.innerWidth - width - MARGIN)),
+        y: Math.max(MARGIN, Math.min(at.y, window.innerHeight - h - MARGIN)),
+      })
+    }
+    place()
+    const el = panel.current
+    if (!el || typeof ResizeObserver === "undefined") return
+    const ro = new ResizeObserver(place)
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [at, width])
 
   if (!at) return null
@@ -101,10 +112,12 @@ export function ContextMenu({
         width,
         left: pos?.x ?? at.x,
         top: pos?.y ?? at.y,
+        // Never taller than the window: a long menu scrolls inside itself.
+        maxHeight: `calc(100vh - ${MARGIN * 2}px)`,
         visibility: pos ? "visible" : "hidden",
       }}
       className={cn(
-        "fixed z-70 origin-top-left overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-float",
+        "fixed z-70 origin-top-left overflow-y-auto overflow-x-hidden overscroll-contain rounded-xl border border-border bg-popover p-1 shadow-float",
         closing ? "animate-menu-out" : "animate-menu",
       )}
     >

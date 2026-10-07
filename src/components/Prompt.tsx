@@ -93,7 +93,7 @@ export function Prompt({ spec, onClose }: { spec: PromptSpec | null; onClose: ()
           void confirm()
         }}
         className={cn(
-          "w-full max-w-[380px] overflow-hidden rounded-xl border border-border bg-popover shadow-float",
+          "w-full max-w-[380px] max-h-[calc(100vh-48px)] overflow-y-auto overflow-x-hidden overscroll-contain rounded-xl border border-border bg-popover shadow-float",
           closing ? "animate-pop-out" : "animate-pop",
         )}
       >

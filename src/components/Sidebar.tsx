@@ -132,7 +132,8 @@ export function Sidebar(props: Props) {
           active={!atHome && scope === "all" && !unreadOnly}
           icon={<Inbox size={14} />}
           label="All articles"
-          count={totalUnread}
+          // No count here: it was the unread total, the same number Unread
+          // shows directly below.
           onClick={() => onSelect("all", null)}
         />
         <Row

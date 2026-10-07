@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- All articles in the sidebar no longer shows a count. It was the unread
+  total, the same number Unread shows right below it.
+
+### Fixed
+- Menus no longer run off the bottom of the window. A feed's right-click
+  menu moves back inside when a group such as Move to expands, and long menus
+  and dialogs (Add feed, Shortcuts, About, confirmations) scroll inside
+  themselves on a short window instead of being cut off.
+
 ## [0.28.0] - 2026-10-07
 
 ### Added

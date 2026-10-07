@@ -28,6 +28,7 @@ export function Menu({
   const [open, setOpen] = useState(false)
   const [closing, setClosing] = useState(false)
   const [up, setUp] = useState(false)
+  const [maxHeight, setMaxHeight] = useState<number | null>(null)
   const host = useRef<HTMLDivElement>(null)
   const panel = useRef<HTMLDivElement>(null)
   const timer = useRef<number | null>(null)
@@ -87,11 +88,22 @@ export function Menu({
     }
   }, [open, closing, close])
 
-  // Flip above the trigger when there is no room below.
+  // Flip above the trigger when there is no room below, and never grow past
+  // the window on the side it opens to: a long menu, or one whose group was
+  // expanded, scrolls inside itself instead of running off the edge.
   useLayoutEffect(() => {
     if (!open || closing || !host.current) return
-    const r = host.current.getBoundingClientRect()
-    setUp(window.innerHeight - r.bottom < 260 && r.top > 260)
+    const place = () => {
+      if (!host.current) return
+      const r = host.current.getBoundingClientRect()
+      const below = window.innerHeight - r.bottom
+      const flip = below < 260 && r.top > 260
+      setUp(flip)
+      setMaxHeight(Math.max(120, (flip ? r.top : below) - 14))
+    }
+    place()
+    window.addEventListener("resize", place)
+    return () => window.removeEventListener("resize", place)
   }, [open, closing])
 
   return (
@@ -102,9 +114,9 @@ export function Menu({
           ref={panel}
           role={role}
           aria-label={label}
-          style={{ width }}
+          style={{ width, maxHeight: maxHeight ?? undefined }}
           className={cn(
-            "absolute z-50 overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-float",
+            "absolute z-50 overflow-y-auto overflow-x-hidden overscroll-contain rounded-xl border border-border bg-popover p-1 shadow-float",
             align === "end" ? "right-0" : "left-0",
             up ? "bottom-full mb-1.5 origin-bottom" : "top-full mt-1.5 origin-top",
             closing ? "animate-menu-out" : "animate-menu",

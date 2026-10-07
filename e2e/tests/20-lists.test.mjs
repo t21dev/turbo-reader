@@ -304,3 +304,15 @@ test("B12 the same story from two feeds shows once, or twice on request", shot("
   await ctx.s.waitFor(async () => (await count()) === 2, "both copies with duplicates shown")
   await ctx.s.press("d")
 }))
+
+test("B-rail All articles has no badge; Unread carries the unread count", async () => {
+  const row = (label) =>
+    ctx.s.exec(
+      `const b = [...document.querySelectorAll('aside button, nav button')].find((x) => x.textContent.trim().startsWith(arguments[0]))
+       return b ? b.textContent.replace(arguments[0], '').trim() : null`,
+      label,
+    )
+  const unread = await row("Unread")
+  assert.match(unread ?? "", /^\d+$/, "Unread shows a number")
+  assert.equal(await row("All articles"), "", "All articles shows none")
+})
