@@ -294,4 +294,22 @@ export const api = {
   downloadImage: (url: string, path: string) =>
     call<void>("download_image", { url, path }),
   imageBytes: (url: string) => call<ArrayBuffer>("image_bytes", { url }),
+
+  skillStatus: () => call<SkillTarget[]>("skill_status"),
+  skillInstall: (agent: string) => call<SkillTarget[]>("skill_install", { agent }),
+  skillRemove: (agent: string) => call<SkillTarget[]>("skill_remove", { agent }),
+  skillContent: () => call<string>("skill_content"),
+}
+
+/** An agent that can hold the Turbo Reader skill, and the copy it has. */
+export type SkillTarget = {
+  id: string
+  label: string
+  path: string
+  /** The agent is installed on this computer. */
+  detected: boolean
+  /** The skill version installed there, or null when it is not. */
+  installed: string | null
+  current: string
+  outdated: boolean
 }

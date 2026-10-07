@@ -41,7 +41,7 @@ test("M1 stdio: the handshake, instructions and every tool with a schema", async
     const list = (await c.request("tools/list")).result.tools
     const names = list.map((t) => t.name).sort()
     assert.deepEqual(names, [
-      "get_article", "get_digest", "get_latest", "get_stats", "list_feeds", "list_folders",
+      "get_article", "get_digest", "get_latest", "get_skill", "get_stats", "list_feeds", "list_folders",
       "mark_read", "preview_feed", "refresh_feeds", "search_articles", "star", "subscribe", "unsubscribe",
     ])
     for (const t of list) {

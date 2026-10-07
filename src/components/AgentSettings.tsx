@@ -4,6 +4,7 @@ import { api, type McpActivity, type McpKey, type McpStatus } from "@/lib/api"
 import { cn, relativeTime } from "@/lib/utils"
 import type { PromptSpec } from "@/components/Prompt"
 import { ListFilter } from "@/components/ListFilter"
+import { SkillSettings } from "@/components/SkillSettings"
 
 /** "5m ago", "just now". */
 function ago(unixSeconds: number): string {
@@ -282,6 +283,8 @@ export function AgentSettings({ confirm }: { confirm: (spec: PromptSpec) => void
           Turbo Reader repository.
         </p>
       </div>
+
+      <SkillSettings />
 
       {/* Activity */}
       <div>

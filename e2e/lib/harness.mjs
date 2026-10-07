@@ -8,6 +8,7 @@
 import { spawn, execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import net from "node:net"
+import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { Session, sleep } from "./webdriver.mjs"
@@ -19,6 +20,12 @@ export const IDENTIFIER = "dev.t21.turbo-reader.e2e"
 export const APP = path.join(ROOT, "src-tauri", "target-e2e", "release", "turbo-reader.exe")
 const EDGE_DRIVER = path.join(ROOT, "e2e", ".bin", "msedgedriver.exe")
 const ARTIFACTS = path.join(ROOT, "e2e", ".artifacts")
+
+// The skill installer writes to ~/.claude and ~/.codex. Every app this harness
+// starts gets a throwaway home for that instead, so a test can never touch
+// the real ones.
+export const SKILL_HOME = path.join(os.tmpdir(), "turbo-e2e-skill-home")
+process.env.TURBO_SKILL_HOME = SKILL_HOME
 
 const DATA_DIRS = [
   path.join(process.env.APPDATA ?? "", IDENTIFIER),
@@ -64,6 +71,7 @@ function wipeData() {
   for (const dir of DATA_DIRS) {
     if (dir.endsWith(IDENTIFIER)) rmSync(dir, { recursive: true, force: true })
   }
+  rmSync(SKILL_HOME, { recursive: true, force: true })
 }
 
 export async function launch({ keepData = false } = {}) {

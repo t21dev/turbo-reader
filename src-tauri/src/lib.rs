@@ -19,6 +19,7 @@ mod notifications;
 mod opml;
 mod rank;
 mod readable;
+mod skill;
 mod storage;
 mod winstate;
 
@@ -266,6 +267,10 @@ pub fn run() {
             commands::write_text_file,
             commands::download_image,
             commands::image_bytes,
+            commands::skill_status,
+            commands::skill_install,
+            commands::skill_remove,
+            commands::skill_content,
             background::get_background,
             background::set_background,
             background::start_hidden,

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react"
 import { createPortal } from "react-dom"
-import { AlertTriangle, ArrowUpCircle, Bell, Bot, Newspaper, RefreshCw, Trash2, X } from "lucide-react"
+import { AlertTriangle, ArrowUpCircle, Bell, Bot, Newspaper, RefreshCw, Sparkles, Trash2, X } from "lucide-react"
 import { listen } from "@tauri-apps/api/event"
 import { openUrl } from "@tauri-apps/plugin-opener"
-import { api, type AppNotification, type NotificationSummary } from "@/lib/api"
+import { api, type AppNotification, type NotificationSummary, type SkillTarget } from "@/lib/api"
+import { SKILLS_CHANGED } from "@/components/SkillSettings"
 import { Menu } from "@/components/Menu"
 import { useDismissible } from "@/lib/presence"
 import { cn, relativeTime } from "@/lib/utils"
@@ -22,6 +23,23 @@ function useSummary() {
     }
   }, [load])
   return { summary, reload: load }
+}
+
+/** Copies of the skill the app installed that are older than its own. */
+function useOutdatedSkills() {
+  const [skills, setSkills] = useState<SkillTarget[]>([])
+  const load = useCallback(() => {
+    api
+      .skillStatus()
+      .then((all) => setSkills(all.filter((t) => t.outdated)))
+      .catch(() => undefined)
+  }, [])
+  useEffect(() => {
+    load()
+    window.addEventListener(SKILLS_CHANGED, load)
+    return () => window.removeEventListener(SKILLS_CHANGED, load)
+  }, [load])
+  return { skills, reload: load }
 }
 
 function KindIcon({ n }: { n: AppNotification }) {
@@ -74,16 +92,28 @@ function Entry({
 function Attention({
   update,
   failing,
+  skills,
   onDone,
   onOpenFeed,
   onRefresh,
 }: {
   update: { latest: string; url: string } | null
   failing: NotificationSummary["failing"]
+  skills: SkillTarget[]
   onDone: () => void
   onOpenFeed: (id: number) => void
   onRefresh: () => void
 }) {
+  const [updating, setUpdating] = useState<string | null>(null)
+  async function updateSkill(t: SkillTarget) {
+    setUpdating(t.id)
+    try {
+      await api.skillInstall(t.id)
+      window.dispatchEvent(new Event(SKILLS_CHANGED))
+    } finally {
+      setUpdating(null)
+    }
+  }
   return (
     <section className="p-1.5">
       <div className="flex items-center justify-between pl-2.5 pr-1">
@@ -122,6 +152,25 @@ function Attention({
             </button>
           </li>
         )}
+        {skills.map((t) => (
+          <li key={t.id} className="flex items-start gap-2.5 rounded-lg px-2.5 py-2" data-outdated-skill>
+            <Sparkles size={14} className="mt-px shrink-0 text-system" />
+            <span className="min-w-0 flex-1 text-[12.5px] text-foreground">
+              The Turbo Reader skill for {t.label} is out of date
+              <span className="block text-[11.5px] text-subtle">
+                {t.installed === "0" ? "An old copy" : `v${t.installed}`} → v{t.current}
+              </span>
+            </span>
+            <button
+              type="button"
+              disabled={updating !== null}
+              onClick={() => void updateSkill(t)}
+              className="row h-6 shrink-0 px-2 text-[11.5px] text-system hover:bg-secondary disabled:opacity-50"
+            >
+              {updating === t.id ? "Updating" : "Update"}
+            </button>
+          </li>
+        ))}
         {failing.map((f) => (
           <li key={f.id} className="flex items-start gap-2.5 rounded-lg px-2.5 py-2" data-failing-feed>
             <AlertTriangle size={14} className="mt-px shrink-0 text-destructive" />
@@ -160,9 +209,10 @@ export function NotificationBell({
   onRefresh: () => void
 }) {
   const { summary, reload } = useSummary()
+  const { skills } = useOutdatedSkills()
   const [allOpen, setAllOpen] = useState(false)
   const failing = summary?.failing ?? []
-  const attention = failing.length + (update ? 1 : 0)
+  const attention = failing.length + skills.length + (update ? 1 : 0)
   const unseen = summary?.unseen ?? 0
 
   return (
@@ -206,7 +256,14 @@ export function NotificationBell({
           <div className="-m-1 flex max-h-[min(520px,70vh)] flex-col" data-bell-panel>
             <div className="min-h-0 flex-1 overflow-y-auto">
             {attention > 0 && (
-              <Attention update={update} failing={failing} onDone={close} onOpenFeed={onOpenFeed} onRefresh={onRefresh} />
+              <Attention
+                update={update}
+                failing={failing}
+                skills={skills}
+                onDone={close}
+                onOpenFeed={onOpenFeed}
+                onRefresh={onRefresh}
+              />
             )}
 
             <section className={cn("p-1.5", attention > 0 && "border-t border-border")}>
@@ -267,6 +324,7 @@ export function NotificationBell({
           onOpenFeed={onOpenFeed}
           update={update}
           failing={failing}
+          skills={skills}
           onRefresh={onRefresh}
         />
       )}
@@ -282,19 +340,21 @@ function AllNotifications({
   onOpenFeed,
   update,
   failing,
+  skills,
   onRefresh,
 }: {
   onClose: () => void
   onOpenFeed: (id: number) => void
   update: { latest: string; url: string } | null
   failing: NotificationSummary["failing"]
+  skills: SkillTarget[]
   onRefresh: () => void
 }) {
   const { closing, dismiss } = useDismissible(onClose)
   const [items, setItems] = useState<AppNotification[]>([])
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
-  const attention = update !== null || failing.length > 0
+  const attention = update !== null || failing.length > 0 || skills.length > 0
 
   const more = useCallback(async (before?: number) => {
     setLoading(true)
@@ -366,7 +426,14 @@ function AllNotifications({
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
           {attention && (
             <div className="-m-2 mb-2 border-b border-border p-2">
-              <Attention update={update} failing={failing} onDone={dismiss} onOpenFeed={onOpenFeed} onRefresh={onRefresh} />
+              <Attention
+                update={update}
+                failing={failing}
+                skills={skills}
+                onDone={dismiss}
+                onOpenFeed={onOpenFeed}
+                onRefresh={onRefresh}
+              />
             </div>
           )}
           {attention && (

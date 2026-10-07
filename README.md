@@ -164,9 +164,13 @@ links", and the agent reads your own library.
   `turbo-reader --mcp`, which an agent starts itself with the app closed.
 - **Off by default**, and local to this computer unless you allow your network.
 - **Read-only unless you say otherwise**, per key.
-- 13 tools: latest articles, full-text search, full articles as Markdown,
+- 14 tools: latest articles, full-text search, full articles as Markdown,
   digests, feeds and folders, and (with write access) subscribe, star and
   mark read.
+- **A skill to go with it.** Install the Turbo Reader `SKILL.md` for Claude
+  Code or Codex in one click, or save it for any other agent. It teaches the
+  agent when to use your feeds and how, and keeps itself up to date through
+  the server.
 
 Turn it on in Settings > AI agents, where the setup for each agent is ready to
 copy. The full guide, with every tool and real example answers, is in

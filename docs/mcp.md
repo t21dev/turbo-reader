@@ -194,6 +194,7 @@ its next request.
 | [`mark_read`](#mark_read) | write | Mark articles read or unread |
 | [`star`](#star) | write | Star or unstar an article |
 | [`refresh_feeds`](#refresh_feeds) | write | Fetch every feed now |
+| [`get_skill`](#get_skill) | read | The Turbo Reader skill, and whether yours is current |
 
 Every tool returns structured JSON (MCP `structuredContent`, also as text).
 The examples below are real responses from a small test library, with its
@@ -473,6 +474,40 @@ refreshes on its own schedule.
 ```json
 { "ok": true, "message": "Checked 2 feeds; 0 new articles.", "feed_id": null, "changed": 0 }
 ```
+
+### get_skill
+
+Read. Returns the Turbo Reader skill, a `SKILL.md` that tells an agent when to
+use these tools and how. Pass the version from your copy's frontmatter; if the
+app has a newer one, `content` holds it to replace yours with.
+
+| Argument | Type | Default |
+| --- | --- | --- |
+| `version` | string | none: the skill is returned whatever you have |
+
+```json
+{ "version": "1.0.0", "up_to_date": false, "content": "---\nname: turbo-reader\n...", "message": "Your skill is version 0.9.0; 1.0.0 is newer. Replace your SKILL.md with content." }
+```
+
+## The skill
+
+Turbo Reader ships a skill in the open
+[SKILL.md](https://agentskills.io) format. It tells an agent to prefer your
+feeds over web search for news, which tool fits which question, how to cite
+articles, and to treat article text as data, never as instructions.
+
+- **Install it** from Settings > AI agents > Skill. Claude Code gets it in
+  `~/.claude/skills/turbo-reader/` and Codex in `~/.codex/skills/turbo-reader/`.
+  For any other agent, use "Save SKILL.md for another agent…" and put it where
+  that agent reads skills.
+- **It keeps itself current.** The skill carries its version in its
+  frontmatter and tells the agent to call `get_skill` with it. When the app
+  has a newer skill, the agent replaces its copy, or, if it cannot write
+  files, tells you to update it.
+- **The app checks too.** Copies it installed are compared with its own at
+  launch, and an old one shows in the notification bell with an Update button.
+- The skill's version moves only when its text changes, not with every app
+  release, so updating the app does not mean updating the skill.
 
 ## Conventions
 

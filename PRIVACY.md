@@ -53,6 +53,11 @@ and changes nothing unless it was started with `--allow-write`.
 Changes agents make through the app's agent server are listed in the
 notification bell, under the agent's name.
 
+The Turbo Reader skill is written into an agent's folder (such as
+`~/.claude/skills/turbo-reader/`) only when you click Install there, and Remove
+deletes only that folder. To see whether an installed copy is current, the app
+reads it on your computer; nothing about it leaves your machine.
+
 ## Downloads
 
 Release files are hosted on GitHub. Each release has a `SHA256SUMS.txt` so you

@@ -1202,6 +1202,32 @@ async fn fetch_image_bytes(url: &str) -> Result<Vec<u8>, String> {
     Ok(res.bytes().await.map_err(e)?.to_vec())
 }
 
+/* --------------------------------- skill -------------------------------- */
+
+/// Where each agent's copy of the skill is, and how current it is.
+#[tauri::command]
+pub fn skill_status() -> Vec<crate::skill::Target> {
+    crate::skill::status()
+}
+
+#[tauri::command]
+pub fn skill_install(agent: String) -> Result<Vec<crate::skill::Target>, String> {
+    crate::skill::install(&agent)?;
+    Ok(crate::skill::status())
+}
+
+#[tauri::command]
+pub fn skill_remove(agent: String) -> Result<Vec<crate::skill::Target>, String> {
+    crate::skill::remove(&agent)?;
+    Ok(crate::skill::status())
+}
+
+/// The skill's text, for saving it anywhere with the save dialog.
+#[tauri::command]
+pub fn skill_content() -> String {
+    crate::skill::content()
+}
+
 /* ------------------------- article side actions ------------------------- */
 
 /// Hide an article from every list without deleting it, the way Fluent

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- The Turbo Reader skill: a versioned `SKILL.md` that teaches an AI agent when
+  to use your feeds and how to use the tools well. Install, update or remove
+  it for Claude Code or Codex from Settings > AI agents, or save it for any
+  other agent.
+- It keeps itself current. A new `get_skill` MCP tool hands out the app's
+  copy, and the skill tells the agent to check its version against it and
+  replace itself when it is old. The app also checks the copies it
+  installed, and an old one shows in the notification bell with an Update
+  button.
+
 ## [0.26.0] - 2026-10-07
 
 ### Fixed
