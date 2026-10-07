@@ -25,9 +25,11 @@ type Props = {
   onScope: (scope: Scope, id: number | null) => void
   /** Bumped by the app whenever a refresh lands, so the page reloads. */
   revision: number
+  /** A feed refresh is running: an empty page may be about to fill. */
+  refreshing: boolean
 }
 
-export function Home({ prefs, onPrefs, onCustomize, onOpen, onStar, onScope, revision }: Props) {
+export function Home({ prefs, onPrefs, onCustomize, onOpen, onStar, onScope, revision, refreshing }: Props) {
   const [data, setData] = useState<HomeData | null>(null)
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState("")
@@ -97,6 +99,10 @@ export function Home({ prefs, onPrefs, onCustomize, onOpen, onStar, onScope, rev
       ),
     [data, prefs.hiddenGroups, prefs.groupOrder],
   )
+
+  const empty = !results && bands.length === 0 && (data?.pinned.length ?? 0) === 0
+  const waiting = refreshing || loading
+  const windowLabel = (WINDOWS.find((w) => w.value === prefs.window)?.label ?? "in this window").toLowerCase()
 
   const dateLine = now.toLocaleDateString(undefined, {
     weekday: "long",
@@ -303,15 +309,51 @@ export function Home({ prefs, onPrefs, onCustomize, onOpen, onStar, onScope, rev
           <Fragment key={key}>{sections[key]}</Fragment>
         ))}
 
-        {!results && !loading && bands.length === 0 && (data?.pinned.length ?? 0) === 0 && (
-          <p className="animate-rise py-16 text-center text-[12px] leading-relaxed text-subtle">
-            Nothing published in this window.
+        {/* An empty page while a refresh runs is usually a new day before the
+            first fetch has landed: show where the stories will go, not a
+            blank page or a "nothing here" that is about to be wrong. */}
+        {empty && waiting && <HomeSkeleton size={prefs.cardSize} />}
+        {empty && !waiting && (
+          <p className="animate-rise py-16 text-center text-[12px] leading-relaxed text-subtle" data-home-empty>
+            Nothing published {windowLabel} yet.
             <br />
-            Try a wider one, or refresh with <span className="text-foreground">r</span>.
+            Try a wider window, or refresh with <span className="text-foreground">r</span>.
           </p>
         )}
       </div>
     </section>
+  )
+}
+
+/** Two bands of placeholder cards, shaped like the real ones. */
+function HomeSkeleton({ size }: { size: CardSize }) {
+  const block = "rounded-md bg-elevated motion-safe:animate-pulse"
+  return (
+    <div aria-busy="true" aria-label="Loading today's articles" data-home-skeleton>
+      {[0, 1].map((band) => (
+        <div key={band} className="animate-rise mt-9" style={{ animationDelay: `${band * 60}ms` }}>
+          <div className="flex items-center gap-2 border-b border-border pb-2.5">
+            <div className={cn(block, "h-3.5 w-32")} />
+            <div className={cn(block, "h-3 w-14 opacity-60")} />
+          </div>
+          <div
+            className="mt-3 grid gap-4"
+            style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_WIDTH[size].cards}px, 1fr))` }}
+          >
+            {[0, 1, 2, 3].map((card) => (
+              <div key={card} className="overflow-hidden rounded-xl border border-border bg-card">
+                <div className={cn(block, "aspect-[16/10] rounded-none")} />
+                <div className="space-y-2 p-3.5">
+                  <div className={cn(block, "h-2.5 w-24 opacity-60")} />
+                  <div className={cn(block, "h-3.5 w-full")} />
+                  <div className={cn(block, "h-3.5 w-3/4")} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 

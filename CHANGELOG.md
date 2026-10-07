@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Home on a new day no longer sits blank until the first refresh finishes.
+  While a refresh runs on an empty page it shows placeholder cards, and when
+  there is still nothing it says so, naming the window: "Nothing published
+  today yet."
+
 ## [0.25.0] - 2026-10-06
 
 ### Added

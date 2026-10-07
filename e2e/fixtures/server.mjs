@@ -242,6 +242,16 @@ A new paragraph about the video.</media:description>
     ],
     "/article/blocked": () => [403, "text/html", "<!doctype html><title>Just a moment...</title>"],
 
+    // Nothing from today: Home's Today window starts empty.
+    "/old.xml": () => [
+      200,
+      "application/rss+xml",
+      rss(base, "Old news", [
+        rssItem({ guid: "old-1", title: "A story from last month", link: `${base}/old/1`,
+          date: now - 40 * 24 * HOUR, html: "<p>Long ago.</p>" }),
+      ]),
+    ],
+
     "/broken.xml": () => [500, "text/plain", "server error"],
 
     // A site, not a feed: it advertises its feed in the head.

@@ -22,7 +22,7 @@ test("W1 a fresh install opens on the welcome screen, not an empty page", shot("
   const text = await ctx.pageText()
   assert.ok(text.includes("Add a feed"), "add a feed is offered")
   assert.ok(text.includes("Import an OPML file"), "import is offered")
-  assert.ok(!text.includes("Nothing published in this window"), "not the empty home page")
+  assert.ok(!text.includes("Nothing published"), "not the empty home page")
 }))
 
 test("W2 choosing starters updates the subscribe button", shot("W2", async () => {

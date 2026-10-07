@@ -808,6 +808,7 @@ export default function App() {
             onStar={(it) => void toggleStar(it.id, !it.starred)}
             onScope={select}
             revision={homeRevision}
+            refreshing={busy}
           />
         ) : view === "list" ? (
           <>
