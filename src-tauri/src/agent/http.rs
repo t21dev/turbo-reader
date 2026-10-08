@@ -417,11 +417,30 @@ pub fn mcp_activity(state: State<AppState>) -> Vec<Activity> {
         .unwrap_or_default()
 }
 
+/// How an agent starts this program for the stdio setup: the command and the
+/// arguments that go before `--mcp`.
+#[derive(Serialize)]
+pub struct McpLaunch {
+    pub command: String,
+    pub args: Vec<String>,
+}
+
 /// Where this program lives, for the stdio setup that agents start themselves.
+/// Inside a Flatpak the binary's path only exists in the sandbox, so agents
+/// go through `flatpak run` instead.
 #[tauri::command]
-pub fn mcp_exe_path() -> Result<String, String> {
+pub fn mcp_exe_path() -> Result<McpLaunch, String> {
+    if let Some(id) = crate::flatpak_id() {
+        return Ok(McpLaunch {
+            command: "flatpak".into(),
+            args: vec!["run".into(), id],
+        });
+    }
     std::env::current_exe()
-        .map(|p| p.to_string_lossy().into_owned())
+        .map(|p| McpLaunch {
+            command: p.to_string_lossy().into_owned(),
+            args: Vec::new(),
+        })
         .map_err(|e| e.to_string())
 }
 

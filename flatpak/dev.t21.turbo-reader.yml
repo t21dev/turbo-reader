@@ -1,0 +1,79 @@
+# Flatpak manifest for Turbo Reader, built from source.
+#
+# Build and install locally (on Linux, or anywhere with Docker through
+# flatpak/build.sh):
+#
+#   flatpak/generate-sources.sh
+#   flatpak-builder --user --install --force-clean build-dir flatpak/dev.t21.turbo-reader.yml
+#   flatpak run dev.t21.turbo-reader
+#
+# The two *-sources.json files list every npm package and crate, so the build
+# runs offline as Flathub requires. Regenerate them whenever package-lock.json
+# or Cargo.lock changes.
+
+id: dev.t21.turbo-reader
+runtime: org.gnome.Platform
+runtime-version: '51'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node22
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: turbo-reader
+
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --share=ipc
+  # Fetching feeds, and the AI agent server on localhost.
+  - --share=network
+  # The tray icon, while "keep running in the tray" is on.
+  - --talk-name=org.kde.StatusNotifierWatcher
+  # New-article notifications.
+  - --talk-name=org.freedesktop.Notifications
+
+modules:
+  # The tray icon loads libayatana-appindicator at run time; the GNOME
+  # runtime does not ship it.
+  - shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
+
+  - name: turbo-reader
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/node22/bin:/usr/lib/sdk/rust-stable/bin
+      env:
+        CARGO_HOME: /run/build/turbo-reader/cargo
+        CARGO_NET_OFFLINE: 'true'
+        npm_config_cache: /run/build/turbo-reader/flatpak-node/npm-cache
+        npm_config_offline: 'true'
+        XDG_CACHE_HOME: /run/build/turbo-reader/flatpak-node/cache
+    sources:
+      # Flathub's copy of this manifest replaces this with the release tag:
+      #   - type: git
+      #     url: https://github.com/t21dev/turbo-reader.git
+      #     tag: v0.28.1
+      - type: dir
+        path: ..
+        skip:
+          - flatpak/build-dir
+          - flatpak/.flatpak-builder
+          - flatpak/shared-modules
+          - node_modules
+          - dist
+          - dist-linux
+          - src-tauri/target
+          - src-tauri/target-e2e
+      - node-sources.json
+      - cargo-sources.json
+    build-commands:
+      - npm ci --offline
+      # The app binary only; Flatpak is the package.
+      - npx tauri build --no-bundle
+      - install -Dm755 src-tauri/target/release/turbo-reader /app/bin/turbo-reader
+      - install -Dm644 flatpak/dev.t21.turbo-reader.desktop /app/share/applications/dev.t21.turbo-reader.desktop
+      - install -Dm644 flatpak/dev.t21.turbo-reader.metainfo.xml /app/share/metainfo/dev.t21.turbo-reader.metainfo.xml
+      - install -Dm644 src-tauri/icons/32x32.png /app/share/icons/hicolor/32x32/apps/dev.t21.turbo-reader.png
+      - install -Dm644 src-tauri/icons/64x64.png /app/share/icons/hicolor/64x64/apps/dev.t21.turbo-reader.png
+      - install -Dm644 src-tauri/icons/128x128.png /app/share/icons/hicolor/128x128/apps/dev.t21.turbo-reader.png
+      - install -Dm644 src-tauri/icons/128x128@2x.png /app/share/icons/hicolor/256x256/apps/dev.t21.turbo-reader.png
+      - install -Dm644 src-tauri/icons/icon.png /app/share/icons/hicolor/512x512/apps/dev.t21.turbo-reader.png

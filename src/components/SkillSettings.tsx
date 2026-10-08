@@ -123,7 +123,7 @@ export function SkillSettings() {
         onClick={() => void saveCopy()}
         className="mt-2 text-[11.5px] text-subtle underline-offset-2 hover:text-foreground hover:underline"
       >
-        Save SKILL.md for another agent…
+        {targets.length ? "Save SKILL.md for another agent…" : "Save SKILL.md…"}
       </button>
 
       {note && (

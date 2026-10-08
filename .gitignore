@@ -15,3 +15,11 @@ e2e/.artifacts/
 
 # Linux packages built with docker/linux-build.Dockerfile
 dist-linux/
+
+# Flatpak build tools and generated offline sources
+flatpak/.flatpak-builder-tools/
+flatpak/.venv/
+flatpak/*-sources.json
+build-dir/
+repo/
+.flatpak-builder/

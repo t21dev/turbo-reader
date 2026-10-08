@@ -100,6 +100,7 @@ Then ask your agent things like:
 | macOS | `/Applications/Turbo Reader.app/Contents/MacOS/turbo-reader` |
 | Linux (.deb, .rpm) | `/usr/bin/turbo-reader` |
 | Linux (AppImage) | the `.AppImage` file itself |
+| Linux (Flatpak) | `flatpak run dev.t21.turbo-reader`: use `flatpak` as the command and put `run`, `dev.t21.turbo-reader` before `--mcp` in the arguments |
 
 The exact path for your install is in Settings > AI agents.
 

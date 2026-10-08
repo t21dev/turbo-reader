@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import { Check, Copy, KeyRound, Trash2 } from "lucide-react"
-import { api, type McpActivity, type McpKey, type McpStatus } from "@/lib/api"
+import { api, type McpActivity, type McpKey, type McpLaunch, type McpStatus } from "@/lib/api"
 import { cn, relativeTime } from "@/lib/utils"
 import type { PromptSpec } from "@/components/Prompt"
 import { ListFilter } from "@/components/ListFilter"
@@ -32,7 +32,7 @@ export function AgentSettings({ confirm }: { confirm: (spec: PromptSpec) => void
     ? activity.filter((a) => activityWords.every((w) => `${a.key} ${a.tool}`.toLowerCase().includes(w)))
     : activity
   const [lanIps, setLanIps] = useState<string[]>([])
-  const [exe, setExe] = useState("")
+  const [exe, setExe] = useState<McpLaunch>({ command: "", args: [] })
   const [port, setPort] = useState("")
   const [note, setNote] = useState<string | null>(null)
   const [newName, setNewName] = useState("")
@@ -333,8 +333,9 @@ export function AgentSettings({ confirm }: { confirm: (spec: PromptSpec) => void
 
 /** Ready-to-paste setup for each agent. HTTP needs the server on and a key;
     stdio needs neither, because the agent starts Turbo Reader itself. */
-function Snippets({ client, url, exe, keyText, serverOn }: { client: Client; url: string; exe: string; keyText: string; serverOn: boolean }) {
+function Snippets({ client, url, exe, keyText, serverOn }: { client: Client; url: string; exe: McpLaunch; keyText: string; serverOn: boolean }) {
   const q = (s: string) => JSON.stringify(s)
+  const args = [...exe.args, "--mcp"]
   const blocks: { title: string; text: string }[] = []
   if (client === "Claude Code") {
     blocks.push({
@@ -344,17 +345,17 @@ function Snippets({ client, url, exe, keyText, serverOn }: { client: Client; url
     blocks.push({
       title: "Or let Claude Code start it (read-only; add --allow-write to change things)",
       // A shell command: the path is quoted as-is, not JSON-escaped.
-      text: `claude mcp add turbo-reader -- "${exe}" --mcp`,
+      text: `claude mcp add turbo-reader -- "${exe.command}" ${args.join(" ")}`,
     })
   } else if (client === "Codex") {
     blocks.push({
       title: "In ~/.codex/config.toml (Codex starts Turbo Reader itself)",
-      text: `[mcp_servers.turbo-reader]\ncommand = ${q(exe)}\nargs = ["--mcp"]`,
+      text: `[mcp_servers.turbo-reader]\ncommand = ${q(exe.command)}\nargs = [${args.map(q).join(", ")}]`,
     })
   } else if (client === "Claude Desktop") {
     blocks.push({
       title: "In claude_desktop_config.json (Settings > Developer > Edit Config)",
-      text: JSON.stringify({ mcpServers: { "turbo-reader": { command: exe, args: ["--mcp"] } } }, null, 2),
+      text: JSON.stringify({ mcpServers: { "turbo-reader": { command: exe.command, args } } }, null, 2),
     })
   } else {
     blocks.push({

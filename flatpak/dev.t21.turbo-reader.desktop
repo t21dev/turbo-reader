@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Turbo Reader
+GenericName=RSS Reader
+Comment=A fast, modern RSS reader
+Exec=turbo-reader
+Icon=dev.t21.turbo-reader
+Terminal=false
+Categories=Network;News;Feed;
+Keywords=rss;atom;feed;news;reader;podcast;
+StartupWMClass=turbo-reader

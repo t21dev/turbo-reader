@@ -21,11 +21,14 @@ export function BackgroundPrefs({ withAgents = false }: { withAgents?: boolean }
   const [prefs, setPrefs] = useState<Prefs | null>(null)
   const [agents, setAgents] = useState<boolean | null>(null)
   const [atLogin, setAtLogin] = useState(false)
+  // Start at login writes outside the Flatpak sandbox, so a Flatpak copy hides it.
+  const [flatpak, setFlatpak] = useState(false)
   const [note, setNote] = useState<string | null>(null)
 
   useEffect(() => {
     api.getBackground().then(setPrefs).catch(() => undefined)
     autostartEnabled().then(setAtLogin).catch(() => undefined)
+    api.inFlatpak().then(setFlatpak).catch(() => undefined)
     if (withAgents) api.mcpStatus().then((s) => setAgents(s.config.enabled)).catch(() => undefined)
   }, [withAgents])
 
@@ -98,17 +101,19 @@ export function BackgroundPrefs({ withAgents = false }: { withAgents?: boolean }
         <Switch on={!!prefs?.closeToTray} disabled={!prefs} labelledBy="bg-tray" onToggle={() => void setTray(!prefs?.closeToTray)} />
       </Row>
 
-      <Row
-        id="bg-login"
-        title="Start at login"
-        detail={
-          prefs?.closeToTray
-            ? "Opens quietly in the tray when you sign in."
-            : "Opens when you sign in. Turn on the tray above to start it out of sight."
-        }
-      >
-        <Switch on={atLogin} labelledBy="bg-login" onToggle={() => void setLogin(!atLogin)} />
-      </Row>
+      {!flatpak && (
+        <Row
+          id="bg-login"
+          title="Start at login"
+          detail={
+            prefs?.closeToTray
+              ? "Opens quietly in the tray when you sign in."
+              : "Opens when you sign in. Turn on the tray above to start it out of sight."
+          }
+        >
+          <Switch on={atLogin} labelledBy="bg-login" onToggle={() => void setLogin(!atLogin)} />
+        </Row>
+      )}
 
       <Row
         id="bg-notify"

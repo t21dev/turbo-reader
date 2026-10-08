@@ -107,6 +107,11 @@ pub struct Target {
 }
 
 pub fn status() -> Vec<Target> {
+    // A Flatpak cannot see the agents' folders in home, so it offers only
+    // the saved copy.
+    if crate::flatpak_id().is_some() {
+        return vec![];
+    }
     let Some(home) = home() else { return vec![] };
     AGENTS
         .iter()

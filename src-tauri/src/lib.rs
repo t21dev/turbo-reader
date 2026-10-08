@@ -43,6 +43,19 @@ pub fn portable_data_dir() -> Option<std::path::PathBuf> {
     dir.join("portable").is_file().then(|| dir.join("data"))
 }
 
+/// The Flatpak app ID when running inside a Flatpak sandbox. Flatpak sets
+/// FLATPAK_ID for every app it runs.
+pub fn flatpak_id() -> Option<String> {
+    std::env::var("FLATPAK_ID").ok().filter(|id| !id.is_empty())
+}
+
+/// Whether this copy runs as a Flatpak, for the UI to hide what the sandbox
+/// cannot do (start at login writes outside it).
+#[tauri::command]
+fn in_flatpak() -> bool {
+    flatpak_id().is_some()
+}
+
 /// Where the library and the user's files live: the portable folder when there
 /// is one, otherwise the usual per-user app data folder.
 pub fn data_dir<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<std::path::PathBuf> {
@@ -271,6 +284,7 @@ pub fn run() {
             commands::skill_install,
             commands::skill_remove,
             commands::skill_content,
+            in_flatpak,
             background::get_background,
             background::set_background,
             background::start_hidden,

@@ -92,6 +92,13 @@ export type OldRead = { count: number; bytes: number }
 export type McpActivity = { at: number; key: string; tool: string }
 
 /** Background mode. All off by default. */
+/** How an agent starts Turbo Reader for stdio: the command and the
+    arguments that go before `--mcp`. */
+export type McpLaunch = {
+  command: string
+  args: string[]
+}
+
 export type BackgroundPrefs = {
   /** Closing the window keeps the app running in the tray. */
   closeToTray: boolean
@@ -263,7 +270,8 @@ export const api = {
   mcpRevokeKey: (id: number) => call<void>("mcp_revoke_key", { id }),
   mcpActivity: () => call<McpActivity[]>("mcp_activity"),
   mcpLanAddresses: () => call<string[]>("mcp_lan_addresses"),
-  mcpExePath: () => call<string>("mcp_exe_path"),
+  mcpExePath: () => call<McpLaunch>("mcp_exe_path"),
+  inFlatpak: () => call<boolean>("in_flatpak"),
   notificationsSummary: () => call<NotificationSummary>("notifications_summary"),
   notificationsPage: (before?: number, limit?: number) =>
     call<{ items: AppNotification[]; hasMore: boolean }>("notifications_page", { before, limit }),

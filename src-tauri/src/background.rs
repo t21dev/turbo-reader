@@ -163,6 +163,14 @@ fn show_tray(app: &AppHandle) -> tauri::Result<()> {
     if let Some(icon) = app.default_window_icon() {
         builder = builder.icon(icon.clone());
     }
+    // On Linux the icon goes to the tray host as a file. Inside a Flatpak the
+    // default spot is outside the sandbox, so use the app's own cache folder,
+    // which the host can read without an extra permission.
+    if crate::flatpak_id().is_some() {
+        if let Ok(dir) = app.path().app_cache_dir() {
+            builder = builder.temp_dir_path(dir.join("tray-icon"));
+        }
+    }
     builder.build(app)?;
     Ok(())
 }

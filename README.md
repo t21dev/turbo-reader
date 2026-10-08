@@ -28,7 +28,14 @@ Download from the [latest release](https://github.com/t21dev/turbo-reader/releas
 | --- | --- |
 | Windows | `_x64-setup.exe` or `.msi`, or `_x64_portable.zip` to run without installing |
 | macOS | `_aarch64.dmg` for Apple silicon, `_x64.dmg` for Intel |
-| Linux | `.AppImage`, `.deb` or `.rpm` |
+| Linux | `.AppImage`, `.deb`, `.rpm` or `.flatpak` |
+
+**Flatpak on Linux.** Install the bundle with
+`flatpak install --user Turbo.Reader_*_x86_64.flatpak`. It needs the GNOME 51
+runtime from [Flathub](https://flathub.org/setup), which Flatpak fetches for
+you. Inside the sandbox, Start at login is not offered, and the agent skill is
+saved through Save SKILL.md rather than installed straight into
+`~/.claude` or `~/.codex`.
 
 **Portable on Windows.** Unzip the portable zip anywhere, a USB stick included,
 and run `Turbo Reader.exe`. The `portable` file beside it keeps your library,
@@ -258,6 +265,20 @@ docker build -f docker/linux-build.Dockerfile --output dist-linux .
 
 The packages land in `dist-linux/`. The image builds on Ubuntu 22.04, the same
 base as the release builds, so the AppImage runs on the same distributions.
+
+**Flatpak.** The manifest is in `flatpak/` and builds from source, offline, as
+Flathub requires. On Linux with `flatpak-builder`:
+
+```bash
+git submodule update --init      # flatpak/shared-modules, for the tray library
+flatpak/generate-sources.sh      # npm and cargo sources for the offline build
+flatpak-builder --user --install --install-deps-from=flathub --force-clean   build-dir flatpak/dev.t21.turbo-reader.yml
+flatpak run dev.t21.turbo-reader
+```
+
+Run `generate-sources.sh` again whenever `package-lock.json` or `Cargo.lock`
+changes. For a release, add a `<release>` line to
+`flatpak/dev.t21.turbo-reader.metainfo.xml`.
 
 ## Attribution
 

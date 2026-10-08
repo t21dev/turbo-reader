@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.t21.turbo-reader</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Turbo Reader</name>
+  <summary>A fast, modern RSS reader</summary>
+  <developer id="dev.t21">
+    <name>t21 dev</name>
+  </developer>
+  <description>
+    <p>
+      Turbo Reader is a fast, lightweight RSS reader with a Rust core. Feeds are
+      fetched, parsed and sanitised outside the interface, so a malformed article
+      can never take the window down.
+    </p>
+    <ul>
+      <li>Opens in under a second and holds thousands of articles in a small process</li>
+      <li>Folders, pinned feeds, search and a distraction-free reading mode</li>
+      <li>OPML import and export</li>
+      <li>Optional tray mode with background refresh and new-article notifications</li>
+      <li>Optional server that lets AI agents read and manage your feeds</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">dev.t21.turbo-reader.desktop</launchable>
+  <url type="homepage">https://github.com/t21dev/turbo-reader</url>
+  <url type="bugtracker">https://github.com/t21dev/turbo-reader/issues</url>
+  <url type="vcs-browser">https://github.com/t21dev/turbo-reader</url>
+  <content_rating type="oars-1.1"/>
+  <branding>
+    <color type="primary" scheme_preference="light">#f5f5f5</color>
+    <color type="primary" scheme_preference="dark">#0d0d0d</color>
+  </branding>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <requires>
+    <display_length compare="ge">880</display_length>
+  </requires>
+  <screenshots>
+    <screenshot type="default">
+      <caption>The home page</caption>
+      <image>https://raw.githubusercontent.com/t21dev/turbo-reader/main/docs/screenshot-home.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Reading an article</caption>
+      <image>https://raw.githubusercontent.com/t21dev/turbo-reader/main/docs/screenshot-reader.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The light theme</caption>
+      <image>https://raw.githubusercontent.com/t21dev/turbo-reader/main/docs/screenshot-light.png</image>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="0.28.1" date="2026-10-07"/>
+  </releases>
+</component>

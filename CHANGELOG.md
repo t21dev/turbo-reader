@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- A Flatpak build for Linux, built from source in Flathub's builder image and
+  attached to each release as a `.flatpak` bundle. The manifest is in
+  `flatpak/`. Inside the sandbox the AI agent setup uses `flatpak run`, the
+  tray icon works without extra permissions, Start at login is hidden, and
+  the agent skill is offered as a file to save.
+
 ## [0.28.1] - 2026-10-07
 
 ### Changed

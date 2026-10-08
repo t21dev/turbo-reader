@@ -41,7 +41,7 @@ jobs:
 
           - Windows: \`.msi\` or \`.exe\`
           - macOS: \`.dmg\`, with separate Apple silicon and Intel builds
-          - Linux: \`.AppImage\` or \`.deb\`
+          - Linux: \`.AppImage\`, \`.deb\` or \`.flatpak\`
 
           ## Note on unsigned builds
           These binaries are not code-signed yet. On Windows, SmartScreen
@@ -131,10 +131,48 @@ jobs:
           gh api -X POST "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ needs.create-release.outputs.release_id }}/assets?name=$zip" `
             -H "Content-Type: application/zip" --input $zip --jq .name
 
+  # A .flatpak bundle built from source in Flathub's own builder image, the
+  # same way Flathub builds it.
+  flatpak:
+    needs: create-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
+      options: --privileged
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Offline sources for npm and cargo
+        run: sh flatpak/generate-sources.sh
+
+      - name: Build the Flatpak
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak-builder --user --install-deps-from=flathub --repo=repo --force-clean \
+            --disable-rofiles-fuse build-dir flatpak/dev.t21.turbo-reader.yml
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "BUNDLE=Turbo.Reader_${VERSION}_x86_64.flatpak" >> "$GITHUB_ENV"
+          flatpak build-bundle repo "Turbo.Reader_${VERSION}_x86_64.flatpak" dev.t21.turbo-reader
+
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@$BUNDLE" \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ needs.create-release.outputs.release_id }}/assets?name=$BUNDLE"
+
   # Once every build has uploaded, list the SHA-256 of each download: as
   # SHA256SUMS.txt beside them, and at the end of the release notes.
   checksums:
-    needs: [create-release, release]
+    needs: [create-release, release, flatpak]
     runs-on: ubuntu-latest
     permissions:
       contents: write
