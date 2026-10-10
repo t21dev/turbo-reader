@@ -7,10 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-10-10
+
 ### Added
 - Retry one failing feed without refreshing the rest: from Retry beside it in
   the bell's Needs attention, from the retry button on its sidebar row, or
   from Retry feed in its right-click menu. A note says whether it works again.
+
+### Fixed
+- About no longer spreads "Up to date on 0.30.0." out with gaps around the
+  version number and the full stop.
 
 ## [0.30.0] - 2026-10-10
 
@@ -482,7 +488,8 @@ First public release.
   to reason about, which is a failure mode browser engines do not let a page
   recover from.
 
-[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.30.0...HEAD
+[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.31.0...HEAD
+[0.31.0]: https://github.com/t21dev/turbo-reader/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/t21dev/turbo-reader/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/t21dev/turbo-reader/compare/v0.28.1...v0.29.0
 [0.28.1]: https://github.com/t21dev/turbo-reader/compare/v0.28.0...v0.28.1
