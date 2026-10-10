@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-10-10
+
+### Changed
+- Home sections and categories in Settings > Home are put in order by
+  dragging the grip on the left of each row, instead of up and down buttons.
+  With a grip focused, Up and Down still move a row one place.
+
+### Fixed
+- Home no longer shows a blank page under pinned feeds while a refresh runs.
+  Placeholder cards show until the stories arrive, and if none do, a line
+  says so.
+
 ## [0.29.0] - 2026-10-08
 
 ### Added
@@ -465,7 +477,8 @@ First public release.
   to reason about, which is a failure mode browser engines do not let a page
   recover from.
 
-[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.29.0...HEAD
+[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.30.0...HEAD
+[0.30.0]: https://github.com/t21dev/turbo-reader/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/t21dev/turbo-reader/compare/v0.28.1...v0.29.0
 [0.28.1]: https://github.com/t21dev/turbo-reader/compare/v0.28.0...v0.28.1
 [0.28.0]: https://github.com/t21dev/turbo-reader/compare/v0.27.0...v0.28.0
