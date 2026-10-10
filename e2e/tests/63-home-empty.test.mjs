@@ -34,3 +34,15 @@ test("H2 while a refresh runs, an empty Home shows placeholder cards instead", s
   await ctx.s.waitFor(async () => !(await skeleton()), "the skeleton to go once the refresh lands")
   await ctx.s.waitFor(async () => /Nothing published today yet/.test((await emptyText()) ?? ""), "the empty message after it")
 }))
+
+test("H3 a pinned feed above an empty Today does not hide the empty message or the skeleton", shot("H3", async () => {
+  const [src] = await ctx.s.invoke("list_sources")
+  await ctx.s.invoke("set_pinned", { id: src.id, pinned: true })
+  await ctx.reloadUi()
+  await ctx.s.waitFor(() => ctx.s.byText("section h2", "Pinned"), "the pinned section")
+  await ctx.s.waitFor(async () => /Nothing published today yet/.test((await emptyText()) ?? ""), "the empty message under the pins")
+  await emit("refresh-started")
+  await ctx.s.waitFor(skeleton, "the skeleton under the pins during a refresh")
+  await emit("feeds-updated")
+  await ctx.s.waitFor(async () => /Nothing published today yet/.test((await emptyText()) ?? ""), "the empty message after it")
+}))

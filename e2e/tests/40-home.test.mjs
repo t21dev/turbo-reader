@@ -163,11 +163,7 @@ test("D8 sections and categories switched off leave home", shot("D8", async () =
 
   await ctx.settings("Home")
   await (await ctx.s.byLabel("Show Search")).click()
-  const eye = await ctx.s.exec(
-    `const row = [...document.querySelectorAll('[role=dialog] span')].find(s => s.textContent.trim() === 'News')?.parentElement;
-     return row?.querySelector('button') ?? null`,
-  )
-  await ctx.s.exec(`arguments[0].click()`, eye)
+  await (await ctx.s.waitFor(() => ctx.s.byLabel("Hide News"), "the News category toggle")).click()
   await ctx.closeSettings()
   await ctx.s.waitFor(
     () => ctx.s.exec(`return ![...document.querySelectorAll('h2')].some(h => h.textContent.trim() === 'News')`),
@@ -204,13 +200,18 @@ const before_ = (a, b) =>
 const SEARCH = `document.getElementById('turbo-home-search')`
 const GLANCE = `[...document.querySelectorAll('section button')].find(b => /This week/i.test(b.textContent) && /[0-9]/.test(b.textContent))`
 
-test("D10 sections can be put in a different order, and it sticks", shot("D10", async () => {
+const sectionOrder = () =>
+  ctx.s.exec(`return [...document.querySelectorAll('[data-home-sections] [data-sortable-row]')].map(r => r.dataset.sortableRow)`)
+
+test("D10 sections can be dragged into a different order, and it sticks", shot("D10", async () => {
   await goHome()
   assert.ok(await before_(GLANCE, SEARCH), "glance comes first by default")
   await ctx.settings("Home")
-  const up = await ctx.s.waitFor(() => ctx.s.byLabel("Move Search up"), "the move button")
-  assert.equal(await ctx.s.exec(`return document.querySelector('[aria-label="Move Glance up"]').disabled`), true, "the first one cannot go higher")
-  await up.click()
+  const grip = await ctx.s.waitFor(() => ctx.s.byLabel("Reorder Search"), "Search's drag handle")
+  const onto = await ctx.s.byLabel("Reorder Glance")
+  await grip.dragTo(onto)
+  await ctx.s.waitFor(async () => (await sectionOrder())[0] === "search", "Search dragged to the top of the list")
+  assert.equal(await ctx.s.exec(`return document.querySelectorAll('[aria-label^="Move "][aria-label$=" up"]').length`), 0, "no arrow buttons left")
   await ctx.closeSettings()
   await ctx.s.waitFor(() => before_(SEARCH, GLANCE), "search to move above glance")
 
@@ -233,7 +234,14 @@ test("D11 categories have their own order on home, apart from the sidebar", shot
   assert.ok(news < techAt, "sidebar order to begin with")
 
   await ctx.settings("Home")
-  await (await ctx.s.waitFor(() => ctx.s.byLabel("Move Tech up"), "Tech's move button")).click()
+  // The keyboard path: focus the grip, Up moves the row one place.
+  const grip = await ctx.s.waitFor(() => ctx.s.byLabel("Reorder Tech"), "Tech's drag handle")
+  await ctx.s.exec(`arguments[0].focus()`, grip)
+  await ctx.s.press("ArrowUp")
+  await ctx.s.waitFor(
+    () => ctx.s.exec(`return document.activeElement?.getAttribute('aria-label') === 'Reorder Tech'`),
+    "focus to stay on Tech's grip after the move",
+  )
   await ctx.closeSettings()
   await ctx.s.waitFor(async () => {
     const [n, t] = order(await bandTitles())
@@ -283,7 +291,7 @@ test("D13 Customize on home opens Settings on the Home tab, with the others a cl
   const selected = () =>
     ctx.s.exec(`return document.querySelector('[role=tab][aria-selected=true]')?.textContent.trim() ?? null`)
   await ctx.s.waitFor(async () => (await selected()) === "Home", "the Home tab")
-  assert.ok(await ctx.s.byLabel("Move Search up"), "the same controls as Settings")
+  assert.ok(await ctx.s.byLabel("Reorder Search"), "the same controls as Settings")
   const tabs = await ctx.s.exec(`return [...document.querySelectorAll('[role=tab]')].map(t => t.textContent.trim())`)
   assert.deepEqual(tabs, ["Appearance", "Reading", "Home", "Feeds", "Storage", "Background", "AI agents"])
 

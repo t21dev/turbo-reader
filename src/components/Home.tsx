@@ -100,7 +100,10 @@ export function Home({ prefs, onPrefs, onCustomize, onOpen, onStar, onScope, rev
     [data, prefs.hiddenGroups, prefs.groupOrder],
   )
 
-  const empty = !results && bands.length === 0 && (data?.pinned.length ?? 0) === 0
+  // No stories to show. Pinned feeds above don't count: a page with only
+  // pinned chips still needs to say the stories are coming, or that there
+  // are none.
+  const noStories = !results && bands.length === 0
   const waiting = refreshing || loading
   const windowLabel = (WINDOWS.find((w) => w.value === prefs.window)?.label ?? "in this window").toLowerCase()
 
@@ -223,6 +226,9 @@ export function Home({ prefs, onPrefs, onCustomize, onOpen, onStar, onScope, rev
     categories: !results && (
       <>
         {/* Categories */}
+        {prefs.bands.categories && noStories && (
+          <StoriesPlaceholder waiting={waiting} size={prefs.cardSize} windowLabel={windowLabel} />
+        )}
         {prefs.bands.categories &&
           bands.map((band, i) => (
             <div
@@ -309,19 +315,35 @@ export function Home({ prefs, onPrefs, onCustomize, onOpen, onStar, onScope, rev
           <Fragment key={key}>{sections[key]}</Fragment>
         ))}
 
-        {/* An empty page while a refresh runs is usually a new day before the
-            first fetch has landed: show where the stories will go, not a
-            blank page or a "nothing here" that is about to be wrong. */}
-        {empty && waiting && <HomeSkeleton size={prefs.cardSize} />}
-        {empty && !waiting && (
-          <p className="animate-rise py-16 text-center text-[12px] leading-relaxed text-subtle" data-home-empty>
-            Nothing published {windowLabel} yet.
-            <br />
-            Try a wider window, or refresh with <span className="text-foreground">r</span>.
-          </p>
+        {/* With categories switched off, the page still needs something
+            when nothing else is on it. */}
+        {!prefs.bands.categories && noStories && (data?.pinned.length ?? 0) === 0 && (
+          <StoriesPlaceholder waiting={waiting} size={prefs.cardSize} windowLabel={windowLabel} />
         )}
       </div>
     </section>
+  )
+}
+
+/** An empty page while a refresh runs is usually a new day before the first
+    fetch has landed: show where the stories will go, not a blank page or a
+    "nothing here" that is about to be wrong. Once it settles, say so. */
+function StoriesPlaceholder({
+  waiting,
+  size,
+  windowLabel,
+}: {
+  waiting: boolean
+  size: CardSize
+  windowLabel: string
+}) {
+  if (waiting) return <HomeSkeleton size={size} />
+  return (
+    <p className="animate-rise py-16 text-center text-[12px] leading-relaxed text-subtle" data-home-empty>
+      Nothing published {windowLabel} yet.
+      <br />
+      Try a wider window, or refresh with <span className="text-foreground">r</span>.
+    </p>
   )
 }
 

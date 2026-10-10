@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react"
-import { ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, Pin } from "lucide-react"
+import { ChevronDown, Eye, EyeOff, Pin } from "lucide-react"
 import { api, type BandLayout, type Group, type Source } from "@/lib/api"
 import {
   LAYOUTS,
   SECTIONS,
   WINDOWS,
-  moved,
   ordered,
   type CardSize,
   type HomePrefs,
@@ -13,6 +12,7 @@ import {
 import { cn } from "@/lib/utils"
 import { fuzzyFilter } from "@/lib/fuzzy"
 import { ListFilter } from "@/components/ListFilter"
+import { SortableList } from "@/components/Sortable"
 
 type Props = {
   home: HomePrefs
@@ -112,25 +112,24 @@ export function HomeSettings({
           </Field>
 
           <Field label="Sections">
-            <div className="space-y-1.5" data-home-sections>
-              {home.order.map((key, i) => {
-                const label = SECTIONS.find((x) => x.key === key)!.label
-                const on = home.bands[key]
+            <SortableList
+              data={{ "data-home-sections": true }}
+              keys={home.order}
+              onReorder={(next) => setHome({ order: next as HomePrefs["order"] })}
+              label={(key) => SECTIONS.find((x) => x.key === key)!.label}
+              row={(key, handle) => {
+                const section = key as HomePrefs["order"][number]
+                const on = home.bands[section]
                 return (
                   <OrderRow
-                    key={key}
-                    label={label}
+                    label={SECTIONS.find((x) => x.key === section)!.label}
                     shown={on}
-                    first={i === 0}
-                    last={i === home.order.length - 1}
-                    onToggle={() => setHome({ bands: { ...home.bands, [key]: !on } })}
-                    onMove={(by) =>
-                      setHome({ order: moved(home.order, key, by) as HomePrefs["order"] })
-                    }
+                    handle={handle}
+                    onToggle={() => setHome({ bands: { ...home.bands, [section]: !on } })}
                   />
                 )
-              })}
-            </div>
+              }}
+            />
           </Field>
 
           <Field label="Pinned feeds">
@@ -139,34 +138,30 @@ export function HomeSettings({
 
           {groups.length > 0 && (
             <Field label="Categories">
-              <div className="space-y-1.5" data-home-categories>
-                {homeGroups.map((g, i) => (
-                  <GroupRow
-                    key={g.id}
-                    group={g}
-                    first={i === 0}
-                    last={i === homeGroups.length - 1}
-                    onMove={(by) =>
-                      setHome({
-                        groupOrder: moved(
-                          homeGroups.map((x) => String(x.id)),
-                          String(g.id),
-                          by,
-                        ),
-                      })
-                    }
-                    hidden={home.hiddenGroups.includes(String(g.id))}
-                    onToggleHidden={() =>
-                      setHome({
-                        hiddenGroups: home.hiddenGroups.includes(String(g.id))
-                          ? home.hiddenGroups.filter((x) => x !== String(g.id))
-                          : [...home.hiddenGroups, String(g.id)],
-                      })
-                    }
-                    onLayout={(layout) => void api.setGroupLayout(g.id, layout).then(onChanged)}
-                  />
-                ))}
-              </div>
+              <SortableList
+                data={{ "data-home-categories": true }}
+                keys={homeGroups.map((g) => String(g.id))}
+                onReorder={(next) => setHome({ groupOrder: next })}
+                label={(id) => homeGroups.find((g) => String(g.id) === id)?.name ?? "category"}
+                row={(id, handle) => {
+                  const g = homeGroups.find((x) => String(x.id) === id)!
+                  return (
+                    <GroupRow
+                      group={g}
+                      handle={handle}
+                      hidden={home.hiddenGroups.includes(String(g.id))}
+                      onToggleHidden={() =>
+                        setHome({
+                          hiddenGroups: home.hiddenGroups.includes(String(g.id))
+                            ? home.hiddenGroups.filter((x) => x !== String(g.id))
+                            : [...home.hiddenGroups, String(g.id)],
+                        })
+                      }
+                      onLayout={(layout) => void api.setGroupLayout(g.id, layout).then(onChanged)}
+                    />
+                  )
+                }}
+              />
             </Field>
           )}
 
@@ -345,63 +340,20 @@ function PinPicker({ sources, onChanged }: { sources: Source[]; onChanged: () =>
   )
 }
 
-/** Up and down buttons for anything the reader can put in order. */
-function MoveButtons({
-  label,
-  first,
-  last,
-  onMove,
-}: {
-  label: string
-  first: boolean
-  last: boolean
-  onMove: (by: -1 | 1) => void
-}) {
-  const cls =
-    "row grid h-8 w-7 shrink-0 place-items-center border border-border text-muted-foreground hover:bg-secondary hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
-  return (
-    <>
-      <button
-        type="button"
-        aria-label={`Move ${label} up`}
-        title="Move up"
-        disabled={first}
-        onClick={() => onMove(-1)}
-        className={cls}
-      >
-        <ArrowUp size={12} />
-      </button>
-      <button
-        type="button"
-        aria-label={`Move ${label} down`}
-        title="Move down"
-        disabled={last}
-        onClick={() => onMove(1)}
-        className={cls}
-      >
-        <ArrowDown size={12} />
-      </button>
-    </>
-  )
-}
-
 function OrderRow({
   label,
   shown,
-  first,
-  last,
+  handle,
   onToggle,
-  onMove,
 }: {
   label: string
   shown: boolean
-  first: boolean
-  last: boolean
+  handle: React.ReactNode
   onToggle: () => void
-  onMove: (by: -1 | 1) => void
 }) {
   return (
     <div className="flex items-center gap-1.5">
+      {handle}
       <button
         type="button"
         onClick={onToggle}
@@ -423,7 +375,6 @@ function OrderRow({
       >
         {label}
       </span>
-      <MoveButtons label={label} first={first} last={last} onMove={onMove} />
     </div>
   )
 }
@@ -431,27 +382,26 @@ function OrderRow({
 function GroupRow({
   group,
   hidden,
-  first,
-  last,
+  handle,
   onToggleHidden,
-  onMove,
   onLayout,
 }: {
   group: Group
   hidden: boolean
-  first: boolean
-  last: boolean
+  handle: React.ReactNode
   onToggleHidden: () => void
-  onMove: (by: -1 | 1) => void
   onLayout: (layout: BandLayout | null) => void
 }) {
   // Kept here as well, since the group list is not reloaded after a change.
   const [layout, setLayout] = useState<string>(group.homeLayout ?? "")
   return (
     <div className="flex items-center gap-1.5">
+      {handle}
       <button
         type="button"
         onClick={onToggleHidden}
+        aria-label={`${hidden ? "Show" : "Hide"} ${group.name}`}
+        aria-pressed={!hidden}
         title={hidden ? "Hidden from home" : "Shown on home"}
         className={cn(
           "row grid h-8 w-8 shrink-0 place-items-center border border-border",
@@ -463,7 +413,6 @@ function GroupRow({
       <span className="min-w-0 flex-1 truncate text-[12px] text-muted-foreground">
         {group.name}
       </span>
-      <MoveButtons label={group.name} first={first} last={last} onMove={onMove} />
       <select
         aria-label={`Layout for ${group.name}`}
         value={layout}

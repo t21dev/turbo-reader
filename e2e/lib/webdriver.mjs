@@ -209,6 +209,29 @@ export class El {
     await this.s.cmd("DELETE", "/actions")
   }
 
+  /** Press on this element, drag it in small steps onto `target`, and let
+      go: a real pointer drag, as a mouse would do it. */
+  async dragTo(target) {
+    await this.s.cmd("POST", "/actions", {
+      actions: [
+        {
+          type: "pointer",
+          id: "mouse",
+          parameters: { pointerType: "mouse" },
+          actions: [
+            { type: "pointerMove", duration: 0, origin: { [ELEMENT]: this.id }, x: 0, y: 0 },
+            { type: "pointerDown", button: 0 },
+            { type: "pause", duration: 60 },
+            { type: "pointerMove", duration: 250, origin: { [ELEMENT]: target.id }, x: 0, y: 0 },
+            { type: "pause", duration: 60 },
+            { type: "pointerUp", button: 0 },
+          ],
+        },
+      ],
+    })
+    await this.s.cmd("DELETE", "/actions")
+  }
+
   text() {
     return this.s.cmd("GET", `/element/${this.id}/text`)
   }

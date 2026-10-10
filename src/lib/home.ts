@@ -101,16 +101,6 @@ export function ordered<T>(list: T[], key: (t: T) => string, order: string[]): T
     .map((x) => x.t)
 }
 
-/** The list with one key swapped one place up (-1) or down (1). */
-export function moved(list: string[], key: string, by: -1 | 1): string[] {
-  const i = list.indexOf(key)
-  const j = i + by
-  if (i === -1 || j < 0 || j >= list.length) return list
-  const next = [...list]
-  ;[next[i], next[j]] = [next[j], next[i]]
-  return next
-}
-
 /** Smallest card width in pixels for each layout at each size. */
 export const CARD_WIDTH: Record<CardSize, { cards: number; mosaic: number; compact: number }> = {
   small: { cards: 190, mosaic: 170, compact: 160 },

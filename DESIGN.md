@@ -201,6 +201,8 @@ Reuse these class strings. Line numbers point at the reference implementation.
 
 **Inline messages.** Success: 14px icon in `text-system` plus 12px text (`SettingsPanel.tsx:716`). Error: `role="alert"`, `text-[12px] leading-relaxed text-destructive` with `AlertCircle size={14}` (`Prompt.tsx:125`).
 
+**Sortable list** (`Sortable.tsx`, `SortableList`). Any list the reader puts in order, instead of up and down buttons. Each row starts with a grip on the left: `GripVertical` 13px in a `row grid h-8 w-5 cursor-grab touch-none text-subtle hover:text-foreground` button, labelled `Reorder <name>`, with the segmented focus ring. Dragging uses pointer events, not HTML5 drag and drop. The lifted row follows the pointer with `bg-popover shadow-float`, and the rows it passes step aside with `transition-[translate] duration-200 ease-out`. Up and Down on a focused grip move the row one place, and a `role="status"` line announces the new position.
+
 **Empty states.** One quiet line, centred, `animate-rise text-[12px] text-subtle` (`ArticleList.tsx:186`), or `text-[13px]` in the reader (`Reader.tsx:69`). Point to the next action in words, with the key in `text-foreground` (`Sidebar.tsx:246`). No illustrations.
 
 **Keyboard hints.** In titles: `title="Refresh all feeds (r)"`. In prose: `<kbd className="font-mono text-foreground">` (`Welcome.tsx:176`). In the shortcuts sheet: `kbd` with `min-w-[2.1rem] rounded-md border border-border bg-background px-1.5 py-0.5 font-mono text-[10.5px]` (`Shortcuts.tsx:108`).
