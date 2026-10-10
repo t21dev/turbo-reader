@@ -155,7 +155,9 @@ export function AboutDialog({
               ) : (
                 <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
                   <CheckCircle2 size={14} className="shrink-0 text-system" />
-                  Up to date on <span className="tabular">{update.current}</span>.
+                  <span>
+                    Up to date on <span className="tabular">{update.current}</span>.
+                  </span>
                 </p>
               )}
             </div>

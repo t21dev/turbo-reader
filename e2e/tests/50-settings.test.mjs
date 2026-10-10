@@ -238,6 +238,12 @@ test("E11 update check: a note in the title bar, a setting to stop it, and the m
   await ctx.trap("check_for_updates", { current: "0.6.0", latest: "0.6.0", newer: false, url: "https://github.com/t21dev/turbo-reader/releases/tag/v0.6.0", published: "2026-10-04" })
   await (await ctx.s.byText("[role=dialog] button", "Check for updates")).click()
   await ctx.waitText("Up to date on")
+  // One run of text: the version and full stop sit flush, not spread out as
+  // separate flex items.
+  const spread = await ctx.s.exec(`
+    const p = document.querySelector('[role=dialog] [role=status] p')
+    return [...p.childNodes].filter((n) => n.nodeType === 3 && n.textContent.trim()).length`)
+  assert.equal(spread, 0, "the sentence is wrapped, so the flex gap doesn't split it")
   await ctx.s.waitFor(async () => (await pill()) === null, "the note to clear after an up-to-date check")
   await ctx.closeAbout()
 }))
