@@ -96,6 +96,8 @@ function Attention({
   onDone,
   onOpenFeed,
   onRefresh,
+  onRetryFeed,
+  retrying,
 }: {
   update: { latest: string; url: string } | null
   failing: NotificationSummary["failing"]
@@ -103,6 +105,10 @@ function Attention({
   onDone: () => void
   onOpenFeed: (id: number) => void
   onRefresh: () => void
+  /** Fetch one failing feed again. */
+  onRetryFeed: (id: number) => void
+  /** Feeds being retried right now. */
+  retrying: ReadonlySet<number>
 }) {
   const [updating, setUpdating] = useState<string | null>(null)
   async function updateSkill(t: SkillTarget) {
@@ -187,6 +193,17 @@ function Attention({
                 {f.error}
               </span>
             </button>
+            <button
+              type="button"
+              disabled={retrying.has(f.id)}
+              onClick={() => onRetryFeed(f.id)}
+              title={`Fetch ${f.name} again now`}
+              aria-label={`Retry ${f.name}`}
+              className="row flex h-6 shrink-0 items-center gap-1 px-2 text-[11.5px] text-system hover:bg-secondary disabled:opacity-60"
+            >
+              <RefreshCw size={11} className={cn(retrying.has(f.id) && "animate-spin")} aria-hidden />
+              {retrying.has(f.id) ? "Retrying" : "Retry"}
+            </button>
           </li>
         ))}
       </ul>
@@ -203,10 +220,16 @@ export function NotificationBell({
   update,
   onOpenFeed,
   onRefresh,
+  onRetryFeed,
+  retrying,
 }: {
   update: { latest: string; url: string } | null
   onOpenFeed: (id: number) => void
   onRefresh: () => void
+  /** Fetch one failing feed again. */
+  onRetryFeed: (id: number) => void
+  /** Feeds being retried right now. */
+  retrying: ReadonlySet<number>
 }) {
   const { summary, reload } = useSummary()
   const { skills } = useOutdatedSkills()
@@ -263,6 +286,8 @@ export function NotificationBell({
                 onDone={close}
                 onOpenFeed={onOpenFeed}
                 onRefresh={onRefresh}
+                onRetryFeed={onRetryFeed}
+                retrying={retrying}
               />
             )}
 
@@ -326,6 +351,8 @@ export function NotificationBell({
           failing={failing}
           skills={skills}
           onRefresh={onRefresh}
+          onRetryFeed={onRetryFeed}
+          retrying={retrying}
         />
       )}
     </>
@@ -342,6 +369,8 @@ function AllNotifications({
   failing,
   skills,
   onRefresh,
+  onRetryFeed,
+  retrying,
 }: {
   onClose: () => void
   onOpenFeed: (id: number) => void
@@ -349,6 +378,10 @@ function AllNotifications({
   failing: NotificationSummary["failing"]
   skills: SkillTarget[]
   onRefresh: () => void
+  /** Fetch one failing feed again. */
+  onRetryFeed: (id: number) => void
+  /** Feeds being retried right now. */
+  retrying: ReadonlySet<number>
 }) {
   const { closing, dismiss } = useDismissible(onClose)
   const [items, setItems] = useState<AppNotification[]>([])
@@ -433,6 +466,8 @@ function AllNotifications({
                 onDone={dismiss}
                 onOpenFeed={onOpenFeed}
                 onRefresh={onRefresh}
+                onRetryFeed={onRetryFeed}
+                retrying={retrying}
               />
             </div>
           )}

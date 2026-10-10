@@ -6,6 +6,7 @@ import {
   Pencil,
   Pin,
   PinOff,
+  RefreshCw,
   Trash2,
 } from "lucide-react"
 import { openUrl } from "@tauri-apps/plugin-opener"
@@ -23,6 +24,7 @@ export type RailTarget = { kind: "rail"; at: MenuPoint }
 export type Target = SourceTarget | GroupTarget | RailTarget
 
 export type SidebarActions = {
+  retrySource: (s: Source) => void
   renameSource: (s: Source) => void
   moveSource: (s: Source, groupId: number | null) => void
   setKeepLimit: (s: Source, limit: number) => void
@@ -86,6 +88,14 @@ export function SidebarContextMenu({
         const s = target.source
         return (
           <>
+            {s.lastError && (
+              <>
+                <MenuItem icon={<RefreshCw size={13} />} onClick={run(() => actions.retrySource(s))}>
+                  Retry feed
+                </MenuItem>
+                <MenuSeparator />
+              </>
+            )}
             <MenuItem icon={<Pencil size={13} />} onClick={run(() => actions.renameSource(s))}>
               Rename
             </MenuItem>

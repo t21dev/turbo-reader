@@ -540,6 +540,30 @@ pub async fn run_refresh(app: &tauri::AppHandle, state: &AppState) -> Result<Fet
     report
 }
 
+/// Fetch one feed now: the retry on a failing feed. Waits for a refresh
+/// already running rather than racing it, then tells the window the feed
+/// changed. No "refresh-started", so the whole app does not go into its
+/// refreshing state for one feed.
+#[tauri::command]
+pub async fn fetch_source(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    id: i64,
+) -> Result<FetchReport, String> {
+    let _guard = state.fetching.lock().await;
+    let started = chrono::Utc::now().timestamp();
+    let report = refresh_sources(&state, Some(id)).await?;
+    if report.sources == 0 {
+        return Err("That feed no longer exists.".into());
+    }
+    let _ = tauri::Emitter::emit(&app, "feeds-updated", &report);
+    spawn_icon_fill(app.clone());
+    if report.new_items > 0 {
+        crate::notifications::record_refresh(&app, started);
+    }
+    Ok(report)
+}
+
 /// "Refresh now" from the tray menu. Skipped if a refresh is already running.
 pub async fn refresh_from_tray(app: &tauri::AppHandle) {
     let state = app.state::<AppState>();
@@ -551,6 +575,11 @@ pub async fn refresh_from_tray(app: &tauri::AppHandle) {
 
 /// Fetch every feed. Shared by the refresh button and the background schedule.
 pub async fn refresh_all(state: &AppState) -> Result<FetchReport, String> {
+    refresh_sources(state, None).await
+}
+
+/// Fetch every shown feed, or only the one with `only`'s id, hidden or not.
+pub async fn refresh_sources(state: &AppState, only: Option<i64>) -> Result<FetchReport, String> {
     let started = std::time::Instant::now();
     // Collect into an owned Vec and bind it, so the guard and the statement
     // are both released before the block ends. Nothing may be held across
@@ -558,10 +587,13 @@ pub async fn refresh_all(state: &AppState) -> Result<FetchReport, String> {
     let targets: Vec<(i64, String, Option<String>, Option<String>)> = {
         let conn = state.db.lock().map_err(e)?;
         let mut stmt = conn
-            .prepare("SELECT id, url, etag, last_modified FROM sources WHERE hidden = 0")
+            .prepare(
+                "SELECT id, url, etag, last_modified FROM sources
+                  WHERE (?1 IS NULL AND hidden = 0) OR id = ?1",
+            )
             .map_err(e)?;
         let rows = stmt
-            .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))
+            .query_map(params![only], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))
             .map_err(e)?
             .collect::<Result<Vec<_>, _>>()
             .map_err(e)?;

@@ -181,7 +181,7 @@ Reuse these class strings. Line numbers point at the reference implementation.
 
 **Checkbox cards** (`Welcome.tsx:113`). Same card shape with `role="checkbox"`; the box is `h-4 w-4 rounded-[4px] border`, checked `border-system bg-system text-background` with `Check size={11} strokeWidth={3}`.
 
-**Sidebar row** (`Sidebar.tsx:28`). `row relative flex w-full items-center gap-2 pr-2 text-[13px] h-(--row-h)`; active `bg-elevated font-medium text-foreground` plus a 3px `bg-system` bar that grows from `h-0` to `h-4`; idle `text-muted-foreground hover:bg-secondary hover:text-foreground`. Counts: `tabular text-[11px] text-subtle`, capped at `999+`.
+**Sidebar row** (`Sidebar.tsx:28`). `row relative flex w-full items-center gap-2 pr-2 text-[13px] h-(--row-h)`; active `bg-elevated font-medium text-foreground` plus a 3px `bg-system` bar that grows from `h-0` to `h-4`; idle `text-muted-foreground hover:bg-secondary hover:text-foreground`. Counts: `tabular text-[11px] text-subtle`, capped at `999+`. A row action, such as retry on a failing feed, is a sibling button laid over the right edge (`row absolute right-1.5 h-6 w-6 bg-secondary`), shown on `group-hover` and focus, never a button inside the row button (`Sidebar.tsx`, `Retryable`).
 
 **Article list item** (`ArticleList.tsx:104`). `border-b border-border/60 px-3 py-2.5`; active `bg-elevated` plus a 2px `bg-system` left bar; hover `bg-secondary/70`; read `opacity-[0.78]`. Meta line 11px subtle with `·` separators; unread dot `h-1.5 w-1.5 rounded-full bg-system`; secondary actions `opacity-0 group-hover:opacity-70`.
 

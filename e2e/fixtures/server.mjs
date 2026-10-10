@@ -24,6 +24,8 @@ const PROSE =
 
 let counters = {}
 let growCount = 0
+// /flaky.xml fails until /__heal is requested, for retrying one feed.
+let healed = false
 
 function bump(key) {
   counters[key] = (counters[key] ?? 0) + 1
@@ -254,6 +256,19 @@ A new paragraph about the video.</media:description>
 
     "/broken.xml": () => [500, "text/plain", "server error"],
 
+    // Fails like broken.xml until /__heal, then serves one article.
+    "/flaky.xml": () =>
+      healed
+        ? [
+            200,
+            "application/rss+xml",
+            rss(base, "Flaky", [
+              rssItem({ guid: "flaky-1", title: "Back online", link: `${base}/flaky/1`,
+                date: now - HOUR, html: "<p>Back.</p>" }),
+            ]),
+          ]
+        : [500, "text/plain", "server error"],
+
     // A site, not a feed: it advertises its feed in the head.
     "/site.html": () => [
       200,
@@ -297,9 +312,15 @@ export function startFixtureServer(port = 0) {
         res.writeHead(200, { "content-type": "application/json" })
         return res.end(JSON.stringify({ counters, growCount }))
       }
+      if (url.pathname === "/__heal") {
+        healed = true
+        res.writeHead(204)
+        return res.end()
+      }
       if (url.pathname === "/__reset") {
         counters = {}
         growCount = 0
+        healed = false
         res.writeHead(204)
         return res.end()
       }

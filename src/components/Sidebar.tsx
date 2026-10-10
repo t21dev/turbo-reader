@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { ChevronRight, FolderPlus, Home as HomeIcon, Inbox, Pin, Plus, Star, CircleDot } from "lucide-react"
+import { ChevronRight, FolderPlus, Home as HomeIcon, Inbox, Pin, Plus, RefreshCw, Star, CircleDot } from "lucide-react"
 import type { MenuPoint } from "@/components/ContextMenu"
 import type { Target } from "@/components/SidebarMenus"
 import type { Group, Scope, Source } from "@/lib/api"
@@ -22,6 +22,10 @@ type Props = {
   /** Right-click anywhere in the rail. Null closes whatever is open. */
   onContextMenu: (target: Target | null) => void
   onNewGroup: () => void
+  /** Fetch one failing feed again. */
+  onRetry: (id: number) => void
+  /** Feeds being retried right now. */
+  retrying: ReadonlySet<number>
 }
 
 /** A rail row. Colour-only feedback, so rows never move on hover. */
@@ -86,6 +90,44 @@ function Row({
   )
 }
 
+/** A failing feed's row gets a retry button on its right edge, shown on
+    hover, on focus, and while the retry runs. It sits beside the row rather
+    than inside it, since a button cannot hold another button. */
+function Retryable({
+  name,
+  error,
+  retrying,
+  onRetry,
+  children,
+}: {
+  name: string
+  error: string | null
+  retrying: boolean
+  onRetry: () => void
+  children: React.ReactNode
+}) {
+  if (!error) return <>{children}</>
+  return (
+    <div className="group/feed relative" data-failing-row>
+      {children}
+      <button
+        type="button"
+        onClick={onRetry}
+        disabled={retrying}
+        title={`Retry ${name}: ${error}`}
+        aria-label={`Retry ${name}`}
+        className={cn(
+          "row absolute right-1.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center bg-secondary text-muted-foreground",
+          "transition-opacity duration-150 hover:bg-elevated hover:text-foreground focus-visible:opacity-100",
+          retrying ? "opacity-100" : "opacity-0 group-hover/feed:opacity-100",
+        )}
+      >
+        <RefreshCw size={12} className={cn(retrying && "animate-spin")} aria-hidden />
+      </button>
+    </div>
+  )
+}
+
 export function Sidebar(props: Props) {
   const {
     atHome,
@@ -101,6 +143,8 @@ export function Sidebar(props: Props) {
     onAddFeed,
     onContextMenu,
     onNewGroup,
+    onRetry,
+    retrying,
   } = props
 
   const grouped = useMemo(() => {
@@ -210,18 +254,25 @@ export function Sidebar(props: Props) {
               <div className="collapse-grid" data-open={g.expanded}>
                 <div className="overflow-hidden">
                   {feeds.map((s) => (
-                    <Row
+                    <Retryable
                       key={s.id}
-                      indent
-                      active={!atHome && scope === "source" && scopeId === s.id}
-                      label={s.name}
-                      title={s.lastError ?? hostOf(s.siteUrl ?? s.url)}
-                      count={s.unread}
-                      icon={<FeedIcon source={s} />}
-                      badge={s.pinned ? <Pin size={10} className="shrink-0 text-subtle" /> : null}
-                      onClick={() => onSelect("source", s.id)}
-                      onContextMenu={(at) => onContextMenu({ kind: "source", source: s, at })}
-                    />
+                      name={s.name}
+                      error={s.lastError}
+                      retrying={retrying.has(s.id)}
+                      onRetry={() => onRetry(s.id)}
+                    >
+                      <Row
+                        indent
+                        active={!atHome && scope === "source" && scopeId === s.id}
+                        label={s.name}
+                        title={s.lastError ?? hostOf(s.siteUrl ?? s.url)}
+                        count={s.unread}
+                        icon={<FeedIcon source={s} />}
+                        badge={s.pinned ? <Pin size={10} className="shrink-0 text-subtle" /> : null}
+                        onClick={() => onSelect("source", s.id)}
+                        onContextMenu={(at) => onContextMenu({ kind: "source", source: s, at })}
+                      />
+                    </Retryable>
                   ))}
                 </div>
               </div>
@@ -230,17 +281,24 @@ export function Sidebar(props: Props) {
         })}
 
         {(grouped.get(null) ?? []).map((s) => (
-          <Row
+          <Retryable
             key={s.id}
-            active={!atHome && scope === "source" && scopeId === s.id}
-            label={s.name}
-            title={s.lastError ?? hostOf(s.siteUrl ?? s.url)}
-            count={s.unread}
-            icon={<FeedIcon source={s} />}
-            badge={s.pinned ? <Pin size={10} className="shrink-0 text-subtle" /> : null}
-            onClick={() => onSelect("source", s.id)}
-            onContextMenu={(at) => onContextMenu({ kind: "source", source: s, at })}
-          />
+            name={s.name}
+            error={s.lastError}
+            retrying={retrying.has(s.id)}
+            onRetry={() => onRetry(s.id)}
+          >
+            <Row
+              active={!atHome && scope === "source" && scopeId === s.id}
+              label={s.name}
+              title={s.lastError ?? hostOf(s.siteUrl ?? s.url)}
+              count={s.unread}
+              icon={<FeedIcon source={s} />}
+              badge={s.pinned ? <Pin size={10} className="shrink-0 text-subtle" /> : null}
+              onClick={() => onSelect("source", s.id)}
+              onContextMenu={(at) => onContextMenu({ kind: "source", source: s, at })}
+            />
+          </Retryable>
         ))}
 
         {sources.length === 0 && (

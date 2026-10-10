@@ -236,6 +236,8 @@ export const api = {
   markAllReadPreview: (filter: Filter) => call<number>("mark_all_read_preview", { filter }),
 
   fetchAll: () => call<FetchReport>("fetch_all"),
+  /** Fetch one feed now, to retry one that is failing. */
+  fetchSource: (id: number) => call<FetchReport>("fetch_source", { id }),
 
   listItems: (filter: Filter) => call<ItemSummary[]>("list_items", { filter }),
   getItem: (id: number) => call<ItemFull>("get_item", { id }),

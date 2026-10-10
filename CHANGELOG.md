@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Retry one failing feed without refreshing the rest: from Retry beside it in
+  the bell's Needs attention, from the retry button on its sidebar row, or
+  from Retry feed in its right-click menu. A note says whether it works again.
+
 ## [0.30.0] - 2026-10-10
 
 ### Changed

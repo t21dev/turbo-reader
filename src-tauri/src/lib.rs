@@ -249,6 +249,7 @@ pub fn run() {
             commands::delete_source,
             commands::update_source,
             commands::fetch_all,
+            commands::fetch_source,
             commands::list_items,
             commands::get_item,
             commands::set_read,

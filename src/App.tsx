@@ -21,7 +21,7 @@ import { Home } from "@/components/Home"
 import { Prompt, type PromptSpec } from "@/components/Prompt"
 import { AddFeedDialog } from "@/components/AddFeedDialog"
 import { Toaster } from "@/components/Toaster"
-import { attempt, notify } from "@/lib/notify"
+import { attempt, notify, reason } from "@/lib/notify"
 import { SidebarContextMenu, type Target } from "@/components/SidebarMenus"
 import { readHomePrefs, writeHomePrefs, type HomePrefs } from "@/lib/home"
 import { installScale } from "@/lib/scale"
@@ -58,6 +58,8 @@ export default function App() {
   const [search, setSearch] = useState("")
 
   const [busy, setBusy] = useState(false)
+  /** Feeds being retried one at a time, so each control can show it. */
+  const [retrying, setRetrying] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   // Set when Settings is opened from home's Customize button.
@@ -227,6 +229,8 @@ export default function App() {
   }, [treeLoaded, sources.length])
 
   const sidebarActions = {
+    retrySource: (s: Source) => void retrySource(s.id),
+
     renameSource: (s: Source) =>
       setPrompt({
         title: "Rename feed",
@@ -320,6 +324,33 @@ export default function App() {
           await afterTreeChange()
         },
       }),
+  }
+
+  /** Fetch one failing feed again, and say how it went. The tree, the list,
+      home and the bell all reload from the feeds-updated event. */
+  async function retrySource(id: number) {
+    if (retrying.has(id)) return
+    const name = sources.find((x) => x.id === id)?.name ?? "The feed"
+    setRetrying((prev) => new Set(prev).add(id))
+    try {
+      const report = await api.fetchSource(id)
+      const error = report.errors[0]?.[1]
+      if (error) notify(`${name} is still failing: ${error}`, "error")
+      else
+        notify(
+          report.newItems > 0
+            ? `${name} is working again, with ${report.newItems} new article${report.newItems === 1 ? "" : "s"}.`
+            : `${name} is working again.`,
+        )
+    } catch (err) {
+      notify(`Retrying ${name} failed: ${reason(err)}`, "error")
+    } finally {
+      setRetrying((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
   }
 
   async function refresh() {
@@ -695,7 +726,13 @@ export default function App() {
         >
           <Search size={14} />
         </button>
-        <NotificationBell update={update} onOpenFeed={(id) => select("source", id)} onRefresh={refresh} />
+        <NotificationBell
+          update={update}
+          onOpenFeed={(id) => select("source", id)}
+          onRefresh={refresh}
+          onRetryFeed={retrySource}
+          retrying={retrying}
+        />
         {/* Settings, shortcuts and About share one menu. The view switch stays
             out here, and only where there is a list for it to change. */}
         <Menu
@@ -780,6 +817,8 @@ export default function App() {
             onAddFeed={() => setAddOpen(true)}
             onContextMenu={setMenuTarget}
             onNewGroup={sidebarActions.newGroup}
+            onRetry={retrySource}
+            retrying={retrying}
           />
         </div>
 
