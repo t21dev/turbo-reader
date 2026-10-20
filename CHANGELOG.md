@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-10-20
+
+### Changed
+- An article opened from home now shows in a full-height panel over home
+  instead of leaving it, so closing it puts you back where you were. Esc, the
+  close button or a click outside closes it. Settings, Home, Open articles set
+  to Leave home brings back the old behaviour.
+
 ## [0.31.0] - 2026-10-10
 
 ### Added
@@ -488,7 +496,8 @@ First public release.
   to reason about, which is a failure mode browser engines do not let a page
   recover from.
 
-[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.32.0...HEAD
+[0.32.0]: https://github.com/t21dev/turbo-reader/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/t21dev/turbo-reader/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/t21dev/turbo-reader/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/t21dev/turbo-reader/compare/v0.28.1...v0.29.0
