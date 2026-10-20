@@ -66,6 +66,17 @@ export function HomeSettings({
             />
           </Field>
 
+          <Field label="Open articles">
+            <Segmented
+              value={home.openIn}
+              onChange={(v) => setHome({ openIn: v as HomePrefs["openIn"] })}
+              options={[
+                { value: "modal", label: "Over home", title: "In a panel over home, closed with Esc" },
+                { value: "page", label: "Leave home", title: "In the article view, as before" },
+              ]}
+            />
+          </Field>
+
           <Field label="Under the date">
             <Segmented
               value={home.masthead}

@@ -18,6 +18,7 @@ import { Reader } from "@/components/Reader"
 import { SettingsPanel, type SettingsTab } from "@/components/SettingsPanel"
 import { Shortcuts } from "@/components/Shortcuts"
 import { Home } from "@/components/Home"
+import { HomeReader } from "@/components/HomeReader"
 import { Prompt, type PromptSpec } from "@/components/Prompt"
 import { AddFeedDialog } from "@/components/AddFeedDialog"
 import { Toaster } from "@/components/Toaster"
@@ -80,6 +81,13 @@ export default function App() {
   // Home has its own layout, so the list/card view does not apply there.
   const onHomePage = atHome && homePrefs.enabled
   const [homeRevision, setHomeRevision] = useState(0)
+  // An article opened from home in the panel over it, rather than leaving
+  // home: its feed, which the full article does not carry, for unread counts.
+  const [homeReading, setHomeReading] = useState<{ sourceId: number } | null>(null)
+  // Leaving home, or the article going (hidden, say), closes the panel too.
+  useEffect(() => {
+    if (!onHomePage || !current) setHomeReading(null)
+  }, [onHomePage, current])
   const [menuTarget, setMenuTarget] = useState<Target | null>(null)
   const [prompt, setPrompt] = useState<PromptSpec | null>(null)
   const [addOpen, setAddOpen] = useState(false)
@@ -371,23 +379,41 @@ export default function App() {
     writeHomePrefs(next)
   }
 
-  /** Opening anything from home leaves home and shows the reader. */
+  /** Opening anything from home shows it in the panel over home, or leaves
+      home for the reader when the reader prefers that. */
   async function openFromHome(it: HomeItem) {
-    setAtHome(false)
-    await selectItem({ ...it, author: null } as ItemSummary)
+    if (homePrefs.openIn === "page") {
+      setAtHome(false)
+      await selectItem({ ...it, author: null } as ItemSummary)
+      return
+    }
+    // Only once the article is in: before that, `current` may still be one
+    // from the article view, and the panel would open on it.
+    if (await selectItem({ ...it, author: null } as ItemSummary))
+      setHomeReading({ sourceId: it.sourceId })
   }
 
-  async function selectItem(it: ItemSummary) {
+  /** Closing the panel clears the article, and reloads home so the story
+      just read shows as read. */
+  function closeHomeReader() {
+    setHomeReading(null)
+    setCurrent(null)
+    setHomeRevision((n) => n + 1)
+  }
+
+  /** Shows an article. True once it is on screen. */
+  async function selectItem(it: ItemSummary): Promise<boolean> {
     const full = await attempt("Opening the article", () => api.getItem(it.id))
-    if (!full) return
+    if (!full) return false
     setCurrent(full)
     if (!it.read) {
-      if ((await attempt("Marking it read", () => api.setRead([it.id], true))) === undefined) return
+      if ((await attempt("Marking it read", () => api.setRead([it.id], true))) === undefined) return true
       setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, read: true } : x)))
       setSources((prev) =>
         prev.map((s) => (s.id === it.sourceId ? { ...s, unread: Math.max(0, s.unread - 1) } : s)),
       )
     }
+    return true
   }
 
   async function toggleStar(id: number, starred: boolean) {
@@ -613,6 +639,10 @@ export default function App() {
       if (typing || ev.ctrlKey || ev.metaKey || ev.altKey) return
 
       const idx = items.findIndex((i) => i.id === current?.id)
+      // The panel over home closes itself on Escape, and j and k step through
+      // the article list, which is not what is behind it.
+      const panel = homeReading !== null && onHomePage
+      if (panel && ["j", "k", "ArrowDown", "ArrowUp", "Escape", "z", "g"].includes(ev.key)) return
       switch (ev.key) {
         case "j":
         case "ArrowDown": {
@@ -978,6 +1008,27 @@ export default function App() {
             setSearch(q)
           }}
         />
+      )}
+
+      {homeReading && onHomePage && current && (
+        <HomeReader
+          onClose={closeHomeReader}
+          covered={!!prompt || addOpen || settingsOpen || shortcutsOpen || paletteOpen || aboutOpen}
+        >
+          {(dismiss) => (
+            <Reader
+              item={current}
+              youtubeInline={prefs.youtubeInline}
+              onStar={(it) => void toggleStar(it.id, !it.starred)}
+              onToggleRead={(it) => void toggleRead(it.id, homeReading.sourceId, !it.read)}
+              onHide={(it) => void hide(it.id)}
+              onContentLoaded={(id, content) =>
+                setCurrent((prev) => (prev && prev.id === id ? { ...prev, content } : prev))
+              }
+              onClose={dismiss}
+            />
+          )}
+        </HomeReader>
       )}
 
       <SidebarContextMenu

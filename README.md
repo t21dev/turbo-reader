@@ -114,6 +114,8 @@ fn geolocation_cannot_survive_sanitising() {
 - Put the sections in any order, hide the ones you do not use, give categories
   a home order separate from the sidebar, and choose small, medium or large cards,
   all from the Customize button on home
+- Articles open in a panel over home, so closing one puts you back where you
+  were. A setting switches back to leaving home for the article view
 - Ranking with no API key and no network: freshness, unread, how often you
   open a feed, the feeds you pinned, and your own interest and mute lists.
   A line in slashes is a regular expression, anything else a substring

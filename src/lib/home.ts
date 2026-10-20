@@ -37,6 +37,9 @@ export type HomePrefs = {
   hiddenGroups: string[]
   interests: string
   mutes: string
+  /** Where an article opened from home shows: over home in a modal, or in
+      the article view, leaving home. */
+  openIn: "modal" | "page"
 }
 
 export const HOME_DEFAULTS: HomePrefs = {
@@ -53,6 +56,7 @@ export const HOME_DEFAULTS: HomePrefs = {
   hiddenGroups: [],
   interests: "",
   mutes: "",
+  openIn: "modal",
 }
 
 const KEY = "turbo-home"
@@ -72,6 +76,7 @@ export function readHomePrefs(): HomePrefs {
       cardSize: (["small", "medium", "large"] as const).includes(o.cardSize as CardSize)
         ? o.cardSize!
         : HOME_DEFAULTS.cardSize,
+      openIn: o.openIn === "page" ? "page" : "modal",
       perBand: [4, 8, 12].includes(o.perBand as number) ? o.perBand! : HOME_DEFAULTS.perBand,
     }
   } catch {

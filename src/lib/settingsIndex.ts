@@ -44,6 +44,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   { label: "Show the home page", place: "Home", keywords: "start page landing dashboard", target: H },
   { label: "Home sections", place: "Home", keywords: "order glance search pinned categories reorder", target: H, anchor: "Sections" },
   { label: "Opening window", place: "Home", keywords: "time range since midnight days", target: H },
+  { label: "Open articles", place: "Home", keywords: "modal panel overlay reader leave home click", target: H },
   { label: "Under the date", place: "Home", keywords: "quote headline masthead", target: H },
   { label: "Clock", place: "Home", keywords: "time seconds", target: H },
   { label: "Card size", place: "Home", keywords: "small medium large", target: H },

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { ArrowLeft, Check, Circle, CircleDot, Download, ExternalLink, EyeOff, FileDown, Globe, Link2, Loader2, MoreHorizontal, Printer, QrCode, Share2, Star, Type, BookOpen, Minimize2, AlertCircle } from "lucide-react"
+import { ArrowLeft, Check, Circle, CircleDot, Download, ExternalLink, EyeOff, FileDown, Globe, Link2, Loader2, MoreHorizontal, Printer, QrCode, Share2, Star, Type, BookOpen, Minimize2, AlertCircle, X } from "lucide-react"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { Lightbox } from "@/components/Lightbox"
 import { save as saveDialog } from "@tauri-apps/plugin-dialog"
@@ -21,6 +21,8 @@ type Props = {
   onContentLoaded: (id: number, content: string) => void
   /** Card view has no list beside the reader, so it needs a way back. */
   onBack?: () => void
+  /** Shown in a modal over home: a close button at the end of the toolbar. */
+  onClose?: () => void
   /** Reading mode: the article alone, sidebar and list hidden. */
   reading?: boolean
   onToggleReading?: () => void
@@ -34,6 +36,7 @@ export function Reader({
   onHide,
   onContentLoaded,
   onBack,
+  onClose,
   reading = false,
   onToggleReading,
 }: Props) {
@@ -402,6 +405,11 @@ export function Reader({
             </>
           )}
         </Menu>
+        {onClose && (
+          <ToolButton label="Close (Esc)" onClick={onClose}>
+            <X size={15} />
+          </ToolButton>
+        )}
       </header>
 
       <div ref={body} key={item.id} className="animate-rise min-h-0 flex-1 overflow-y-auto">

@@ -103,13 +103,40 @@ test("D5 See all opens the folder", shot("D5", async () => {
   }, "the folder's articles only")
 }))
 
-test("D6 opening an article from home goes to the reader", shot("D6", async () => {
+test("D6 opening an article from home shows it in a panel over home", shot("D6", async () => {
   await goHome()
   const card = await ctx.s.waitFor(() => ctx.s.byText("article, li > div", "Alpha arrives within the hour"), "the card")
   await card.click()
   await ctx.s.waitFor(async () => (await ctx.readerTitle()) === "Alpha arrives within the hour", "the reader")
   const item = (await ctx.items()).find((x) => x.title.startsWith("Alpha"))
   assert.equal(item.read, true, "marked read")
+  const panel = () => ctx.s.exec(`return !!document.querySelector('[role=dialog][aria-label=Article]')`)
+  assert.ok(await panel(), "in the panel")
+  assert.ok(await atHome(), "home is still behind it")
+
+  await ctx.s.press("Escape")
+  await ctx.s.waitFor(async () => !(await panel()), "Escape to close the panel")
+  assert.ok(await atHome(), "back on home")
+
+  // The close button does the same.
+  await (await ctx.s.waitFor(() => ctx.s.byText("article, li > div", "Alpha arrives within the hour"), "the card")).click()
+  await (await ctx.s.waitFor(() => ctx.s.byLabel("Close (Esc)"), "the close button")).click()
+  await ctx.s.waitFor(async () => !(await panel()), "the close button to close the panel")
+}))
+
+test("D6b with Open articles set to Leave home, an article leaves home for the reader", shot("D6b", async () => {
+  await goHome()
+  await ctx.settings("Home")
+  await (await ctx.s.byText("[role=dialog] button", "Leave home")).click()
+  await ctx.closeSettings()
+  await (await ctx.s.waitFor(() => ctx.s.byText("article, li > div", "Alpha arrives within the hour"), "the card")).click()
+  await ctx.s.waitFor(async () => (await ctx.readerTitle()) === "Alpha arrives within the hour", "the reader")
+  assert.ok(!(await atHome()), "left home")
+
+  await goHome()
+  await ctx.settings("Home")
+  await (await ctx.s.byText("[role=dialog] button", "Over home")).click()
+  await ctx.closeSettings()
 }))
 
 test("D7 interests lift an article and mutes sink one", shot("D7", async () => {
