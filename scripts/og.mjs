@@ -28,7 +28,7 @@ for (const f of [
 }
 
 const shot = (await readFile(new URL("scripts/assets/og-shot.jpg", root))).toString("base64");
-const unitX = 64 + size.length * 104;
+const unitX = 62 + size.length * 98;
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
