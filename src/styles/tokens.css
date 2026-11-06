@@ -1,0 +1,68 @@
+/* Hallmark · macrostructure: Stat-Led (spec sheet) · tone: technical, austere · anchor hue: 255 (app accent blue)
+ * theme: custom — the app's own dark palette (turbo-reader DESIGN.md), converted to OKLCH
+ * nav: N5-style sticky bar with scroll border · footer: Ft5 statement
+ * Hallmark · pre-emit critique: P5 H4 E4 S5 R4 V4
+ */
+:root {
+  color-scheme: dark;
+
+  /* colour — app dark theme */
+  --color-paper: oklch(16.5% 0 0);        /* #0d0d0d background */
+  --color-card: oklch(19.6% 0 0);         /* #131313 */
+  --color-elevated: oklch(24.4% 0 0);     /* #1f1f1f */
+  --color-rule: oklch(26% 0 0);           /* hairlines, a touch above the app's #202020 for web */
+  --color-rule-strong: oklch(32% 0 0);
+  --color-ink: oklch(94.7% 0 0);          /* #ededed */
+  --color-muted: oklch(66.5% 0 0);        /* #949494 */
+  --color-subtle: oklch(52% 0 0);         /* #666 lifted for AA on the paper */
+  --color-accent: oklch(71.5% 0.135 256); /* hsl(215 90% 68%), the app's default accent */
+  --color-accent-soft: oklch(71.5% 0.135 256 / 0.14);
+  --color-accent-ink: oklch(18% 0.03 256);
+  --color-starred: oklch(80% 0.15 75);    /* hsl(38 92% 60%), used once for the Rust test */
+  --color-focus: oklch(71.5% 0.135 256);
+  --color-scrim: oklch(16.5% 0 0 / 0.72);
+
+  /* type */
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "Cascadia Code", Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+  --text-3xl: clamp(2.25rem, 1.4rem + 3.4vw, 3.75rem);
+  --text-mega: clamp(6rem, 2rem + 17vw, 15rem);
+
+  /* space — 4pt */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+  --space-32: 8rem;
+
+  --gutter: max(20px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(20px, env(safe-area-inset-right, 0px));
+  --max: 1200px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* motion — Emil's curves */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-press: 140ms;
+  --dur-fast: 180ms;
+  --dur-base: 260ms;
+
+  --shadow-float: 0 0 0 1px oklch(100% 0 0 / 0.06), 0 24px 64px -12px oklch(0% 0 0 / 0.6);
+}

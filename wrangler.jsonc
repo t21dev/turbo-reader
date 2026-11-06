@@ -1,0 +1,18 @@
+// Turbo Reader website on Cloudflare Workers (static assets only, no Worker script).
+// Deploy: `npm run deploy` (needs `wrangler login` to the account that owns t21.dev),
+// or connect this branch in Workers Builds with build command `npm run build`
+// and deploy command `npx wrangler deploy`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "turbo-reader-landing",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "drop-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "routes": [{ "pattern": "turbo-reader.t21.dev", "custom_domain": true }],
+  // The workers.dev URL stays off so the site has one canonical address.
+  "workers_dev": false,
+  "preview_urls": false
+}
