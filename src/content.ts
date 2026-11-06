@@ -108,7 +108,7 @@ export const PACKAGES: { name: string; os: string; live: boolean; commands: stri
     commands: ["scoop bucket add t21dev https://github.com/t21dev/scoop-bucket", "scoop install t21dev/turbo-reader"],
   },
   { name: "winget", os: "Windows", live: false, commands: ["winget install t21dev.TurboReader"] },
-  { name: "Homebrew", os: "macOS", live: false, commands: ["brew install --cask t21dev/tap/turbo-reader"] },
+  { name: "Homebrew", os: "macOS", live: true, commands: ["brew install --cask t21dev/tap/turbo-reader"] },
 ];
 
 export const RUST_TEST =`#[test]
