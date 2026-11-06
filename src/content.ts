@@ -99,7 +99,19 @@ export const TOUR: TourItem[] = [
   },
 ];
 
-export const RUST_TEST = `#[test]
+// Package managers. Flip `live` once a package installs for real; only live ones render.
+export const PACKAGES: { name: string; os: string; live: boolean; commands: string[] }[] = [
+  {
+    name: "Scoop",
+    os: "Windows",
+    live: true,
+    commands: ["scoop bucket add t21dev https://github.com/t21dev/scoop-bucket", "scoop install t21dev/turbo-reader"],
+  },
+  { name: "winget", os: "Windows", live: false, commands: ["winget install t21dev.TurboReader"] },
+  { name: "Homebrew", os: "macOS", live: false, commands: ["brew install --cask t21dev/tap/turbo-reader"] },
+];
+
+export const RUST_TEST =`#[test]
 fn geolocation_cannot_survive_sanitising() {
     let hostile = r#"<p>a <geolocation> b</p><script>alert(1)</script>"#;
     let out = sanitise(hostile, None);

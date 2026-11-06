@@ -1105,3 +1105,26 @@ section h2 {
   font-size: var(--text-2xl);
   letter-spacing: -0.03em;
 }
+
+/* ---------- package managers ---------- */
+.pkgs {
+  margin-top: var(--space-10);
+}
+.pkgs h3 {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+.pkg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: var(--space-6);
+}
+.pkg {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.pkg .label {
+  margin: 0 0 var(--space-1);
+}
