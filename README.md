@@ -30,6 +30,23 @@ Download from the [latest release](https://github.com/t21dev/turbo-reader/releas
 | macOS | `_aarch64.dmg` for Apple silicon, `_x64.dmg` for Intel |
 | Linux | `.AppImage`, `.deb`, `.rpm` or `.flatpak` |
 
+Or install with a package manager:
+
+```sh
+# macOS, Homebrew
+brew install --cask t21dev/tap/turbo-reader
+
+# Windows, Scoop
+scoop bucket add t21dev https://github.com/t21dev/scoop-bucket
+scoop install t21dev/turbo-reader
+```
+
+Both also put a `turbo-reader` command on your PATH, so MCP clients can run
+`turbo-reader --mcp`. The cask clears the quarantine flag, so macOS opens the
+app without the warning below. Scoop installs the portable build and keeps its
+`data` folder across updates. `brew upgrade` and `scoop update` pick up new
+releases within a few hours of each one.
+
 **Flatpak on Linux.** Install the bundle with
 `flatpak install --user Turbo.Reader_*_x86_64.flatpak`. It needs the GNOME 51
 runtime from [Flathub](https://flathub.org/setup), which Flatpak fetches for
