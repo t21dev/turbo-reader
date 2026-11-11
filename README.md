@@ -16,13 +16,20 @@ By **[t21 dev](https://github.com/t21dev)** and **[TriptoAfsin](https://github.c
 [![Build](https://img.shields.io/github/actions/workflow/status/t21dev/turbo-reader/build.yml?branch=main&style=flat-square)](https://github.com/t21dev/turbo-reader/actions)
 [![Licence](https://img.shields.io/badge/licence-MIT-blue?style=flat-square)](LICENSE)
 
+<a href="https://apps.microsoft.com/detail/9NLRTCM38V06"><img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" alt="Get it from Microsoft" /></a>
+
 </div>
 
 ---
 
 ## Install
 
-Download from the [latest release](https://github.com/t21dev/turbo-reader/releases/latest).
+**Windows, Microsoft Store.** Get it from the
+[Microsoft Store](https://apps.microsoft.com/detail/9NLRTCM38V06). The Store
+copy is signed, so SmartScreen doesn't warn, and the Store keeps it up to date.
+It also puts `turbo-reader` on your PATH for `turbo-reader --mcp`.
+
+Or download from the [latest release](https://github.com/t21dev/turbo-reader/releases/latest).
 
 | Platform | File |
 | --- | --- |
@@ -33,6 +40,9 @@ Download from the [latest release](https://github.com/t21dev/turbo-reader/releas
 Or install with a package manager:
 
 ```sh
+# Windows, winget (installs the Microsoft Store build)
+winget install 9NLRTCM38V06 -s msstore
+
 # macOS, Homebrew
 brew install --cask t21dev/tap/turbo-reader
 
@@ -61,8 +71,8 @@ reader moves with the folder. Delete the `portable` file to use the normal
 per-user data folder instead. It needs the Microsoft Edge WebView2 Runtime,
 which Windows 10 and 11 already have.
 
-The builds are not code-signed with an Apple or Microsoft certificate yet, so
-Windows SmartScreen and macOS Gatekeeper warn on first run. On Windows, click
+The GitHub builds are not code-signed with an Apple or Microsoft certificate yet,
+so Windows SmartScreen and macOS Gatekeeper warn on first run. On Windows, click
 More info, then Run anyway. On macOS, if it says Turbo Reader is damaged or can't
 be verified, run `xattr -cr "/Applications/Turbo Reader.app"` in Terminal once; or
 try to open it, then click Open Anyway in System Settings > Privacy & Security
