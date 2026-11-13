@@ -364,6 +364,10 @@ analytics and no telemetry. It connects to other systems only for these:
 
 The full policy is in [PRIVACY.md](PRIVACY.md).
 
+## Support
+
+This project is free and open source. If it saves you time, you can support [Team 21](https://t21.dev) on [Patreon](https://www.patreon.com/triptex). It pays for code signing, app store fees and servers.
+
 ## Licence
 
 Turbo Reader is free and open source under the [MIT licence](LICENSE).
