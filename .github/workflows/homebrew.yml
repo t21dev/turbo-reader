@@ -1,0 +1,63 @@
+name: Homebrew
+
+# Updates the Homebrew cask (t21dev/homebrew-tap) when a release is published,
+# so `brew upgrade` sees it within minutes instead of waiting for the tap's
+# six-hourly autobump PR. Releases are published by hand (release.yml leaves
+# a draft), which is what triggers this. Run it by hand for a release that is
+# already out. HOMEBREW_TAP_TOKEN: a token that can push to the tap (classic,
+# public_repo scope).
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, like v0.33.0
+        required: true
+
+jobs:
+  cask:
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update the cask
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ -z "$TAP_TOKEN" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN isn't set; the tap's autobump will catch up instead"
+            exit 0
+          fi
+          VERSION="${TAG#v}"
+          gh release download "$TAG" -R "$REPO" -p SHA256SUMS.txt
+          sum() { awk -v f="$1" '$2 == f || $2 == "*" f { print $1 }' SHA256SUMS.txt; }
+          ARM=$(sum "Turbo.Reader_${VERSION}_aarch64.dmg")
+          INTEL=$(sum "Turbo.Reader_${VERSION}_x64.dmg")
+          if [ ${#ARM} -ne 64 ] || [ ${#INTEL} -ne 64 ]; then
+            echo "::warning::A macOS disk image is missing from the release; the cask is left as it is"
+            exit 0
+          fi
+          git clone --depth 1 "https://x-access-token:${TAP_TOKEN}@github.com/t21dev/homebrew-tap.git" tap
+          cd tap
+          sed -E -i \
+            -e "s/^(  version \")[^\"]+\"/\1${VERSION}\"/" \
+            -e "s/(arm: +\")[0-9a-f]{64}\"/\1${ARM}\"/" \
+            -e "s/(intel: +\")[0-9a-f]{64}\"/\1${INTEL}\"/" \
+            Casks/turbo-reader.rb
+          grep -q "version \"${VERSION}\"" Casks/turbo-reader.rb
+          grep -q "$ARM" Casks/turbo-reader.rb
+          grep -q "$INTEL" Casks/turbo-reader.rb
+          if git diff --quiet; then
+            echo "The cask already has $VERSION"
+            exit 0
+          fi
+          git diff
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "turbo-reader ${VERSION}"
+          git push origin HEAD
