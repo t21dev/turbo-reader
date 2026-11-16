@@ -33,6 +33,8 @@ jobs:
             echo "::warning::HOMEBREW_TAP_TOKEN isn't set; the tap's autobump will catch up instead"
             exit 0
           fi
+          # A secret pasted with a trailing newline breaks the clone URL.
+          TAP_TOKEN=$(printf '%s' "$TAP_TOKEN" | tr -d '[:space:]')
           VERSION="${TAG#v}"
           gh release download "$TAG" -R "$REPO" -p SHA256SUMS.txt
           sum() { awk -v f="$1" '$2 == f || $2 == "*" f { print $1 }' SHA256SUMS.txt; }
