@@ -44,10 +44,14 @@ jobs:
           - Linux: \`.AppImage\`, \`.deb\` or \`.flatpak\`
 
           ## Note on unsigned builds
-          These binaries are not code-signed yet. On Windows, SmartScreen
-          shows "Windows protected your PC": click More info, then Run anyway.
-          On macOS, open System Settings > Privacy & Security and click Open
-          Anyway, or run \`xattr -cr "/Applications/Turbo Reader.app"\`.
+          These binaries are not code-signed with an Apple or Microsoft
+          certificate yet. On Windows, SmartScreen shows "Windows protected
+          your PC": click More info, then Run anyway. On macOS, if the first
+          launch says Turbo Reader is damaged or can't be verified, run
+          \`xattr -cr "/Applications/Turbo Reader.app"\` in Terminal once; or
+          try to open it, then click Open Anyway in System Settings > Privacy
+          & Security (on macOS 14 and earlier, right-click the app and choose
+          Open).
           Check any download against the SHA-256 checksums at the end of
           these notes or in \`SHA256SUMS.txt\`.
           EOF

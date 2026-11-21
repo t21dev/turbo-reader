@@ -43,6 +43,9 @@
       "icons/icon.ico"
     ],
     "category": "News",
+    "macOS": {
+      "signingIdentity": "-"
+    },
     "shortDescription": "A fast, modern RSS reader",
     "longDescription": "Turbo Reader is a fast, lightweight RSS reader with a Rust core. Feeds are fetched, parsed and sanitised outside the UI, so a malformed article can never take the window down."
   }

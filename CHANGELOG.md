@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- The Apple silicon download no longer opens as "Turbo Reader is damaged and
+  can't be opened" on macOS. The app is now ad-hoc signed, so macOS shows its
+  usual warning for apps from outside the App Store, with Open Anyway in
+  System Settings > Privacy & Security
+  ([#6](https://github.com/t21dev/turbo-reader/issues/6)).
+
 ## [0.32.0] - 2026-10-20
 
 ### Changed

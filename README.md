@@ -61,10 +61,12 @@ reader moves with the folder. Delete the `portable` file to use the normal
 per-user data folder instead. It needs the Microsoft Edge WebView2 Runtime,
 which Windows 10 and 11 already have.
 
-The builds are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper
-warn on first run. On Windows, click More info, then Run anyway. On macOS,
-right-click the app and choose Open, or run
-`xattr -cr "/Applications/Turbo Reader.app"`. Each release lists the SHA-256
+The builds are not code-signed with an Apple or Microsoft certificate yet, so
+Windows SmartScreen and macOS Gatekeeper warn on first run. On Windows, click
+More info, then Run anyway. On macOS, if it says Turbo Reader is damaged or can't
+be verified, run `xattr -cr "/Applications/Turbo Reader.app"` in Terminal once; or
+try to open it, then click Open Anyway in System Settings > Privacy & Security
+(on macOS 14 and earlier, right-click the app and choose Open). Each release lists the SHA-256
 checksum of every download in `SHA256SUMS.txt`, so you can check what you
 installed.
 
