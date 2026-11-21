@@ -593,7 +593,9 @@ pub async fn refresh_sources(state: &AppState, only: Option<i64>) -> Result<Fetc
             )
             .map_err(e)?;
         let rows = stmt
-            .query_map(params![only], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))
+            .query_map(params![only], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
+            })
             .map_err(e)?
             .collect::<Result<Vec<_>, _>>()
             .map_err(e)?;
