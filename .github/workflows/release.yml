@@ -116,6 +116,16 @@ jobs:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
 
+      # An unsigned arm64 app opens as "damaged" on Apple silicon (#6), so
+      # fail the job if the bundle lost its ad-hoc signature.
+      - name: Check the app signature (macOS)
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          app=$(ls -d src-tauri/target/*/release/bundle/macos/*.app | head -n 1)
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign -dv "$app" 2>&1 | grep -E '^(Identifier|Format|Signature)='
+
       # A zip that runs without installing. The `portable` file next to the
       # exe keeps all data in a `data` folder beside it.
       - name: Portable zip (Windows)
