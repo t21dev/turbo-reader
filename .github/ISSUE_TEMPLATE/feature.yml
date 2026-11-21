@@ -1,0 +1,37 @@
+name: Feature request
+description: An idea that would make Turbo Reader better.
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of Turbo Reader is it about?
+      options:
+        - Feeds (adding, refreshing, OPML)
+        - Reading articles
+        - Home
+        - Search
+        - Background, tray, notifications
+        - AI agents (MCP)
+        - Look, settings, shortcuts
+        - Install / updates
+        - Speed / memory
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation or annoyance, not the solution yet.
+      placeholder: I follow 200 feeds and scroll a long way to find the ones I read daily.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      placeholder: Let me pin feeds to the top of the sidebar.
+    validations:
+      required: true

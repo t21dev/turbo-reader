@@ -1,0 +1,71 @@
+name: Bug report
+description: Something in Turbo Reader doesn't work the way it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. The README at https://github.com/t21dev/turbo-reader#readme may already answer it.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of Turbo Reader is it about?
+      options:
+        - Feeds (adding, refreshing, OPML)
+        - Reading articles
+        - Home
+        - Search
+        - Background, tray, notifications
+        - AI agents (MCP)
+        - Look, settings, shortcuts
+        - Install / updates
+        - Speed / memory
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Turbo Reader version
+      description: Settings → About shows it.
+      placeholder: "0.32.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS (Apple silicon)
+        - macOS (Intel)
+        - Linux
+    validations:
+      required: true
+  - type: input
+    id: install
+    attributes:
+      label: How you installed it (optional)
+      placeholder: ".dmg from GitHub, Homebrew, Scoop, Microsoft Store, Flatpak…"
+  - type: textarea
+    id: steps
+    attributes:
+      label: What happened, step by step
+      placeholder: |
+        1. Add the feed https://example.com/feed.xml
+        2. Click Refresh
+        3. The feed shows no articles
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshot or feed URL (optional)
+      description: Drag a screenshot in. A failing feed's URL helps a lot, if it's fine to make it public.

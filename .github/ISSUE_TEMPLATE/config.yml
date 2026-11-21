@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Turbo Reader README
+    url: https://github.com/t21dev/turbo-reader#readme
+    about: Install notes, features and the AI agent (MCP) guide.
