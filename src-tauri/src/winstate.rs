@@ -98,6 +98,11 @@ pub fn capture<R: tauri::Runtime>(
     if window.is_minimized().unwrap_or(false) {
         return None;
     }
+    // Full screen reports the screen too, and is not restored on launch: keep
+    // whatever was saved before it.
+    if window.is_fullscreen().unwrap_or(false) {
+        return previous;
+    }
     if window.is_maximized().unwrap_or(false) {
         return Some(match previous {
             Some(p) => WindowState {

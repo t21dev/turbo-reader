@@ -15,6 +15,7 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
       ["Esc", "Back to the list"],
       [isMac ? "⌘ [  ⌘ ]" : "Alt ←  Alt →", "Back and forward"],
       [`${MOD} B`, "Show or hide the sidebar"],
+      [isMac ? "⌃ ⌘ F" : "F11", "Full screen"],
       ["v", "Switch between cards and list"],
       ["g", "Home"],
       [`${MOD} K`, "Search feeds and articles"],
