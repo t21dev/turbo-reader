@@ -30,11 +30,13 @@ export function TitleBar({
   onRefresh?: () => void
 }) {
   const [isMaximized, setIsMaximized] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   useEffect(() => {
     const check = async () => {
       try {
         setIsMaximized(await appWindow.isMaximized())
+        setIsFullscreen(await appWindow.isFullscreen())
       } catch {
         /* window gone */
       }
@@ -44,6 +46,19 @@ export function TitleBar({
     return () => {
       void unlisten.then((fn) => fn())
     }
+  }, [])
+
+  // macOS has the green traffic light and ⌃⌘F from the View menu. Elsewhere
+  // the bar is drawn by the app, so F11 does it, as in a browser.
+  useEffect(() => {
+    if (isMac) return
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key !== "F11" || ev.repeat) return
+      ev.preventDefault()
+      void appWindow.isFullscreen().then((on) => appWindow.setFullscreen(!on))
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
   }, [])
 
   /** True for the parts of the bar that should move the window, so a click on
@@ -95,7 +110,8 @@ export function TitleBar({
       className={cn(
         "relative z-30 flex h-10 shrink-0 select-none items-center justify-between",
         "border-b border-border/70 bg-background/80 backdrop-blur-md",
-        isMac ? "pl-[78px]" : "pl-1.5",
+        // Room for the traffic lights, which hide in full screen.
+        isMac && !isFullscreen ? "pl-[78px]" : "pl-1.5",
       )}
     >
       <div className="flex items-center gap-1">
