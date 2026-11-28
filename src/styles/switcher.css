@@ -220,3 +220,25 @@
     display: none;
   }
 }
+
+/* Touch screens: a finger can't hit a 28px chevron reliably next to the logo link, and a miss
+   jumped to the top or the home page. So the whole logo area is the menu button there; the
+   current app's row in the menu still leads home. */
+@media (pointer: coarse) {
+  .apps-btn {
+    position: absolute;
+    inset: -6px -8px;
+    z-index: 1;
+    width: auto;
+    height: auto;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding-right: 8px;
+    border-radius: var(--sw-radius-row);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .brand-group {
+    padding-right: 26px;
+  }
+}
