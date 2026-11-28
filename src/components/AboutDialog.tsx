@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react"
-import { ArrowUpCircle, CheckCircle2, Download, Github, MessageSquare, RefreshCw, X } from "lucide-react"
+import { ArrowUpCircle, CheckCircle2, Download, ExternalLink, Github, MessageSquare, RefreshCw, X } from "lucide-react"
 import { getVersion } from "@tauri-apps/api/app"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { api, type UpdateCheck } from "@/lib/api"
 import type { AppPrefs } from "@/lib/prefs"
 import { recordUpdateCheck, useStoreCopy } from "@/lib/updates"
 import { TurboMark } from "@/components/TitleBar"
+import { CopyButton } from "@/components/CopyButton"
 import { useDismissible } from "@/lib/presence"
 import { cn } from "@/lib/utils"
 
@@ -154,14 +155,35 @@ export function AboutDialog({
                         <span className="tabular">{update.current}</span>.
                       </span>
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => void openUrl(update.url)}
-                      className="row mt-2 flex h-9 w-full items-center justify-center gap-2 border border-system bg-elevated text-[12px] text-foreground hover:bg-secondary"
-                    >
-                      <Download size={13} />
-                      Get it from GitHub
-                    </button>
+                    {update.upgrade ? (
+                      <>
+                        {/* A package manager put it here: updating any other way would leave two copies. */}
+                        <p className="mt-2 text-[11px] text-subtle">Update it the way you installed it:</p>
+                        <div className="mt-1 flex items-center gap-2 rounded-md border border-border bg-secondary py-1 pl-2.5 pr-1">
+                          <code className="min-w-0 flex-1 break-all font-mono text-[11px] text-foreground" data-upgrade>
+                            {update.upgrade}
+                          </code>
+                          <CopyButton text={update.upgrade} />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => void openUrl(update.url)}
+                          className="row mt-1.5 flex h-9 w-full items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        >
+                          <ExternalLink size={13} />
+                          What's new
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void openUrl(update.url)}
+                        className="row mt-2 flex h-9 w-full items-center justify-center gap-2 border border-system bg-elevated text-[12px] text-foreground hover:bg-secondary"
+                      >
+                        <Download size={13} />
+                        Get it from GitHub
+                      </button>
+                    )}
                   </>
                 ) : (
                   <p className="flex items-center gap-2 text-[12px] text-muted-foreground">

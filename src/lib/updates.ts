@@ -7,7 +7,7 @@ const EVENT = "turbo-update-checked"
 /** After launch, so the check never competes with startup. */
 const DELAY_MS = 8000
 
-type Saved = { at: number; latest: string | null; url: string }
+type Saved = { at: number; latest: string | null; url: string; upgrade?: string | null }
 
 function read(): Saved | null {
   try {
@@ -35,7 +35,7 @@ export function useStoreCopy(): boolean | null {
 
 /** Remember a check, automatic or manual, and tell anything showing it. */
 export function recordUpdateCheck(result: UpdateCheck) {
-  const saved: Saved = { at: Date.now(), latest: result.latest, url: result.url }
+  const saved: Saved = { at: Date.now(), latest: result.latest, url: result.url, upgrade: result.upgrade }
   try {
     localStorage.setItem(KEY, JSON.stringify(saved))
   } catch {
@@ -60,7 +60,9 @@ function isNewer(latest: string, current: string): boolean {
  * check there. Compared with the running version, so it disappears once you
  * have updated.
  */
-export function useUpdateCheck(enabled: boolean): { latest: string; url: string } | null {
+export function useUpdateCheck(
+  enabled: boolean,
+): { latest: string; url: string; upgrade: string | null } | null {
   const [saved, setSaved] = useState<Saved | null>(read)
   const [current, setCurrent] = useState<string | null>(null)
 
@@ -84,5 +86,5 @@ export function useUpdateCheck(enabled: boolean): { latest: string; url: string 
   }, [enabled])
 
   if (!enabled || !saved?.latest || !current || !isNewer(saved.latest, current)) return null
-  return { latest: saved.latest, url: saved.url }
+  return { latest: saved.latest, url: saved.url, upgrade: saved.upgrade ?? null }
 }

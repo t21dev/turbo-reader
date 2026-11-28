@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
-import { Check, Copy, KeyRound, Trash2 } from "lucide-react"
+import { KeyRound, Trash2 } from "lucide-react"
+import { CopyButton } from "@/components/CopyButton"
 import { api, type McpActivity, type McpKey, type McpLaunch, type McpStatus } from "@/lib/api"
 import { cn, relativeTime } from "@/lib/utils"
 import type { PromptSpec } from "@/components/Prompt"
@@ -378,26 +379,6 @@ function Snippets({ client, url, exe, keyText, serverOn }: { client: Client; url
         <p className="text-[11px] text-subtle">The HTTP setup needs "Allow AI agents to connect" on.</p>
       )}
     </div>
-  )
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [done, setDone] = useState(false)
-  return (
-    <button
-      type="button"
-      title="Copy"
-      aria-label="Copy"
-      onClick={() => {
-        void navigator.clipboard.writeText(text).then(() => {
-          setDone(true)
-          window.setTimeout(() => setDone(false), 1500)
-        })
-      }}
-      className="row grid h-7 w-7 shrink-0 place-items-center text-subtle hover:bg-background hover:text-foreground"
-    >
-      {done ? <Check size={13} className="text-system" /> : <Copy size={13} />}
-    </button>
   )
 }
 

@@ -112,6 +112,8 @@ export type UpdateCheck = {
   newer: boolean
   url: string
   published: string | null
+  /** The command that updates this copy, when Scoop or Homebrew installed it. */
+  upgrade: string | null
 }
 
 export type SourcePreview = {

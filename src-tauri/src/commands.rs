@@ -1430,6 +1430,48 @@ pub struct UpdateCheck {
     pub newer: bool,
     pub url: String,
     pub published: Option<String>,
+    /// The command that updates this copy, when a package manager installed
+    /// it: the interface shows it instead of sending you to the download page.
+    pub upgrade: Option<&'static str>,
+}
+
+/// How to update this copy, when Scoop or Homebrew installed it. Both keep it
+/// where the installer and the portable zip never are.
+fn upgrade_command() -> Option<&'static str> {
+    let exe = std::env::current_exe().ok()?;
+    if cfg!(windows) {
+        let roots: Vec<String> = ["SCOOP", "SCOOP_GLOBAL"]
+            .iter()
+            .filter_map(|key| std::env::var(key).ok())
+            .collect();
+        return scoop_copy(&exe.to_string_lossy(), &roots).then_some("scoop update turbo-reader");
+    }
+    if cfg!(target_os = "macos") {
+        // The cask copies the app into /Applications and keeps its record in
+        // the Caskroom, under /opt/homebrew on Apple silicon.
+        let cask = [
+            "/opt/homebrew/Caskroom/turbo-reader",
+            "/usr/local/Caskroom/turbo-reader",
+        ];
+        return cask
+            .iter()
+            .any(|dir| std::path::Path::new(dir).is_dir())
+            .then_some("brew upgrade --cask turbo-reader");
+    }
+    None
+}
+
+/// Whether `exe` sits in a Scoop app folder: `<root>\apps\turbo-reader\…`,
+/// where the root is `%SCOOP%`, `%SCOOP_GLOBAL%` or the default `…\scoop`.
+fn scoop_copy(exe: &str, roots: &[String]) -> bool {
+    // Compared with forward slashes and in lower case, as Windows paths are.
+    let norm = |path: &str| path.replace('\\', "/").trim_end_matches('/').to_lowercase();
+    let exe = norm(exe);
+    let in_root = |root: &String| {
+        let root = norm(root);
+        !root.is_empty() && exe.starts_with(&format!("{root}/apps/turbo-reader/"))
+    };
+    roots.iter().any(in_root) || exe.contains("/scoop/apps/turbo-reader/")
 }
 
 const REPO_URL: &str = "https://github.com/t21dev/turbo-reader";
@@ -1481,6 +1523,7 @@ pub async fn check_for_updates(state: State<'_, AppState>) -> Result<UpdateCheck
         latest: Some(found.version),
         url: found.url,
         published: found.published,
+        upgrade: upgrade_command(),
     })
 }
 
@@ -1604,15 +1647,12 @@ fn newest(answers: Vec<Result<Found, String>>) -> Result<Found, String> {
     for answer in answers {
         match answer {
             Ok(found) => {
-                let better = match &best {
-                    None => true,
-                    Some(b) => {
-                        is_newer(&found.version, &b.version)
-                            || (!is_newer(&b.version, &found.version)
-                                && b.published.is_none()
-                                && found.published.is_some())
-                    }
-                };
+                let better = best.as_ref().is_none_or(|b| {
+                    is_newer(&found.version, &b.version)
+                        || (!is_newer(&b.version, &found.version)
+                            && b.published.is_none()
+                            && found.published.is_some())
+                });
                 if better {
                     best = Some(found);
                 }
@@ -1655,7 +1695,45 @@ fn is_newer(candidate: &str, current: &str) -> bool {
 
 #[cfg(test)]
 mod update_tests {
-    use super::{is_newer, newest, parse_github, parse_site, release_from_page, Found};
+    use super::{is_newer, newest, parse_github, parse_site, release_from_page, scoop_copy, Found};
+
+    #[test]
+    fn knows_a_scoop_copy() {
+        let none: [String; 0] = [];
+        // Scoop's default root, under the user's profile.
+        assert!(scoop_copy(
+            r"C:\Users\Ana\scoop\apps\turbo-reader\0.34.0\Turbo Reader.exe",
+            &none
+        ));
+        assert!(scoop_copy(
+            r"C:\Users\Ana\scoop\apps\turbo-reader\current\Turbo Reader.exe",
+            &none
+        ));
+        // A root moved with %SCOOP%, in any case and either slash.
+        let roots = [r"D:\Tools\".to_string()];
+        assert!(scoop_copy(
+            r"d:\tools\apps\Turbo-Reader\current\Turbo Reader.exe",
+            &roots
+        ));
+        assert!(scoop_copy(
+            "D:/Tools/apps/turbo-reader/current/Turbo Reader.exe",
+            &roots
+        ));
+        // The installer, the portable zip, and another Scoop app's folder.
+        assert!(!scoop_copy(
+            r"C:\Program Files\Turbo Reader\turbo-reader.exe",
+            &roots
+        ));
+        assert!(!scoop_copy(
+            r"C:\Users\Ana\Downloads\Turbo Reader\Turbo Reader.exe",
+            &roots
+        ));
+        assert!(!scoop_copy(
+            r"D:\Tools\apps\kitab\current\kitab.exe",
+            &roots
+        ));
+        assert!(!scoop_copy(r"C:\x\turbo-reader.exe", &["".to_string()]));
+    }
 
     fn found(v: &str, published: Option<&str>) -> Found {
         Found {
