@@ -183,15 +183,23 @@
   margin: 0 -6px;
   padding: 10px 16px;
   border-top: 1px solid var(--sw-rule);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 13px;
-  text-align: right;
 }
 .apps-foot a {
   color: var(--sw-muted);
   font-weight: 500;
   text-decoration: none;
 }
+.apps-foot .apps-explore {
+  color: var(--sw-ink);
+}
 @media (hover: hover) and (pointer: fine) {
+  .apps-foot .apps-explore:hover {
+    color: var(--sw-accent);
+  }
   .apps-foot a:hover {
     color: var(--sw-ink);
   }

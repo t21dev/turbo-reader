@@ -91,6 +91,9 @@ export function AppSwitcher({ current, home = "#top" }: Props) {
           })}
         </ul>
         <p className="apps-foot">
+          <a className="apps-explore" href="https://tools.t21.dev/">
+            Explore all tools <span aria-hidden="true">→</span>
+          </a>
           <a href="https://t21.dev">t21.dev</a>
         </p>
       </div>
