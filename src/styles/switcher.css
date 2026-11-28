@@ -160,6 +160,9 @@
   font-weight: 500;
   white-space: nowrap;
 }
+.apps-home {
+  display: none;
+}
 .apps-os {
   margin-left: auto;
   color: var(--sw-muted);
@@ -240,5 +243,12 @@
   }
   .brand-group {
     padding-right: 26px;
+  }
+  /* So the way home is labelled: the current app's row says "Back to top" (or "Home"). */
+  .apps-here:not(.apps-home) {
+    display: none;
+  }
+  .apps-home {
+    display: inline;
   }
 }

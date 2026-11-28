@@ -8,9 +8,11 @@ type Props = {
   current: AppId;
   /** Where the current app's row goes: the top of this page or its home. */
   home?: string;
+  /** What that row says on touch screens, where the logo opens this menu instead of going home. */
+  homeLabel?: string;
 };
 
-export function AppSwitcher({ current, home = "#top" }: Props) {
+export function AppSwitcher({ current, home = "#top", homeLabel = "Back to top" }: Props) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -80,7 +82,12 @@ export function AppSwitcher({ current, home = "#top" }: Props) {
                   <span className="apps-text">
                     <span className="apps-name">
                       {a.name}
-                      {here ? <span className="apps-here">You're here</span> : null}
+                      {here ? (
+                        <>
+                          <span className="apps-here">You're here</span>
+                          <span className="apps-here apps-home">{homeLabel}</span>
+                        </>
+                      ) : null}
                       <span className="apps-os">{a.platforms}</span>
                     </span>
                     <span className="apps-line">{a.line}</span>
