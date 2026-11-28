@@ -1,0 +1,56 @@
+name: Website
+
+# The website follows the release: when one is published, the changelog and
+# release data are synced into the `landing` branch, which Cloudflare Workers
+# Builds deploys on every push. So turbo-reader.t21.dev shows the new version
+# and download links, and turbo-reader.t21.dev/latest.json (which the app's
+# update check asks alongside GitHub's rate-limited API) names it. Releases are
+# published by hand (release.yml leaves a draft), which is what triggers this.
+# Run it by hand for a release that is already out.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, like v0.33.0
+        required: true
+
+jobs:
+  sync:
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: landing
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # From the release tag, not main: main may already be ahead of it.
+      - name: Sync from the release tag
+        shell: bash
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch origin "refs/tags/$TAG:refs/tags/$TAG"
+          npm ci
+          npm run sync -- "$TAG"
+          node scripts/release.mjs
+          git add content/CHANGELOG.md src/release.json
+          if git diff --cached --quiet; then
+            echo "The site already has this release's content"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: sync content for $TAG"
+            git push origin HEAD:landing
+          fi

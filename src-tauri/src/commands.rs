@@ -1432,7 +1432,29 @@ pub struct UpdateCheck {
     pub published: Option<String>,
 }
 
-/// Ask GitHub what the newest published release is.
+const REPO_URL: &str = "https://github.com/t21dev/turbo-reader";
+const RELEASES_PAGE: &str = "https://github.com/t21dev/turbo-reader/releases/latest";
+/// GitHub's answer for the latest published release (drafts and pre-releases
+/// left out). Limited per address, and sometimes refused.
+const LATEST_API: &str = "https://api.github.com/repos/t21dev/turbo-reader/releases/latest";
+/// The same answer from the website, built from the changelog with every
+/// release, with no request limit.
+const SITE_LATEST: &str = "https://turbo-reader.t21.dev/latest.json";
+/// Both answers are a few kilobytes.
+const MAX_ANSWER: usize = 1 << 20;
+
+/// A release one of the sources named.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Found {
+    version: String,
+    url: String,
+    published: Option<String>,
+}
+
+/// Ask what the newest published release is: the website's `latest.json`,
+/// GitHub's API, and where github.com's latest-release page redirects to,
+/// all at once. The newest answer wins, so one being down, rate-limited or
+/// not yet updated doesn't matter.
 ///
 /// Deliberately not the Tauri updater: that wants a signing key pair and a
 /// signed manifest, and until the binaries are code-signed it would be
@@ -1440,59 +1462,167 @@ pub struct UpdateCheck {
 /// sends you to the page; you decide.
 #[tauri::command]
 pub async fn check_for_updates(state: State<'_, AppState>) -> Result<UpdateCheck, String> {
-    const RELEASES: &str = "https://github.com/t21dev/turbo-reader/releases/latest";
     // The Store copy is updated by the Store; the interface hides this check.
     if crate::package::family_name().is_some() {
         return Err("Updates come through the Microsoft Store.".into());
     }
     let current = env!("CARGO_PKG_VERSION").to_string();
 
-    let res = state
-        .http
-        .get("https://api.github.com/repos/t21dev/turbo-reader/releases/latest")
-        .header(reqwest::header::ACCEPT, "application/vnd.github+json")
-        .send()
-        .await
-        .map_err(|err| format!("Could not reach GitHub: {err}"))?;
-
-    if !res.status().is_success() {
-        return Err(format!("GitHub returned {}", res.status()));
-    }
-
-    // reqwest is built without its json feature, so the body is parsed here.
-    let text = res
-        .text()
-        .await
-        .map_err(|err| format!("Unexpected answer from GitHub: {err}"))?;
-    let body: serde_json::Value = serde_json::from_str(&text)
-        .map_err(|err| format!("Unexpected answer from GitHub: {err}"))?;
-
-    let latest = body
-        .get("tag_name")
-        .and_then(|v| v.as_str())
-        .map(|t| t.trim_start_matches('v').to_string());
-    let published = body
-        .get("published_at")
-        .and_then(|v| v.as_str())
-        .map(|s| s[..10.min(s.len())].to_string());
-    let url = body
-        .get("html_url")
-        .and_then(|v| v.as_str())
-        .unwrap_or(RELEASES)
-        .to_string();
-
-    let newer = latest
-        .as_deref()
-        .map(|l| is_newer(l, &current))
-        .unwrap_or(false);
+    let (github, site, page) = tokio::join!(
+        ask_github(&state.http),
+        ask_site(&state.http),
+        ask_releases_page(),
+    );
+    let found = newest(vec![github, site, page])?;
 
     Ok(UpdateCheck {
+        newer: is_newer(&found.version, &current),
         current,
-        latest,
-        newer,
-        url,
-        published,
+        latest: Some(found.version),
+        url: found.url,
+        published: found.published,
     })
+}
+
+/// GET `url` and return the body, which must be small.
+async fn get_text(http: &reqwest::Client, url: &str, accept: &str) -> Result<String, String> {
+    let res = http
+        .get(url)
+        .header(reqwest::header::ACCEPT, accept)
+        .send()
+        .await
+        .map_err(|err| err.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("returned {}", res.status()));
+    }
+    let text = res.text().await.map_err(|err| err.to_string())?;
+    if text.len() > MAX_ANSWER {
+        return Err("sent too much".into());
+    }
+    Ok(text)
+}
+
+/// A version as tags and the changelog write it, without the "v"; None
+/// unless it starts with a digit and holds only version characters.
+fn clean_version(v: &str) -> Option<String> {
+    let v = v.trim().trim_start_matches(['v', 'V']);
+    (v.starts_with(|c: char| c.is_ascii_digit())
+        && v.chars()
+            .all(|c| c.is_ascii_alphanumeric() || ".-+".contains(c)))
+    .then(|| v.to_string())
+}
+
+/// Only a page of the project's own is ever opened.
+fn own_url(url: Option<&str>) -> String {
+    url.filter(|u| u.starts_with(&format!("{REPO_URL}/")))
+        .unwrap_or(RELEASES_PAGE)
+        .to_string()
+}
+
+fn date_of(s: Option<&str>) -> Option<String> {
+    s.map(|s| s.chars().take(10).collect::<String>())
+        .filter(|s| !s.is_empty())
+}
+
+async fn ask_github(http: &reqwest::Client) -> Result<Found, String> {
+    // reqwest is built without its json feature, so the body is parsed here.
+    let text = get_text(http, LATEST_API, "application/vnd.github+json")
+        .await
+        .map_err(|err| format!("Could not reach GitHub: {err}"))?;
+    parse_github(&text)
+}
+
+fn parse_github(text: &str) -> Result<Found, String> {
+    let body: serde_json::Value = serde_json::from_str(text)
+        .map_err(|err| format!("Unexpected answer from GitHub: {err}"))?;
+    let field = |k: &str| body.get(k).and_then(|v| v.as_str());
+    Ok(Found {
+        version: field("tag_name")
+            .and_then(clean_version)
+            .ok_or("GitHub has no release yet")?,
+        url: own_url(field("html_url")),
+        published: date_of(field("published_at")),
+    })
+}
+
+async fn ask_site(http: &reqwest::Client) -> Result<Found, String> {
+    let text = get_text(http, SITE_LATEST, "application/json")
+        .await
+        .map_err(|err| format!("Could not reach the website: {err}"))?;
+    parse_site(&text)
+}
+
+/// The website's `latest.json`: `{"version", "published", "url", "notes"}`.
+fn parse_site(text: &str) -> Result<Found, String> {
+    let bad = || "Unexpected answer from the website".to_string();
+    let body: serde_json::Value = serde_json::from_str(text).map_err(|_| bad())?;
+    let field = |k: &str| body.get(k).and_then(|v| v.as_str());
+    Ok(Found {
+        version: field("version").and_then(clean_version).ok_or_else(bad)?,
+        url: own_url(field("url")),
+        published: date_of(field("published")),
+    })
+}
+
+/// Where github.com's latest-release page redirects: `…/releases/tag/v0.33.0`
+/// is 0.33.0. No limit and never behind, but only the number.
+async fn ask_releases_page() -> Result<Found, String> {
+    let failed = || "Could not reach github.com".to_string();
+    let client = reqwest::Client::builder()
+        .user_agent(concat!("Turbo-Reader/", env!("CARGO_PKG_VERSION")))
+        .timeout(std::time::Duration::from_secs(15))
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .map_err(|_| failed())?;
+    let res = client
+        .head(RELEASES_PAGE)
+        .send()
+        .await
+        .map_err(|_| failed())?;
+    let location = res
+        .headers()
+        .get(reqwest::header::LOCATION)
+        .and_then(|v| v.to_str().ok())
+        .ok_or_else(failed)?;
+    release_from_page(location).ok_or_else(failed)
+}
+
+fn release_from_page(location: &str) -> Option<Found> {
+    let tag = location.strip_prefix(&format!("{REPO_URL}/releases/tag/"))?;
+    Some(Found {
+        version: clean_version(tag)?,
+        url: location.to_string(),
+        published: None,
+    })
+}
+
+/// The newest answer, preferring one with a date when two name the same
+/// version; the first error (GitHub's) when none came.
+fn newest(answers: Vec<Result<Found, String>>) -> Result<Found, String> {
+    let mut error = None;
+    let mut best: Option<Found> = None;
+    for answer in answers {
+        match answer {
+            Ok(found) => {
+                let better = match &best {
+                    None => true,
+                    Some(b) => {
+                        is_newer(&found.version, &b.version)
+                            || (!is_newer(&b.version, &found.version)
+                                && b.published.is_none()
+                                && found.published.is_some())
+                    }
+                };
+                if better {
+                    best = Some(found);
+                }
+            }
+            Err(err) => {
+                error.get_or_insert(err);
+            }
+        }
+    }
+    best.ok_or_else(|| error.unwrap_or_else(|| "Could not check for updates".into()))
 }
 
 /// Compare two dotted versions numerically. A segment that is not a number
@@ -1525,7 +1655,91 @@ fn is_newer(candidate: &str, current: &str) -> bool {
 
 #[cfg(test)]
 mod update_tests {
-    use super::is_newer;
+    use super::{is_newer, newest, parse_github, parse_site, release_from_page, Found};
+
+    fn found(v: &str, published: Option<&str>) -> Found {
+        Found {
+            version: v.into(),
+            url: format!("https://github.com/t21dev/turbo-reader/releases/tag/v{v}"),
+            published: published.map(Into::into),
+        }
+    }
+
+    #[test]
+    fn reads_the_websites_latest_json() {
+        let f = parse_site(
+            r#"{"version":"0.33.0","published":"2026-11-28","url":"https://github.com/t21dev/turbo-reader/releases/tag/v0.33.0","notes":"Added things"}"#,
+        )
+        .unwrap();
+        assert_eq!(f, found("0.33.0", Some("2026-11-28")));
+        assert!(parse_site(r#"{"version":"soon"}"#).is_err());
+        assert!(parse_site("<html>").is_err());
+    }
+
+    #[test]
+    fn opens_only_the_projects_own_pages() {
+        let f = parse_site(r#"{"version":"1.0.0","url":"https://evil.example/x"}"#).unwrap();
+        assert_eq!(
+            f.url,
+            "https://github.com/t21dev/turbo-reader/releases/latest"
+        );
+        let g = parse_github(
+            r#"{"tag_name":"v1.0.0","html_url":"https://github.com/t21dev/turbo-reader-fake/x"}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            g.url,
+            "https://github.com/t21dev/turbo-reader/releases/latest"
+        );
+    }
+
+    #[test]
+    fn reads_githubs_answer() {
+        let f = parse_github(
+            r#"{"tag_name":"v0.33.0","html_url":"https://github.com/t21dev/turbo-reader/releases/tag/v0.33.0","published_at":"2026-11-28T08:27:46Z"}"#,
+        )
+        .unwrap();
+        assert_eq!(f, found("0.33.0", Some("2026-11-28")));
+        assert!(parse_github(r#"{"message":"Not Found"}"#).is_err());
+    }
+
+    #[test]
+    fn reads_the_release_page_redirect() {
+        assert_eq!(
+            release_from_page("https://github.com/t21dev/turbo-reader/releases/tag/v0.33.0"),
+            Some(found("0.33.0", None))
+        );
+        assert_eq!(
+            release_from_page("https://github.com/t21dev/turbo-reader/releases"),
+            None
+        );
+        assert_eq!(
+            release_from_page("https://github.com/other/repo/releases/tag/v9.0.0"),
+            None
+        );
+    }
+
+    #[test]
+    fn the_newest_answer_wins() {
+        let r = newest(vec![
+            Err("GitHub returned 403".into()),
+            Ok(found("0.33.0", Some("2026-11-28"))),
+            Ok(found("0.34.0", None)),
+        ]);
+        assert_eq!(r.unwrap().version, "0.34.0");
+        // Same version: the one with a date.
+        let r = newest(vec![
+            Ok(found("0.33.0", None)),
+            Ok(found("0.33.0", Some("2026-11-28"))),
+        ]);
+        assert_eq!(r.unwrap().published.as_deref(), Some("2026-11-28"));
+        // None: GitHub's error.
+        let r = newest(vec![
+            Err("GitHub returned 403".into()),
+            Err("Could not reach the website".into()),
+        ]);
+        assert_eq!(r.unwrap_err(), "GitHub returned 403");
+    }
 
     #[test]
     fn newer_versions_win() {

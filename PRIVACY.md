@@ -34,9 +34,14 @@ Turbo Reader connects to other systems only for these:
   publisher put them, the same as on their website. YouTube videos play inline
   only if you turn that on in Settings, and then through
   `youtube-nocookie.com`.
-- **GitHub, to check for a new version.** Once when the app opens, it asks
-  GitHub for the latest Turbo Reader release. Turn this off in About. GitHub
-  sees your IP address; the request carries nothing about you or your library.
+- **The website and GitHub, to check for a new version.** Once when the app
+  opens, it asks for the latest Turbo Reader release number in three places at
+  once: the website (`turbo-reader.t21.dev/latest.json`), GitHub's API
+  (`api.github.com/repos/t21dev/turbo-reader/releases/latest`), and GitHub's
+  latest-release page (only to see which version it points to). Asking all
+  three means one of them being down, busy or behind doesn't matter. Turn this
+  off in About. Cloudflare (which hosts the website) and GitHub see your IP
+  address; the requests carry nothing about you or your library.
   The Microsoft Store version never does this: the Store updates it.
 
 Links you open from an article open in your own browser, not in Turbo Reader.

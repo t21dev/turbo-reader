@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The update check asks the Turbo Reader website
+  (`turbo-reader.t21.dev/latest.json`) as well as GitHub's API and GitHub's
+  latest-release page, all at once, and goes by the newest answer. GitHub's
+  API limits how often one address may ask, so the check used to fail now and
+  then on shared or busy connections.
+
 ## [0.33.0] - 2026-11-28
 
 ### Added

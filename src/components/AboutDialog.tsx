@@ -185,8 +185,9 @@ export function AboutDialog({
                   Check at launch
                 </p>
                 <p className="mt-0.5 text-[11.5px] leading-relaxed text-subtle">
-                  Asks GitHub for the newest release when Turbo Reader opens, and shows a note in the
-                  title bar when there is one. Nothing about your feeds is sent.
+                  Asks the Turbo Reader website and GitHub for the newest release when Turbo Reader
+                  opens, and shows a note in the title bar when there is one. Nothing about your
+                  feeds is sent.
                 </p>
               </div>
               <button
