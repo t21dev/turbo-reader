@@ -2,7 +2,7 @@
 //!
 //! An agent such as Codex or Claude Code starts this itself when it needs
 //! Turbo Reader, so it works with the app closed. It opens the same library
-//! the app uses (the portable one when there is a `portable` file), and only
+//! the app uses (the portable or Store package one when there is one), and only
 //! reads unless started with `--allow-write`.
 
 use super::server::TurboTools;
@@ -22,7 +22,7 @@ pub fn run(identifier: &str, allow_write: bool) -> i32 {
 }
 
 fn serve(identifier: &str, allow_write: bool) -> Result<(), String> {
-    let dir = crate::portable_data_dir()
+    let dir = crate::own_data_dir()
         .or_else(|| dirs::data_dir().map(|d| d.join(identifier)))
         .ok_or("Could not find the user's data folder.")?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;

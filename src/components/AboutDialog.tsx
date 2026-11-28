@@ -4,7 +4,7 @@ import { getVersion } from "@tauri-apps/api/app"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { api, type UpdateCheck } from "@/lib/api"
 import type { AppPrefs } from "@/lib/prefs"
-import { recordUpdateCheck } from "@/lib/updates"
+import { recordUpdateCheck, useStoreCopy } from "@/lib/updates"
 import { TurboMark } from "@/components/TitleBar"
 import { useDismissible } from "@/lib/presence"
 import { cn } from "@/lib/utils"
@@ -29,6 +29,7 @@ export function AboutDialog({
   const [update, setUpdate] = useState<UpdateCheck | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
+  const storeCopy = useStoreCopy()
 
   useEffect(() => {
     getVersion().then(setVersion).catch(() => undefined)
@@ -120,85 +121,96 @@ export function AboutDialog({
           </p>
         </div>
 
-        <div className="mt-5 border-t border-border px-6 py-5">
-          <button
-            type="button"
-            onClick={() => void check()}
-            disabled={checking}
-            className="row flex h-9 w-full items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
-          >
-            <RefreshCw size={13} className={checking ? "animate-spin" : undefined} />
-            {checking ? "Checking" : "Check for updates"}
-          </button>
-
-          {update && !error && (
-            <div className="animate-rise mt-3" role="status">
-              {update.newer ? (
-                <>
-                  <p className="flex items-start gap-2 text-[12px] leading-relaxed text-foreground">
-                    <ArrowUpCircle size={14} className="mt-px shrink-0 text-system" />
-                    <span>
-                      Version <span className="tabular">{update.latest}</span> is out.
-                      {update.published ? ` Published ${update.published}.` : ""} You are on{" "}
-                      <span className="tabular">{update.current}</span>.
-                    </span>
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => void openUrl(update.url)}
-                    className="row mt-2 flex h-9 w-full items-center justify-center gap-2 border border-system bg-elevated text-[12px] text-foreground hover:bg-secondary"
-                  >
-                    <Download size={13} />
-                    Get it from GitHub
-                  </button>
-                </>
-              ) : (
-                <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                  <CheckCircle2 size={14} className="shrink-0 text-system" />
-                  <span>
-                    Up to date on <span className="tabular">{update.current}</span>.
-                  </span>
-                </p>
-              )}
-            </div>
-          )}
-          {error && (
-            <p role="alert" className="animate-rise mt-3 text-[11.5px] leading-relaxed text-destructive">
-              {error}
+        {storeCopy && (
+          <div className="mt-5 border-t border-border px-6 py-5">
+            <p className="flex items-center gap-2 text-[12px] text-muted-foreground" data-store-updates>
+              <CheckCircle2 size={14} className="shrink-0 text-system" />
+              <span>Updates come through the Microsoft Store.</span>
             </p>
-          )}
+          </div>
+        )}
 
-          <div className="mt-4 flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p id="about-launch" className="text-[12.5px] font-medium text-foreground">
-                Check at launch
-              </p>
-              <p className="mt-0.5 text-[11.5px] leading-relaxed text-subtle">
-                Asks GitHub for the newest release when Turbo Reader opens, and shows a note in the
-                title bar when there is one. Nothing about your feeds is sent.
-              </p>
-            </div>
+        {storeCopy === false && (
+          <div className="mt-5 border-t border-border px-6 py-5">
             <button
               type="button"
-              role="switch"
-              aria-checked={prefs.updateCheck}
-              aria-labelledby="about-launch"
-              onClick={() => onPrefs({ ...prefs, updateCheck: !prefs.updateCheck })}
-              className={cn(
-                "relative mt-0.5 h-5 w-9 shrink-0 rounded-full border transition-colors duration-200 ease-out",
-                "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50",
-                prefs.updateCheck ? "border-system bg-system" : "border-border bg-elevated",
-              )}
+              onClick={() => void check()}
+              disabled={checking}
+              className="row flex h-9 w-full items-center justify-center gap-2 border border-border text-[12px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50"
             >
-              <span
-                className={cn(
-                  "absolute left-0.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full transition-transform duration-200 ease-out",
-                  prefs.updateCheck ? "translate-x-4 bg-background" : "translate-x-0 bg-muted-foreground",
-                )}
-              />
+              <RefreshCw size={13} className={checking ? "animate-spin" : undefined} />
+              {checking ? "Checking" : "Check for updates"}
             </button>
+
+            {update && !error && (
+              <div className="animate-rise mt-3" role="status">
+                {update.newer ? (
+                  <>
+                    <p className="flex items-start gap-2 text-[12px] leading-relaxed text-foreground">
+                      <ArrowUpCircle size={14} className="mt-px shrink-0 text-system" />
+                      <span>
+                        Version <span className="tabular">{update.latest}</span> is out.
+                        {update.published ? ` Published ${update.published}.` : ""} You are on{" "}
+                        <span className="tabular">{update.current}</span>.
+                      </span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void openUrl(update.url)}
+                      className="row mt-2 flex h-9 w-full items-center justify-center gap-2 border border-system bg-elevated text-[12px] text-foreground hover:bg-secondary"
+                    >
+                      <Download size={13} />
+                      Get it from GitHub
+                    </button>
+                  </>
+                ) : (
+                  <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                    <CheckCircle2 size={14} className="shrink-0 text-system" />
+                    <span>
+                      Up to date on <span className="tabular">{update.current}</span>.
+                    </span>
+                  </p>
+                )}
+              </div>
+            )}
+            {error && (
+              <p role="alert" className="animate-rise mt-3 text-[11.5px] leading-relaxed text-destructive">
+                {error}
+              </p>
+            )}
+
+            <div className="mt-4 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p id="about-launch" className="text-[12.5px] font-medium text-foreground">
+                  Check at launch
+                </p>
+                <p className="mt-0.5 text-[11.5px] leading-relaxed text-subtle">
+                  Asks GitHub for the newest release when Turbo Reader opens, and shows a note in the
+                  title bar when there is one. Nothing about your feeds is sent.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={prefs.updateCheck}
+                aria-labelledby="about-launch"
+                onClick={() => onPrefs({ ...prefs, updateCheck: !prefs.updateCheck })}
+                className={cn(
+                  "relative mt-0.5 h-5 w-9 shrink-0 rounded-full border transition-colors duration-200 ease-out",
+                  "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50",
+                  prefs.updateCheck ? "border-system bg-system" : "border-border bg-elevated",
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute left-0.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full transition-transform duration-200 ease-out",
+                    prefs.updateCheck ? "translate-x-4 bg-background" : "translate-x-0 bg-muted-foreground",
+                  )}
+                />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-2 gap-1.5 border-t border-border px-6 py-4">
           <button

@@ -18,6 +18,21 @@ function read(): Saved | null {
   }
 }
 
+let storeCopy: Promise<boolean> | null = null
+
+/**
+ * Whether this copy came from the Microsoft Store, which updates it itself:
+ * null until known, so nothing reaches GitHub before the answer is in.
+ */
+export function useStoreCopy(): boolean | null {
+  const [store, setStore] = useState<boolean | null>(null)
+  useEffect(() => {
+    storeCopy ??= api.inStorePackage().catch(() => false)
+    void storeCopy.then(setStore)
+  }, [])
+  return store
+}
+
 /** Remember a check, automatic or manual, and tell anything showing it. */
 export function recordUpdateCheck(result: UpdateCheck) {
   const saved: Saved = { at: Date.now(), latest: result.latest, url: result.url }

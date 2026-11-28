@@ -12,6 +12,7 @@
     "tauri": "tauri",
     "app": "tauri dev",
     "app:build": "tauri build",
+    "msix": "node scripts/msix.mjs",
     "e2e:build": "node e2e/build.mjs",
     "e2e": "node --test --test-concurrency=1 --test-timeout=600000 \"e2e/tests/*.test.mjs\""
   },
@@ -23,7 +24,6 @@
     "@fontsource-variable/merriweather": "^5.3.0",
     "@fontsource-variable/source-serif-4": "^5.3.0",
     "@tauri-apps/api": "^2.0.0",
-    "@tauri-apps/plugin-autostart": "^2.7.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
     "@tauri-apps/plugin-notification": "^2.5.1",
     "@tauri-apps/plugin-opener": "^2.0.0",

@@ -4997,11 +4997,13 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-notification",
  "tauri-plugin-opener",
+ "tauri-winrt-notification",
  "thiserror 1.0.69",
  "tokio",
  "tokio-util",
  "url",
  "webview2-com",
+ "windows",
  "windows-core",
  "windows-sys 0.59.0",
 ]

@@ -145,6 +145,28 @@ jobs:
           gh api -X POST "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ needs.create-release.outputs.release_id }}/assets?name=$zip" `
             -H "Content-Type: application/zip" --input $zip --jq .name
 
+      # The Microsoft Store package, from the exe built above. It is unsigned
+      # because the Store signs it, so it cannot be installed as a download and
+      # is kept as a workflow artifact for the Partner Center upload, not
+      # attached to the release.
+      - name: Microsoft Store package (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        env:
+          WINAPP_CLI_TELEMETRY_OPTOUT: '1'
+        run: |
+          npm install --no-save --no-audit --no-fund @microsoft/winappcli@0.8.0
+          $env:PATH = "$PWD\node_modules\.bin;$env:PATH"
+          npm run msix -- --no-build
+
+      - name: Upload the Store package
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: microsoft-store-msix
+          path: src-tauri/target/msix/*.msix
+          if-no-files-found: error
+
   # A .flatpak bundle built from source in Flathub's own builder image, the
   # same way Flathub builds it.
   flatpak:

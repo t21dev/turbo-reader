@@ -70,7 +70,7 @@ fn db_bytes(path: &Path) -> u64 {
 fn webview_cache_dirs(app: &AppHandle) -> Vec<PathBuf> {
     #[cfg(windows)]
     {
-        let base = match crate::portable_data_dir() {
+        let base = match crate::own_data_dir() {
             Some(dir) => dir.join("webview").join("EBWebView"),
             None => match app.path().app_local_data_dir() {
                 Ok(d) => d.join("EBWebView"),

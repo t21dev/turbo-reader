@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { disable as disableAutostart, enable as enableAutostart, isEnabled as autostartEnabled } from "@tauri-apps/plugin-autostart"
 import { isPermissionGranted, requestPermission } from "@tauri-apps/plugin-notification"
 import { api, type BackgroundPrefs as Prefs } from "@/lib/api"
 import { isLinux, isMac } from "@/lib/platform"
@@ -27,7 +26,7 @@ export function BackgroundPrefs({ withAgents = false }: { withAgents?: boolean }
 
   useEffect(() => {
     api.getBackground().then(setPrefs).catch(() => undefined)
-    autostartEnabled().then(setAtLogin).catch(() => undefined)
+    api.startAtLogin().then(setAtLogin).catch(() => undefined)
     api.inFlatpak().then(setFlatpak).catch(() => undefined)
     if (withAgents) api.mcpStatus().then((s) => setAgents(s.config.enabled)).catch(() => undefined)
   }, [withAgents])
@@ -61,9 +60,7 @@ export function BackgroundPrefs({ withAgents = false }: { withAgents?: boolean }
   async function setLogin(on: boolean) {
     setNote(null)
     try {
-      if (on) await enableAutostart()
-      else await disableAutostart()
-      setAtLogin(await autostartEnabled())
+      setAtLogin(await api.setStartAtLogin(on))
     } catch (err) {
       setNote(`Could not change start at login: ${err}`)
     }

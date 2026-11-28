@@ -17,6 +17,7 @@ mod home;
 mod markdown;
 mod notifications;
 mod opml;
+pub(crate) mod package;
 mod rank;
 mod readable;
 mod skill;
@@ -43,6 +44,13 @@ pub fn portable_data_dir() -> Option<std::path::PathBuf> {
     dir.join("portable").is_file().then(|| dir.join("data"))
 }
 
+/// A data folder of the app's own, used instead of the user profile: the
+/// portable folder, or the Microsoft Store package's LocalState folder. The
+/// webview keeps its storage in it too.
+pub fn own_data_dir() -> Option<std::path::PathBuf> {
+    portable_data_dir().or_else(package::data_dir)
+}
+
 /// The Flatpak app ID when running inside a Flatpak sandbox. Flatpak sets
 /// FLATPAK_ID for every app it runs.
 pub fn flatpak_id() -> Option<String> {
@@ -56,10 +64,17 @@ fn in_flatpak() -> bool {
     flatpak_id().is_some()
 }
 
-/// Where the library and the user's files live: the portable folder when there
+/// Whether this copy is the Microsoft Store package. The Store updates it, so
+/// it never looks for releases on GitHub or offers a download.
+#[tauri::command]
+fn in_store_package() -> bool {
+    package::family_name().is_some()
+}
+
+/// Where the library and the user's files live: the app's own folder when there
 /// is one, otherwise the usual per-user app data folder.
 pub fn data_dir<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<std::path::PathBuf> {
-    match portable_data_dir() {
+    match own_data_dir() {
         Some(dir) => Ok(dir),
         None => app.path().app_data_dir(),
     }
@@ -107,7 +122,8 @@ pub fn run() {
             storage::clear_webview_if_pending(app.handle(), &conn);
 
             // The window is built here rather than from the config file, so
-            // portable mode can keep the webview's storage in the data folder.
+            // portable mode and the Store package can keep the webview's
+            // storage in their own data folder.
             // It is still created hidden, as configured.
             let config = app
                 .config()
@@ -132,7 +148,7 @@ pub fn run() {
                     }
                     false
                 });
-            if portable_data_dir().is_some() {
+            if own_data_dir().is_some() {
                 window = window.data_directory(dir.join("webview"));
             }
             let _window = window.build()?;
@@ -286,9 +302,12 @@ pub fn run() {
             commands::skill_remove,
             commands::skill_content,
             in_flatpak,
+            in_store_package,
             background::get_background,
             background::set_background,
             background::start_hidden,
+            background::start_at_login,
+            background::set_start_at_login,
             agent::http::mcp_status,
             agent::http::mcp_configure,
             agent::http::mcp_keys,

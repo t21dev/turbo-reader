@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Info, Keyboard, LayoutGrid, List as ListIcon, Search, Settings2, Menu as MenuIcon } from "lucide-react"
 import { listen } from "@tauri-apps/api/event"
-import { useUpdateCheck } from "@/lib/updates"
+import { useStoreCopy, useUpdateCheck } from "@/lib/updates"
 import { pickAndImportOpml } from "@/lib/opml"
 import { Welcome } from "@/components/Welcome"
 import { openUrl } from "@tauri-apps/plugin-opener"
@@ -92,8 +92,10 @@ export default function App() {
   const [prompt, setPrompt] = useState<PromptSpec | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [prefs, setPrefs] = useState<AppPrefs>(readPrefs)
-  // A newer release on GitHub, checked at launch unless switched off.
-  const update = useUpdateCheck(prefs.updateCheck)
+  // A newer release on GitHub, checked at launch unless switched off. Never
+  // for the Microsoft Store copy, which the Store updates.
+  const storeCopy = useStoreCopy()
+  const update = useUpdateCheck(prefs.updateCheck && storeCopy === false)
   // When any feed was last checked, from the database, so it is right after a
   // restart and reflects scheduled refreshes as well as manual ones.
   const lastChecked = useMemo(() => {

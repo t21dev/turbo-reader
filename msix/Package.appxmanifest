@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Microsoft Store package. Identity values come from Partner Center
+  (Product identity) and must match it exactly. The version is filled in from
+  tauri.conf.json by scripts/msix.mjs; the Store needs the fourth part to be 0.
+  The startup task and alias IDs must match src-tauri/src/package.rs.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap3 desktop rescap">
+
+  <Identity
+    Name="TriptoAfsin.TurboReader"
+    Publisher="CN=83EC5113-24EF-4718-9965-289BB530FA30"
+    Version="0.0.0.0"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>Turbo Reader</DisplayName>
+    <PublisherDisplayName>TriptoAfsin</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.18362.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="App" Executable="turbo-reader.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Turbo Reader"
+        Description="A fast, modern RSS reader"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\MedTile.png"
+        Square44x44Logo="Assets\AppList.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\WideTile.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <!-- Start at login. Off until switched on in Settings > Background. -->
+        <desktop:Extension Category="windows.startupTask" Executable="turbo-reader.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="TurboReaderAtLogin" Enabled="false" DisplayName="Turbo Reader" />
+        </desktop:Extension>
+        <!-- A path that survives updates, for AI agents that start the MCP server. -->
+        <uap3:Extension Category="windows.appExecutionAlias" Executable="turbo-reader.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap3:AppExecutionAlias>
+            <desktop:ExecutionAlias Alias="turbo-reader.exe" />
+          </uap3:AppExecutionAlias>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

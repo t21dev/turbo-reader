@@ -274,6 +274,9 @@ export const api = {
   mcpLanAddresses: () => call<string[]>("mcp_lan_addresses"),
   mcpExePath: () => call<McpLaunch>("mcp_exe_path"),
   inFlatpak: () => call<boolean>("in_flatpak"),
+  inStorePackage: () => call<boolean>("in_store_package"),
+  startAtLogin: () => call<boolean>("start_at_login"),
+  setStartAtLogin: (on: boolean) => call<boolean>("set_start_at_login", { on }),
   notificationsSummary: () => call<NotificationSummary>("notifications_summary"),
   notificationsPage: (before?: number, limit?: number) =>
     call<{ items: AppNotification[]; hasMore: boolean }>("notifications_page", { before, limit }),

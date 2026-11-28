@@ -64,8 +64,19 @@ qrcode = { version = "0.14", default-features = false, features = ["svg"] }
 # straight from the OS. See src/winstate.rs.
 windows-sys = { version = "0.59", features = [
   "Win32_Foundation",
+  "Win32_Storage_Packaging_Appx",
   "Win32_UI_WindowsAndMessaging",
 ] }
+# The Microsoft Store copy runs from a package, which starts at login through a
+# startup task and must send notifications under its own app ID. Both crates
+# are already in the build for Tauri and its notification plugin.
+# See src/package.rs.
+windows = { version = "0.62", features = [
+  "ApplicationModel",
+  "ApplicationModel_Activation",
+  "Foundation",
+] }
+tauri-winrt-notification = "0.8"
 # The webview's right-click menu is trimmed through WebView2 itself. Both are
 # already built for Tauri at these versions, so they add nothing to the size.
 # See src/ctxmenu.rs.

@@ -16,8 +16,11 @@ Everything Turbo Reader keeps is stored in its data folder:
 
 The data folder is the normal per-user app data folder for
 `dev.t21.turbo-reader` (on Windows, `%APPDATA%\dev.t21.turbo-reader`). The
-portable Windows build keeps it in a `data` folder next to the exe instead.
-Delete that folder and everything is gone.
+portable Windows build keeps it in a `data` folder next to the exe instead,
+and the Microsoft Store version in its own package folder
+(`%LOCALAPPDATA%\Packages\TriptoAfsin.TurboReader_py9gkaefmesmp\LocalState`),
+which Windows deletes when you uninstall it. Delete that folder and everything
+is gone.
 
 ## When it goes online
 
@@ -34,6 +37,7 @@ Turbo Reader connects to other systems only for these:
 - **GitHub, to check for a new version.** Once when the app opens, it asks
   GitHub for the latest Turbo Reader release. Turn this off in About. GitHub
   sees your IP address; the request carries nothing about you or your library.
+  The Microsoft Store version never does this: the Store updates it.
 
 Links you open from an article open in your own browser, not in Turbo Reader.
 

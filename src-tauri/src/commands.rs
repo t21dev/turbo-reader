@@ -1441,6 +1441,10 @@ pub struct UpdateCheck {
 #[tauri::command]
 pub async fn check_for_updates(state: State<'_, AppState>) -> Result<UpdateCheck, String> {
     const RELEASES: &str = "https://github.com/t21dev/turbo-reader/releases/latest";
+    // The Store copy is updated by the Store; the interface hides this check.
+    if crate::package::family_name().is_some() {
+        return Err("Updates come through the Microsoft Store.".into());
+    }
     let current = env!("CARGO_PKG_VERSION").to_string();
 
     let res = state

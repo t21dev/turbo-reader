@@ -106,7 +106,10 @@ pub fn init(app: &AppHandle, conn: &Connection) {
     state.background.set(prefs);
     if prefs.close_to_tray {
         let _ = show_tray(app);
-        let hidden = std::env::args().any(|a| a == HIDDEN_ARG);
+        // The Store package's startup task cannot pass arguments, so a
+        // packaged copy asks Windows how it was started instead.
+        let hidden =
+            std::env::args().any(|a| a == HIDDEN_ARG) || crate::package::launched_at_login();
         state
             .background
             .started_hidden
@@ -260,16 +263,46 @@ pub fn notify_new(app: &AppHandle, since: i64) {
     if feeds.len() > 3 {
         body.push_str(&format!(" and {} more feeds", feeds.len() - 3));
     }
+    let title = format!("{total} new article{}", if total == 1 { "" } else { "s" });
+    if crate::package::notify(&title, &body) {
+        return;
+    }
     use tauri_plugin_notification::NotificationExt;
-    let _ = app
-        .notification()
-        .builder()
-        .title(format!(
-            "{total} new article{}",
-            if total == 1 { "" } else { "s" }
-        ))
-        .body(body)
-        .show();
+    let _ = app.notification().builder().title(title).body(body).show();
+}
+
+/* ---------------------------- start at login ---------------------------- */
+
+/// Whether Turbo Reader starts at login: the Store package's startup task, or
+/// the autostart entry for every other copy.
+#[tauri::command]
+pub async fn start_at_login(app: AppHandle) -> Result<bool, String> {
+    if crate::package::family_name().is_some() {
+        return tauri::async_runtime::spawn_blocking(crate::package::start_at_login)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    use tauri_plugin_autostart::ManagerExt;
+    app.autolaunch().is_enabled().map_err(|e| e.to_string())
+}
+
+/// Switch starting at login on or off, and say whether it is now on.
+#[tauri::command]
+pub async fn set_start_at_login(app: AppHandle, on: bool) -> Result<bool, String> {
+    if crate::package::family_name().is_some() {
+        return tauri::async_runtime::spawn_blocking(move || crate::package::set_start_at_login(on))
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    use tauri_plugin_autostart::ManagerExt;
+    let launcher = app.autolaunch();
+    if on {
+        launcher.enable()
+    } else {
+        launcher.disable()
+    }
+    .map_err(|e| e.to_string())?;
+    launcher.is_enabled().map_err(|e| e.to_string())
 }
 
 /// New articles per feed since a moment, most first.

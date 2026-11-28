@@ -427,13 +427,20 @@ pub struct McpLaunch {
 
 /// Where this program lives, for the stdio setup that agents start themselves.
 /// Inside a Flatpak the binary's path only exists in the sandbox, so agents
-/// go through `flatpak run` instead.
+/// go through `flatpak run` instead. The Store package's folder changes with
+/// every update, so agents go through its execution alias.
 #[tauri::command]
 pub fn mcp_exe_path() -> Result<McpLaunch, String> {
     if let Some(id) = crate::flatpak_id() {
         return Ok(McpLaunch {
             command: "flatpak".into(),
             args: vec!["run".into(), id],
+        });
+    }
+    if let Some(alias) = crate::package::alias_path() {
+        return Ok(McpLaunch {
+            command: alias.to_string_lossy().into_owned(),
+            args: Vec::new(),
         });
     }
     std::env::current_exe()

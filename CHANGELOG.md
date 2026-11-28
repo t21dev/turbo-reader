@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- A Microsoft Store package. `npm run msix` builds it, and each release keeps
+  one as a workflow artifact for the Partner Center upload. In the Store copy,
+  start at login uses a startup task you can also switch off in Task Manager,
+  agents start the MCP server through the `turbo-reader.exe` alias, and the
+  library lives in the package's own folder.
+
 ## [0.32.1] - 2026-11-21
 
 ### Fixed
