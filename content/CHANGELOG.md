@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-11-28
+
+### Added
+- A copy installed with Scoop or Homebrew says how to update it when a newer
+  version is out (`scoop update turbo-reader`, or
+  `brew upgrade --cask turbo-reader`), with a button to copy the command,
+  instead of sending you to the download page. The release notes list both
+  package managers.
+
+### Changed
+- The update check asks the Turbo Reader website
+  (`turbo-reader.t21.dev/latest.json`) as well as GitHub's API and GitHub's
+  latest-release page, all at once, and goes by the newest answer. GitHub's
+  API limits how often one address may ask, so the check used to fail now and
+  then on shared or busy connections.
+- Tauri 2.12.7, its plugins, React 19.3.1 and the other dependencies are on
+  their latest compatible versions, and building from source needs Rust 1.90,
+  which the dependencies already asked for. The release workflows run on
+  Node 22 and current GitHub Actions.
+
 ## [0.33.0] - 2026-11-28
 
 ### Added
@@ -530,7 +550,8 @@ First public release.
   to reason about, which is a failure mode browser engines do not let a page
   recover from.
 
-[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.33.0...HEAD
+[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.34.0...HEAD
+[0.34.0]: https://github.com/t21dev/turbo-reader/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/t21dev/turbo-reader/compare/v0.32.1...v0.33.0
 [0.32.1]: https://github.com/t21dev/turbo-reader/compare/v0.32.0...v0.32.1
 [0.32.0]: https://github.com/t21dev/turbo-reader/compare/v0.31.0...v0.32.0

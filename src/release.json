@@ -1,56 +1,56 @@
 {
-  "version": "0.33.0",
+  "version": "0.34.0",
   "date": "2026-11-28",
-  "page": "https://github.com/t21dev/turbo-reader/releases/tag/v0.33.0",
+  "page": "https://github.com/t21dev/turbo-reader/releases/tag/v0.34.0",
   "assets": {
     "windows": {
-      "name": "Turbo.Reader_0.33.0_x64-setup.exe",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_x64-setup.exe",
-      "size": 5005433
+      "name": "Turbo.Reader_0.34.0_x64-setup.exe",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.34.0/Turbo.Reader_0.34.0_x64-setup.exe",
+      "size": 5109943
     },
     "windowsMsi": {
-      "name": "Turbo.Reader_0.33.0_x64_en-US.msi",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_x64_en-US.msi",
-      "size": 6270976
+      "name": "Turbo.Reader_0.34.0_x64_en-US.msi",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.34.0/Turbo.Reader_0.34.0_x64_en-US.msi",
+      "size": 6414336
     },
     "windowsPortable": {
-      "name": "Turbo.Reader_0.33.0_x64_portable.zip",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_x64_portable.zip",
-      "size": 6081259
+      "name": "Turbo.Reader_0.34.0_x64_portable.zip",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.34.0/Turbo.Reader_0.34.0_x64_portable.zip",
+      "size": 6229922
     },
     "macArm": {
-      "name": "Turbo.Reader_0.33.0_aarch64.dmg",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_aarch64.dmg",
-      "size": 5957923
+      "name": "Turbo.Reader_0.34.0_aarch64.dmg",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.34.0/Turbo.Reader_0.34.0_aarch64.dmg",
+      "size": 6119026
     },
     "macIntel": {
-      "name": "Turbo.Reader_0.33.0_x64.dmg",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_x64.dmg",
-      "size": 6402680
+      "name": "Turbo.Reader_0.34.0_x64.dmg",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.34.0/Turbo.Reader_0.34.0_x64.dmg",
+      "size": 6589157
     },
     "appimage": {
-      "name": "Turbo.Reader_0.33.0_amd64.AppImage",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_amd64.AppImage",
-      "size": 85117432
+      "name": "Turbo.Reader_0.34.0_amd64.AppImage",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.34.0/Turbo.Reader_0.34.0_amd64.AppImage",
+      "size": 85445112
     },
     "deb": {
-      "name": "Turbo.Reader_0.33.0_amd64.deb",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_amd64.deb",
-      "size": 6770048
+      "name": "Turbo.Reader_0.34.0_amd64.deb",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.34.0/Turbo.Reader_0.34.0_amd64.deb",
+      "size": 7154686
     },
     "rpm": {
-      "name": "Turbo.Reader-0.33.0-1.x86_64.rpm",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader-0.33.0-1.x86_64.rpm",
-      "size": 6771390
+      "name": "Turbo.Reader-0.34.0-1.x86_64.rpm",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.34.0/Turbo.Reader-0.34.0-1.x86_64.rpm",
+      "size": 7159673
     },
     "flatpak": {
-      "name": "Turbo.Reader_0.33.0_x86_64.flatpak",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_x86_64.flatpak",
-      "size": 5824152
+      "name": "Turbo.Reader_0.34.0_x86_64.flatpak",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.34.0/Turbo.Reader_0.34.0_x86_64.flatpak",
+      "size": 6077992
     },
     "checksums": {
       "name": "SHA256SUMS.txt",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/SHA256SUMS.txt",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.34.0/SHA256SUMS.txt",
       "size": 1084
     }
   }
