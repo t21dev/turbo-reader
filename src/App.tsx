@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { RELEASE, SITE, SPECS, TOUR, RUST_TEST, installerMB, mb, type Asset, PACKAGES } from "./content";
 import { Mark, GitHub, ArrowRight, Download, Copy, Check } from "./components/Icons";
 import { useDownload, useSystem } from "./download";
+import { AppSwitcher } from "./components/AppSwitcher";
 
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
@@ -14,9 +15,12 @@ function Nav() {
   return (
     <header className="nav" data-scrolled={scrolled}>
       <div className="nav-inner">
-        <a className="brand" href="#top" aria-label="Turbo Reader, back to top">
-          <Mark /> <span>Turbo Reader</span>
-        </a>
+        <div className="brand-group">
+          <a className="brand" href="#top" aria-label="Turbo Reader, back to top">
+            <Mark /> <span>Turbo Reader</span>
+          </a>
+          <AppSwitcher current="turbo-reader" />
+        </div>
         <nav aria-label="Sections" className="nav-links">
           <a href="#tour">Tour</a>
           <a href="#agents">Agents</a>

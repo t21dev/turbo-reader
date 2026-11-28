@@ -4,6 +4,7 @@ import "@fontsource-variable/geist";
 import "@fontsource-variable/geist-mono";
 import "./styles/tokens.css";
 import "./styles/site.css";
+import "./styles/switcher.css";
 import App from "./App";
 
 hydrateRoot(
