@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-11-28
+
 ### Added
 - A Microsoft Store package. `npm run msix` builds it, and each release keeps
   one as a workflow artifact for the Partner Center upload. In the Store copy,
@@ -23,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   path becomes a link to the new folder, so AI agents set up with it keep
   working. Without administrator rights, use the portable zip or the
   Microsoft Store.
+
+### Fixed
+- On macOS the window has its close, minimise and full screen buttons again,
+  and goes full screen from the green button or Control-Command-F. Windows
+  and Linux go full screen with F11. A window closed in full screen opens at
+  its normal size next time.
 
 ## [0.32.1] - 2026-11-21
 
@@ -522,7 +530,8 @@ First public release.
   to reason about, which is a failure mode browser engines do not let a page
   recover from.
 
-[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.32.1...HEAD
+[Unreleased]: https://github.com/t21dev/turbo-reader/compare/v0.33.0...HEAD
+[0.33.0]: https://github.com/t21dev/turbo-reader/compare/v0.32.1...v0.33.0
 [0.32.1]: https://github.com/t21dev/turbo-reader/compare/v0.32.0...v0.32.1
 [0.32.0]: https://github.com/t21dev/turbo-reader/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/t21dev/turbo-reader/compare/v0.30.0...v0.31.0
