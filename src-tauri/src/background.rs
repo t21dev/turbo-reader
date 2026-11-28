@@ -290,9 +290,11 @@ pub async fn start_at_login(app: AppHandle) -> Result<bool, String> {
 #[tauri::command]
 pub async fn set_start_at_login(app: AppHandle, on: bool) -> Result<bool, String> {
     if crate::package::family_name().is_some() {
-        return tauri::async_runtime::spawn_blocking(move || crate::package::set_start_at_login(on))
-            .await
-            .map_err(|e| e.to_string())?;
+        return tauri::async_runtime::spawn_blocking(move || {
+            crate::package::set_start_at_login(on)
+        })
+        .await
+        .map_err(|e| e.to_string())?;
     }
     use tauri_plugin_autostart::ManagerExt;
     let launcher = app.autolaunch();

@@ -137,8 +137,13 @@ pub fn set_start_at_login(on: bool) -> Result<bool, String> {
             .map_err(|e| e.to_string())?;
         match state {
             S::Enabled | S::EnabledByPolicy => Ok(true),
-            S::DisabledByUser => Err("Turbo Reader is switched off in Task Manager > Startup apps. Switch it on there.".into()),
-            S::DisabledByPolicy => Err("A policy on this computer keeps Turbo Reader from starting at login.".into()),
+            S::DisabledByUser => Err(
+                "Turbo Reader is switched off in Task Manager > Startup apps. Switch it on there."
+                    .into(),
+            ),
+            S::DisabledByPolicy => {
+                Err("A policy on this computer keeps Turbo Reader from starting at login.".into())
+            }
             _ => Ok(false),
         }
     }
