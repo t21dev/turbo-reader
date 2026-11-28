@@ -5,7 +5,7 @@ description = "A fast, modern RSS reader"
 authors = ["t21dev"]
 license = "MIT"
 edition = "2021"
-rust-version = "1.77"
+rust-version = "1.90"
 
 [lib]
 name = "turbo_reader_lib"
@@ -49,11 +49,9 @@ rusqlite = { version = "0.32", features = ["bundled", "backup"] }
 
 # support
 anyhow = "1"
-thiserror = "1"
 chrono = { version = "0.4", features = ["serde"] }
 sha2 = "0.10"
 regex = "1"
-once_cell = "1"
 url = "2"
 quick-xml = "0.36"
 qrcode = { version = "0.14", default-features = false, features = ["svg"] }

@@ -9,15 +9,15 @@
 //! candidate containers, score them on how much prose they hold versus how
 //! much of that prose is link text, and keep the winner.
 
-use once_cell::sync::Lazy;
 use regex::Regex;
+use std::sync::LazyLock;
 use url::Url;
 
 use crate::feed;
 
 /// Furniture and executable content, stripped before anything is scored. One
 /// regex per tag, because `regex` has no backreference to close the pair with.
-static SCRIPTISH: Lazy<Vec<Regex>> = Lazy::new(|| {
+static SCRIPTISH: LazyLock<Vec<Regex>> = LazyLock::new(|| {
     [
         "script", "style", "noscript", "svg", "iframe", "form", "nav", "header", "footer", "aside",
         "template",
@@ -26,10 +26,11 @@ static SCRIPTISH: Lazy<Vec<Regex>> = Lazy::new(|| {
     .map(|t| Regex::new(&format!(r"(?is)<{t}\b[^>]*>.*?</\s*{t}\s*>")).unwrap())
     .collect()
 });
-static COMMENT: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?s)<!--.*?-->").unwrap());
-static TAG: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?s)<[^>]*>").unwrap());
-static ANCHOR: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?is)<a\b[^>]*>.*?</\s*a\s*>").unwrap());
-static PARAGRAPH: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)<p\b").unwrap());
+static COMMENT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?s)<!--.*?-->").unwrap());
+static TAG: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?s)<[^>]*>").unwrap());
+static ANCHOR: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?is)<a\b[^>]*>.*?</\s*a\s*>").unwrap());
+static PARAGRAPH: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)<p\b").unwrap());
 
 /// Containers worth scoring, in the order we prefer them when scores tie.
 const CONTAINERS: &[&str] = &["article", "main", "section", "div"];
@@ -132,7 +133,7 @@ pub fn extract(html: &str) -> Option<String> {
             if score <= 0.0 {
                 continue;
             }
-            if best.as_ref().map_or(true, |(b, _)| score > *b) {
+            if best.as_ref().is_none_or(|(b, _)| score > *b) {
                 best = Some((score, block));
             }
         }

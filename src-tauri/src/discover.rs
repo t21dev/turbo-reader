@@ -7,16 +7,17 @@
 //! usual paths when it advertises nothing, and words every failure as
 //! something a person can do something about.
 
-use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Serialize;
+use std::sync::LazyLock;
 use url::Url;
 
 use crate::feed::{self, FetchOutcome};
 
-static LINK_TAG: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?is)<link\b[^>]*>").unwrap());
-static ATTR: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r#"(?is)([a-z-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))"#).unwrap());
+static LINK_TAG: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?is)<link\b[^>]*>").unwrap());
+static ATTR: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)([a-z-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))"#).unwrap()
+});
 
 /// Paths worth trying when a page advertises no feed at all. Short on purpose:
 /// every guess is a request to someone else's server.

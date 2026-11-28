@@ -8,9 +8,9 @@
 //! An assistant can re-rank what comes out of here later, but it never gets to
 //! decide what exists. See docs/ai-assistant-spec.md.
 
-use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 /// Freshness halves every this many seconds. Eighteen hours means yesterday
 /// morning still shows up, and last week does not.
@@ -134,7 +134,7 @@ pub fn affinity(opened: i64, total: i64) -> f64 {
     (rate - 0.25).clamp(-0.25, 0.75) / 0.75
 }
 
-static WHITESPACE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s+").unwrap());
+static WHITESPACE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap());
 
 pub fn score(
     c: &Candidate,

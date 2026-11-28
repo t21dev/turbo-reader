@@ -323,8 +323,8 @@ Built with [Tauri](https://tauri.app), [feed-rs](https://github.com/feed-rs/feed
 
 | | |
 | --- | --- |
-| Windows installer | **4.7 MB**, kept under 5 MB |
-| Installed on disk | **11 MB** |
+| Windows installer | **4.9 MB**, kept under 5 MB |
+| Installed on disk | **12 MB** |
 | Memory, 500 feeds and 20,000 articles | **14 MB** app process, **~270 MB** with the system webview |
 | Refresh 500 feeds from a local test server | **0.2 s** |
 | Cold start to usable | **under half a second** |

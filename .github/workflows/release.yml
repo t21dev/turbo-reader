@@ -18,7 +18,7 @@ jobs:
       release_id: ${{ steps.create.outputs.id }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Create the draft release
         id: create
@@ -42,6 +42,11 @@ jobs:
           - Windows: \`.msi\` or \`.exe\`
           - macOS: \`.dmg\`, with separate Apple silicon and Intel builds
           - Linux: \`.AppImage\`, \`.deb\` or \`.flatpak\`
+
+          Or with a package manager, which also keeps it up to date:
+          \`brew install --cask t21dev/tap/turbo-reader\` on macOS;
+          \`scoop bucket add t21dev https://github.com/t21dev/scoop-bucket\` and
+          then \`scoop install t21dev/turbo-reader\` on Windows.
 
           ## Note on unsigned builds
           These binaries are not code-signed with an Apple or Microsoft
@@ -81,7 +86,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
@@ -90,9 +95,9 @@ jobs:
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install Rust stable
@@ -161,7 +166,7 @@ jobs:
 
       - name: Upload the Store package
         if: matrix.platform == 'windows-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: microsoft-store-msix
           path: src-tauri/target/msix/*.msix
@@ -179,7 +184,7 @@ jobs:
       options: --privileged
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: true
 

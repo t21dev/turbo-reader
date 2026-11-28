@@ -9,10 +9,10 @@
 //! unknown element at all.
 
 use anyhow::{anyhow, Result};
-use once_cell::sync::Lazy;
 use regex::Regex;
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
+use std::sync::LazyLock;
 use std::time::Duration;
 
 /// Feeds behind FeedBurner (and a few CDNs) reject requests that look like a
@@ -21,10 +21,10 @@ use std::time::Duration;
 const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
                           (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 
-static IMG_SRC: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r#"(?i)<img[^>]+src\s*=\s*["']([^"']+)["']"#).unwrap());
-static TAG: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?s)<[^>]*>").unwrap());
-static WS: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s+").unwrap());
+static IMG_SRC: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(?i)<img[^>]+src\s*=\s*["']([^"']+)["']"#).unwrap());
+static TAG: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?s)<[^>]*>").unwrap());
+static WS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap());
 
 #[derive(Debug, Clone)]
 pub struct FetchOutcome {
@@ -136,7 +136,7 @@ pub fn parse(
         let link = e
             .links
             .iter()
-            .find(|l| l.rel.as_deref().map_or(true, |r| r == "alternate"))
+            .find(|l| l.rel.as_deref().is_none_or(|r| r == "alternate"))
             .or_else(|| e.links.first())
             .map(|l| absolutise(&l.href, base.as_ref()));
 
@@ -561,12 +561,13 @@ fn b64(data: &[u8]) -> String {
     out
 }
 
-static ICON_LINK: Lazy<Regex> = Lazy::new(|| {
+static ICON_LINK: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)<link[^>]+rel\s*=\s*["']([^"']*icon[^"']*)["'][^>]*>"#).unwrap()
 });
-static HREF: Lazy<Regex> = Lazy::new(|| Regex::new(r#"(?i)href\s*=\s*["']([^"']+)["']"#).unwrap());
-static SIZES: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r#"(?i)sizes\s*=\s*["'](\d+)x\d+["']"#).unwrap());
+static HREF: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(?i)href\s*=\s*["']([^"']+)["']"#).unwrap());
+static SIZES: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(?i)sizes\s*=\s*["'](\d+)x\d+["']"#).unwrap());
 
 #[cfg(test)]
 mod tests {
