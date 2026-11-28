@@ -47,7 +47,7 @@ Codex, in `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.turbo-reader]
-command = "C:\\Users\\you\\AppData\\Local\\Turbo Reader\\turbo-reader.exe"
+command = "C:\\Program Files\\Turbo Reader\\turbo-reader.exe"
 args = ["--mcp"]
 ```
 
@@ -94,8 +94,7 @@ Then ask your agent things like:
 
 | Platform | Typical path |
 | --- | --- |
-| Windows (installer) | `C:\Users\you\AppData\Local\Turbo Reader\turbo-reader.exe` |
-| Windows (MSI) | `C:\Program Files\Turbo Reader\turbo-reader.exe` |
+| Windows (`.exe` or `.msi` installer) | `C:\Program Files\Turbo Reader\turbo-reader.exe`. Before 0.33.0 the `.exe` installer used `C:\Users\you\AppData\Local\Turbo Reader`, which keeps working as a link to the new folder after the upgrade |
 | Windows (portable) | wherever you unzipped it; it uses the `data` folder beside it |
 | macOS | `/Applications/Turbo Reader.app/Contents/MacOS/turbo-reader` |
 | Linux (.deb, .rpm) | `/usr/bin/turbo-reader` |

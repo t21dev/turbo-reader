@@ -14,6 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   agents start the MCP server through the `turbo-reader.exe` alias, and the
   library lives in the package's own folder.
 
+### Changed
+- The Windows `.exe` installer now installs for all users into
+  `C:\Program Files\Turbo Reader`, as the `.msi` does, instead of
+  `%LOCALAPPDATA%\Turbo Reader`, so it asks for administrator rights. It
+  moves an earlier per-user copy over: the old copy is uninstalled, the library
+  and settings stay as they are, start at login stays on, and the old program
+  path becomes a link to the new folder, so AI agents set up with it keep
+  working. Without administrator rights, use the portable zip or the
+  Microsoft Store.
+
 ## [0.32.1] - 2026-11-21
 
 ### Fixed
