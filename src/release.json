@@ -1,56 +1,56 @@
 {
-  "version": "0.32.0",
-  "date": "2026-10-20",
-  "page": "https://github.com/t21dev/turbo-reader/releases/tag/v0.32.0",
+  "version": "0.33.0",
+  "date": "2026-11-28",
+  "page": "https://github.com/t21dev/turbo-reader/releases/tag/v0.33.0",
   "assets": {
     "windows": {
-      "name": "Turbo.Reader_0.32.0_x64-setup.exe",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.32.0/Turbo.Reader_0.32.0_x64-setup.exe",
-      "size": 4994487
+      "name": "Turbo.Reader_0.33.0_x64-setup.exe",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_x64-setup.exe",
+      "size": 5005433
     },
     "windowsMsi": {
-      "name": "Turbo.Reader_0.32.0_x64_en-US.msi",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.32.0/Turbo.Reader_0.32.0_x64_en-US.msi",
-      "size": 6250496
+      "name": "Turbo.Reader_0.33.0_x64_en-US.msi",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_x64_en-US.msi",
+      "size": 6270976
     },
     "windowsPortable": {
-      "name": "Turbo.Reader_0.32.0_x64_portable.zip",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.32.0/Turbo.Reader_0.32.0_x64_portable.zip",
-      "size": 6063438
+      "name": "Turbo.Reader_0.33.0_x64_portable.zip",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_x64_portable.zip",
+      "size": 6081259
     },
     "macArm": {
-      "name": "Turbo.Reader_0.32.0_aarch64.dmg",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.32.0/Turbo.Reader_0.32.0_aarch64.dmg",
-      "size": 5973204
+      "name": "Turbo.Reader_0.33.0_aarch64.dmg",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_aarch64.dmg",
+      "size": 5957923
     },
     "macIntel": {
-      "name": "Turbo.Reader_0.32.0_x64.dmg",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.32.0/Turbo.Reader_0.32.0_x64.dmg",
-      "size": 6301846
+      "name": "Turbo.Reader_0.33.0_x64.dmg",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_x64.dmg",
+      "size": 6402680
     },
     "appimage": {
-      "name": "Turbo.Reader_0.32.0_amd64.AppImage",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.32.0/Turbo.Reader_0.32.0_amd64.AppImage",
-      "size": 85088760
+      "name": "Turbo.Reader_0.33.0_amd64.AppImage",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_amd64.AppImage",
+      "size": 85117432
     },
     "deb": {
-      "name": "Turbo.Reader_0.32.0_amd64.deb",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.32.0/Turbo.Reader_0.32.0_amd64.deb",
-      "size": 6742296
+      "name": "Turbo.Reader_0.33.0_amd64.deb",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_amd64.deb",
+      "size": 6770048
     },
     "rpm": {
-      "name": "Turbo.Reader-0.32.0-1.x86_64.rpm",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.32.0/Turbo.Reader-0.32.0-1.x86_64.rpm",
-      "size": 6747167
+      "name": "Turbo.Reader-0.33.0-1.x86_64.rpm",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader-0.33.0-1.x86_64.rpm",
+      "size": 6771390
     },
     "flatpak": {
-      "name": "Turbo.Reader_0.32.0_x86_64.flatpak",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.32.0/Turbo.Reader_0.32.0_x86_64.flatpak",
-      "size": 5823608
+      "name": "Turbo.Reader_0.33.0_x86_64.flatpak",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/Turbo.Reader_0.33.0_x86_64.flatpak",
+      "size": 5824152
     },
     "checksums": {
       "name": "SHA256SUMS.txt",
-      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.32.0/SHA256SUMS.txt",
+      "url": "https://github.com/t21dev/turbo-reader/releases/download/v0.33.0/SHA256SUMS.txt",
       "size": 1084
     }
   }

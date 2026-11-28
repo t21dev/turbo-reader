@@ -4,6 +4,11 @@
 /screenshots/*
   Cache-Control: public, max-age=604800
 
+/latest.json
+  Content-Type: application/json; charset=utf-8
+  Cache-Control: public, max-age=300
+  X-Robots-Tag: noindex
+
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

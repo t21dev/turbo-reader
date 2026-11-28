@@ -12,6 +12,7 @@
     "preview": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",
     "og": "node scripts/og.mjs",
+    "sync": "node scripts/sync-from-main.mjs",
     "check": "node scripts/check-seo.mjs"
   },
   "dependencies": {

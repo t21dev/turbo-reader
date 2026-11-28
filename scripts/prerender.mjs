@@ -79,5 +79,20 @@ await writeFile(
 </urlset>
 `,
 );
+// latest.json, for the app's update check. Turbo Reader asks this alongside
+// GitHub's API, which limits requests per address. Built from the newest
+// released section of the synced changelog, so it needs no network.
+{
+  const changelog = await readFile(resolve("content/CHANGELOG.md"), "utf8");
+  const m = changelog.match(/^## \[(\d[^\]]*)\] - (\d{4}-\d{2}-\d{2})[^\n]*\n([\s\S]*?)(?=^## \[|^\[[^\]]+\]: |(?![\s\S]))/m);
+  if (!m) throw new Error("latest.json: no released version in content/CHANGELOG.md");
+  const [, version, published, notes] = m;
+  await writeFile(
+    dist("latest.json"),
+    JSON.stringify({ version, published, url: `https://github.com/t21dev/turbo-reader/releases/tag/v${version}`, notes: notes.trim() }, null, 2) + "\n",
+  );
+  console.log(`latest.json: ${version} (${published})`);
+}
+
 await rm("dist-ssr", { recursive: true, force: true });
-console.log(`prerender: index.html, 404.html, sitemap.xml (v${release.version})`);
+console.log(`prerender: index.html, 404.html, sitemap.xml, latest.json (v${release.version})`);
